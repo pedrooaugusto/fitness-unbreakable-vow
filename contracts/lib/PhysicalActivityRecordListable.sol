@@ -1,0 +1,36 @@
+pragma solidity ^0.8.28;
+
+import { PhysicalActivityRecord, PhysicalActivityRecordFunctions } from './Types.sol';
+import { Config } from './Config.sol';
+
+abstract contract PhysicalActivityRecordListable {
+    using PhysicalActivityRecordFunctions for PhysicalActivityRecord;
+
+    mapping(uint8 => PhysicalActivityRecord) public physicalActivityRecords;
+
+    function push(PhysicalActivityRecord memory record, uint8 weekNumber) internal {
+        PhysicalActivityRecord storage existingRecord = physicalActivityRecords[weekNumber];
+
+        if(existingRecord.isNull()) {
+            physicalActivityRecords[weekNumber] = record;
+        } else {
+            existingRecord.mergeWith(record);
+        }
+
+        physicalActivityRecords[weekNumber].timestamp = uint32(block.timestamp);
+    }
+
+    function get(uint8 weekNumber) internal view returns (PhysicalActivityRecord storage) {
+        return (physicalActivityRecords[weekNumber]);
+    }
+
+    function list(uint8 currentWeekIndex) internal view returns (PhysicalActivityRecord[] memory) {
+        PhysicalActivityRecord[] memory records = new PhysicalActivityRecord[](currentWeekIndex + 1);
+
+        for (uint8 i = 0; i <= currentWeekIndex; i++) {
+            records[i] = physicalActivityRecords[i];
+        }
+
+        return records;
+    }
+}

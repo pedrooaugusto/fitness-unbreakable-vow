@@ -1,0 +1,13 @@
+* {
+    margin: 0px;
+    padding: 0px;
+}
+
+:root {
+  --background: #0A0A0A;
+  --logo-color: #F06543;
+}
+
+body {
+    background-color: var(--background);
+}

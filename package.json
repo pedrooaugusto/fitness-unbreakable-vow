@@ -1,0 +1,36 @@
+{
+  "name": "stridecontract",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx hardhat test",
+    "coverage": "npx hardhat coverage",
+    "build": "npm run minify-verifier-script && npx hardhat compile",
+    "start": "npx hardhat node",
+    "deploy": "npx hardhat ignition deploy ./ignition/modules/$CONTRACT --network $NETWORK $RESET",
+    "deploy:sepolia": "npx hardhat --network sepolia DeployPhysicalActivityOracle",
+    "verify:sepolia": "npx hardhat verify --network sepolia",
+    "GetSteps:sepolia": "npx hardhat --network sepolia GetSteps",
+    "PushPhysicalActivityRecord:sepolia": "cross-env npx hardhat --network sepolia PushPhysicalActivityRecord",
+    "verify-signed-apk": "apksigner.bat verify --print-certs android-app/app/build/outputs/apk/debug/app-debug.apk",
+    "sign-apk": "apksigner.bat sign --ks android-app/keystore.jks android-app/app/build/outputs/apk/debug/app-debug.apk",
+    "create-web3j-clients": "node scripts/build-web3j-client.js",
+    "build-abi-for-backend": "cp artifacts/contracts/FitnessUnbreakableVow.sol/FitnessUnbreakableVow.json @dashboard.server/src/abi/FitnessUnbreakableVow.json && cp artifacts/contracts/PhysicalActivityOracle.sol/PhysicalActivityOracle.json @dashboard.server/src/abi/PhysicalActivityOracle.json",
+    "minify-verifier-script": "npx ts-node scripts/minify-verifier-script.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/chai-subset": "^1.3.6",
+    "chai-subset": "^1.6.0",
+    "dotenv": "^17.2.1",
+    "hardhat": "^2.25.0",
+    "terser": "^5.42.0"
+  },
+  "dependencies": {
+    "@chainlink/contracts": "^1.4.0"
+  }
+}
