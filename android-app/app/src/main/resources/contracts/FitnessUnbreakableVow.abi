@@ -139,7 +139,7 @@
     "name": "PHYSICAL_ACTIVITY_ORACLE",
     "outputs": [
       {
-        "internalType": "contract Oracle",
+        "internalType": "address",
         "name": "",
         "type": "address"
       }
@@ -207,7 +207,7 @@
             "type": "bool"
           }
         ],
-        "internalType": "struct WeeklyGoalsCompletionResult[]",
+        "internalType": "struct WeeklyGoal[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -242,43 +242,10 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "isPenaltyLikely",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "terminateVow",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint8",
-        "name": "recordWeekIndex",
+        "name": "weekIndex",
         "type": "uint8"
       },
       {
@@ -309,7 +276,27 @@
         "type": "tuple"
       }
     ],
-    "name": "updateRecords",
+    "name": "onNewPhysicalActivityRecord",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "terminateVow",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

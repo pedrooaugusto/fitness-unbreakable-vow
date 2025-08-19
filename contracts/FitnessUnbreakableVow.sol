@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { WeeklyGoalStatus, WeeklyGoalsCompletionResult, PhysicalActivityRecord, Oracle, PhysicalActivityOracleListener } from './lib/Types.sol';
+import { WeeklyGoalStatus, WeeklyGoal, PhysicalActivityRecord, Listener, Observable } from './lib/Types.sol';
 import { Ownable } from './lib/Ownable.sol';
-import { WeeklyGoalsRecords } from './lib/WeeklyGoalsRecords.sol';
+import { IExpirable } from "./lib/Expirable.sol";
+import { console } from "./lib/Config.sol";
+import { WeeklyGoalListable } from './lib/WeeklyGoalListable.sol';
 
 event NoPenaltyApplied();
 event PenaltyApplied(uint256 penaltyAmount, address receiver);
@@ -13,11 +15,11 @@ event VowExpired(uint256 releasedFunds, address receiver);
  * @title FitnessUnbreakableVow: Penalizes Physical Inactivity with Fund Deduction.
  * @notice This contract enforces physical activity goals by deducting funds if activity cannot be verified.
  */
-contract FitnessUnbreakableVow is WeeklyGoalsRecords, Ownable, PhysicalActivityOracleListener {
+contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener {
     /**
      * @dev Oracle responsinble for storing physical activity records.
      */
-    Oracle public immutable PHYSICAL_ACTIVITY_ORACLE;
+    address public immutable PHYSICAL_ACTIVITY_ORACLE;
 
     /**
      * @dev Chainlink Upkeep address. Upkeep is responsible for calling this contract at least once a day.
@@ -48,13 +50,13 @@ contract FitnessUnbreakableVow is WeeklyGoalsRecords, Ownable, PhysicalActivityO
         address upkeepAddress,
         uint256 creationDate,
         uint256 expirationDate
-    ) payable WeeklyGoalsRecords(creationDate, expirationDate) {
+    ) payable WeeklyGoalListable(creationDate, expirationDate) {
         STAKED_AMOUNT = msg.value;
         CHAINLINK_UPKEEP_ADDRESS = upkeepAddress;
-        PHYSICAL_ACTIVITY_ORACLE = Oracle(physicalActivityOracleAddress);
+        PHYSICAL_ACTIVITY_ORACLE = physicalActivityOracleAddress;
         PENALTY_AMOUNT = STAKED_AMOUNT / ((EXPIRATION_DATE - CREATION_DATE) / SECONDS_IN_A_WEEK);
 
-        requireSameDatesAsOracle(CREATION_DATE, EXPIRATION_DATE);
+        syncWithOracle(physicalActivityOracleAddress, creationDate, expirationDate);
     }
 
     /**
@@ -64,12 +66,10 @@ contract FitnessUnbreakableVow is WeeklyGoalsRecords, Ownable, PhysicalActivityO
      * for non-compliance, rewarding the caller who verifies the unmet goal.
      */
     function enforceAgreement() external notExpired {
-        updateAllWeekStatuses();
+        int8 weekIndex = findFirstFailedWeek();
 
-        int8 weekNumber = findFirstWeekPendingPenalty();
-
-        if (weekNumber != -1) {
-            applyPenaltyForWeek(uint8(weekNumber));
+        if (weekIndex != -1) {
+            applyPenaltyForWeek(uint8(weekIndex));
         } else {
             emit NoPenaltyApplied();
         }
@@ -89,15 +89,17 @@ contract FitnessUnbreakableVow is WeeklyGoalsRecords, Ownable, PhysicalActivityO
         emit VowExpired(balance, msg.sender);
     }
 
-    function onNewPhysicalActivityRecord(uint8 weekIndex, PhysicalActivityRecord memory record) external onlyOracle {
-        putWeek(weekIndex, buildWeeklyGoalsFrom(record));
+    function onNewPhysicalActivityRecord(uint8 weekIndex, PhysicalActivityRecord memory record) external {
+        console.log("Processing new record.");
+
+        putWeek(weekIndex, buildWeeklyGoalFrom(record));
     }
 
     /** 
      * @notice Retrieves all weekly goals completion records.
-     * @return An array of `WeeklyGoalsCompletionResult` structs containing the completion records for all weekly goals.
+     * @return An array of `WeeklyGoal` structs containing the completion records for all weekly goals.
      */
-    function getAllWeeklyGoalsRecords() external view returns (WeeklyGoalsCompletionResult[] memory) {
+    function getAllWeeklyGoalsRecords() external view returns (WeeklyGoal[] memory) {
         return listAllWeeks();
     }
 
@@ -137,13 +139,15 @@ contract FitnessUnbreakableVow is WeeklyGoalsRecords, Ownable, PhysicalActivityO
         return msg.sender == CHAINLINK_UPKEEP_ADDRESS;
     }
 
-    function requireSameDatesAsOracle(uint256 creationDate, uint256 expirationDate) internal view {
-        require(PHYSICAL_ACTIVITY_ORACLE.CREATION_DATE() == creationDate, "Oracle and Vow creation dates diverge.");
-        require(PHYSICAL_ACTIVITY_ORACLE.EXPIRATION_DATE() == expirationDate, "Oracle and Vow expiration dates diverge.");
+    function syncWithOracle(address oracle, uint256 creationDate, uint256 expirationDate) private {
+        require(IExpirable(oracle).CREATION_DATE() == creationDate, "Oracle and Vow creation dates diverge.");
+        require(IExpirable(oracle).EXPIRATION_DATE() == expirationDate, "Oracle and Vow expiration dates diverge.");
+
+        Observable(oracle).registerOnNewPhysicalActivityRecordListener(address(this));
     }
 
     modifier onlyOracle() {
-        require(address(PHYSICAL_ACTIVITY_ORACLE) == msg.sender, "Callable only by the oracle.");
+        require(PHYSICAL_ACTIVITY_ORACLE == msg.sender, "Callable only by the oracle.");
         _;
     }
 }

@@ -4,15 +4,17 @@ import { SignatureVerifier } from "./lib/SignatureVerifier.sol";
 import { PhysicalActivityRecordListable } from "./lib/PhysicalActivityRecordListable.sol";
 import { Ownable } from './lib/Ownable.sol';
 import { Expirable } from './lib/Expirable.sol';
-import { PhysicalActivityRecord, PhysicalActivityRecordFunctions, PhysicalActivityOracleListener } from "./lib/Types.sol";
-import { ChainLinkFunctionsParamsProvider } from "./lib/Config.sol";
+import { PhysicalActivityRecord, PhysicalActivityRecordFunctions, Listener, Observable } from './lib/Types.sol';
+import { ChainLinkFunctionsParamsProvider, console } from "./lib/Config.sol";
+
 
 event PhysicalActivityRecordAdded();
 
-contract PhysicalActivityOracle is SignatureVerifier, PhysicalActivityRecordListable, Expirable, Ownable {
+// TODO: Rename to WeeklyMetrics
+contract PhysicalActivityOracle is SignatureVerifier, PhysicalActivityRecordListable, Observable, Expirable, Ownable {
     using PhysicalActivityRecordFunctions for PhysicalActivityRecord;
 
-    PhysicalActivityOracleListener public immutable ORACLE_UPDATE_LISTENER;
+    Listener public ORACLE_UPDATE_LISTENER;
 
     constructor(string memory network, uint256 creationDate, uint256 expirationDate)
         Expirable(creationDate, expirationDate)
@@ -44,9 +46,8 @@ contract PhysicalActivityOracle is SignatureVerifier, PhysicalActivityRecordList
      */
     function getCurrentWeekPhysicalActivityRecord() external view returns (uint8, PhysicalActivityRecord memory) {
         uint8 currentWeekIndex = getCurrentWeekIndex();
-        PhysicalActivityRecord storage record = get(currentWeekIndex);
 
-        return (currentWeekIndex, record);
+        return (currentWeekIndex, get(currentWeekIndex));
     }
 
     /**
@@ -55,13 +56,21 @@ contract PhysicalActivityOracle is SignatureVerifier, PhysicalActivityRecordList
      * @return An array of `PhysicalActivityRecord` representing all recorded physical activities.
      */
     function listAllPhysicalActivityRecords() external view returns (PhysicalActivityRecord[] memory) {
-        return list(getWeekIndexOf(block.timestamp));
+        return list(getCurrentWeekIndex());
+    }
+
+    function registerOnNewPhysicalActivityRecordListener(address listener) external {
+        require(address(ORACLE_UPDATE_LISTENER) == address(0), "Listener already set.");
+
+        ORACLE_UPDATE_LISTENER = Listener(listener);
     }
 
     function safePushPhysicalActivityRecord(PhysicalActivityRecord memory newRecord) private {
         uint8 weekIndex = getWeekIndexOf(uint256(newRecord.timestamp));
 
         push(newRecord, weekIndex);
+
+        console.log("Calling listener.");
 
         ORACLE_UPDATE_LISTENER.onNewPhysicalActivityRecord(weekIndex, newRecord);
 

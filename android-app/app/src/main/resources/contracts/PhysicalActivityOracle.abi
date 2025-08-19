@@ -113,6 +113,19 @@
   },
   {
     "inputs": [],
+    "name": "ORACLE_UPDATE_LISTENER",
+    "outputs": [
+      {
+        "internalType": "contract Listener",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "SECONDS_IN_A_WEEK",
     "outputs": [
       {
@@ -344,6 +357,19 @@
       }
     ],
     "name": "pushPhysicalActivityRecord",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "listener",
+        "type": "address"
+      }
+    ],
+    "name": "registerOnNewPhysicalActivityRecordListener",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

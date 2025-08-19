@@ -134,6 +134,7 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
         const oracle = await hre.ethers.getContractAt("PhysicalActivityOracle", oracleAddress);
         const fitnessUnbreakableVow = await FitnessUnbreakableVowFactory.deploy(
             oracleAddress,
+            chainLinkUpkeepAddress,
             await oracle.CREATION_DATE(),
             await oracle.EXPIRATION_DATE(),
             { value: STAKED_AMOUNT }
@@ -158,9 +159,9 @@ task('SetUpkeepAddress', "Add the upkeep")
 
         const contract = await hre.ethers.getContractAt("FitnessUnbreakableVow", contractAddress);
 
-        const result = await contract.setChainlinkUpkeepAddress(taskArgs.a);
+        //const result = await contract.setChainlinkUpkeepAddress(taskArgs.a);
 
-        await result.wait();
+        //await result.wait();
     })
 
 task('MockChainLinkOracle', "Deploys an mock Chainlink oracle.")

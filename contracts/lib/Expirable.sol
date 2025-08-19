@@ -3,7 +3,12 @@ pragma solidity ^0.8.28;
 
 import { Config } from './Config.sol';
 
-abstract contract Expirable {
+interface IExpirable {
+    function EXPIRATION_DATE() external view returns(uint256);
+    function CREATION_DATE() external view returns(uint256);
+}
+
+abstract contract Expirable is IExpirable {
     uint256 public constant SECONDS_IN_A_WEEK = Config.SECONDS_IN_SEVEN_DAYS;
 
     uint256 public immutable CREATION_DATE;

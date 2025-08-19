@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-//import { console as HardhatConsole } from "hardhat/console.sol";
-//import { ChainlinkFunctionsMock } from "./ChainlinkFunctionsMock.sol";
+import { console as HardhatConsole } from "hardhat/console.sol";
+import { ChainlinkFunctionsMock } from "./ChainlinkFunctionsMock.sol";
 
 library Config {
     uint256 public constant SECONDS_IN_SEVEN_DAYS = 10 minutes; //7 days;
@@ -10,18 +10,18 @@ library Config {
 
 library console {
     function log(string memory message) internal pure {
-        //HardhatConsole.log(message);
+        HardhatConsole.log(message);
     }
 
     function log(string memory message1, string memory message2) internal pure {
-        //HardhatConsole.log(message1, message2);
+        HardhatConsole.log(message1, message2);
     }
 }
 
 library ChainlinkFunctionsMockLib {
     function executeCode(address mockAddress, string memory code, string[] memory args) internal returns (bytes32) {
-        return bytes32(0);
-        //return ChainlinkFunctionsMock(payable(mockAddress)).executeCode(code, args);
+        //return bytes32(0);
+        return ChainlinkFunctionsMock(payable(mockAddress)).executeCode(code, args);
     }
 }
 

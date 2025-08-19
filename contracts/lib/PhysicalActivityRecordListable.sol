@@ -20,7 +20,7 @@ abstract contract PhysicalActivityRecordListable {
         physicalActivityRecords[weekNumber].timestamp = uint32(block.timestamp);
     }
 
-    function get(uint8 weekNumber) internal view returns (PhysicalActivityRecord storage) {
+    function get(uint8 weekNumber) internal view returns (PhysicalActivityRecord memory) {
         return (physicalActivityRecords[weekNumber]);
     }
 

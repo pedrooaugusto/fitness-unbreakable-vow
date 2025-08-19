@@ -86,7 +86,7 @@ case "$1" in
         npx hardhat --network "$2" SetUpkeepAddress "${@:3}"
         echo "Done."
         ;;
-    mock-chainlink)
+    chainlink)
         echo "Starting chainlink functions mock..."
         npx hardhat --network localhost MockChainLinkOracle
         ;;
