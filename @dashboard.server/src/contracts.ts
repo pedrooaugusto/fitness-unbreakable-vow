@@ -7,7 +7,7 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const NETWORK = __LastUsedNetwork as keyof typeof FitnessUnbreakableVowAddresses;
+export const NETWORK = __LastUsedNetwork as keyof typeof FitnessUnbreakableVowAddresses;
 const RPC_URL = process.env[NETWORK + '.RPC_URL']
 
 export const FitnessUnbreakableVowAddress = FitnessUnbreakableVowAddresses[NETWORK];
@@ -48,4 +48,26 @@ async function localhostMultiCall(contract: Contract, functions: string[]) {
 
 export async function getBalance(target: Contract) {
     return await provider.getBalance(await target.getAddress());
+}
+
+export async function getEvents<T>(contract: Contract, eventName: string, indexes: any[], data: string[]) {
+    const filter = contract.filters[eventName]?.(...indexes)!;
+
+    const events = await contract.queryFilter(filter);
+
+    return events.map(item => {
+        const args: T = {} as any;
+        for (let i = 0; i < (item as any).args.length; i++) {
+            const keyName = data[i]!;
+            const value = (item as any).args[i];
+
+            (args as any)[keyName] = typeof value === 'bigint' ? Number(value) : value;
+        }
+
+        return {
+            transactionHash: item.transactionHash,
+            blockNumber: item.blockNumber,
+            ...args,
+        };
+    });
 }

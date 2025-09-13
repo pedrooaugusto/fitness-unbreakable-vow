@@ -91,7 +91,7 @@ case "$1" in
         npx hardhat --network localhost MockChainLinkOracle
         ;;
     *)
-        echo "Usage: $0 {build|build-prod|deploy}"
+        echo "Usage: $0 {build|build-prod|deploy|chainlink|enforce|terminate|push-record}"
         exit 1
         ;;
 esac

@@ -68,11 +68,11 @@ contract PhysicalActivityOracle is SignatureVerifier, PhysicalActivityRecordList
     function safePushPhysicalActivityRecord(PhysicalActivityRecord memory newRecord) private {
         uint8 weekIndex = getWeekIndexOf(uint256(newRecord.timestamp));
 
-        push(newRecord, weekIndex);
+        PhysicalActivityRecord memory mergedRecord = merge(newRecord, weekIndex);
 
         console.log("Calling listener.");
 
-        ORACLE_UPDATE_LISTENER.onNewPhysicalActivityRecord(weekIndex, newRecord);
+        ORACLE_UPDATE_LISTENER.onNewPhysicalActivityRecord(weekIndex, mergedRecord);
 
         emit PhysicalActivityRecordAdded();
     }

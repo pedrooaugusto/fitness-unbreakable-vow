@@ -34,6 +34,7 @@ enum WeeklyGoalStatus {
     NULL,
     COMPLETED,
     PENDING_END_OF_WEEK,
+    FAILED_PENDING_PENALTY,
     FAILED_PENALTY_APPLIED
 }
 
@@ -47,8 +48,8 @@ struct WeeklyGoal {
 
 library WeeklyGoalFunctions {
     function isCompleted(
-        WeeklyGoal storage self
-    ) internal view returns (bool) {
+        WeeklyGoal memory self
+    ) internal pure returns (bool) {
         bool ran2km = self.ran2km;
         bool sleptWell = self.sleptWell;
         bool wentoToTheGymEnoughTimes = self.wentoToTheGymEnoughTimes;
@@ -63,7 +64,15 @@ library WeeklyGoalFunctions {
     function wasWasNotCompleted(
         WeeklyGoal storage self
     ) internal view returns (bool) {
-        return !isCompleted(self);
+        bool ran2km = self.ran2km;
+        bool sleptWell = self.sleptWell;
+        bool wentoToTheGymEnoughTimes = self.wentoToTheGymEnoughTimes;
+
+        if ((wentoToTheGymEnoughTimes && ran2km) || (wentoToTheGymEnoughTimes && sleptWell) || (ran2km && sleptWell)) {
+            return false;
+        } else {
+            return true;
+        }
     }
 }
 
@@ -82,5 +91,5 @@ interface Observable {
 }
 
 interface Listener {
-    function onNewPhysicalActivityRecord(uint8 weekIndex, PhysicalActivityRecord memory record) external;
+    function onNewPhysicalActivityRecord(uint8 weekIndex, PhysicalActivityRecord calldata record) external;
 }

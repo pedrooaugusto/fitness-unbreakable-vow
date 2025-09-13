@@ -1,12 +1,11 @@
 {
   "PhysicalActivityOracle": {
     "localhost": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    "sepolia": "0xe48aBAeBbe06D8F9Bd7C256aCcDBd0939E5723ec"
+    "sepolia": "0x41728908bc265c881A64D792b9C8F26624a293b8"
   },
-  ".lastUsedNetwork": "sepolia",
   "FitnessUnbreakableVow": {
     "localhost": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-    "sepolia": "0xB4BeeF09865e71C82cb9733CD833388Da35B8B43"
+    "sepolia": "0x60F812f256D79f116D20307B5806047950Da8ce4"
   },
   "ChainlinkFunctionsMock": {
     "localhost": "0x5FbDB2315678afecb367f032d93F642f64180aa3"

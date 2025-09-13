@@ -100,7 +100,7 @@ task('EnforceVow', "Enforces the FitnessUnbreakableVow.")
 
 const CREATION_DATE = Math.floor(+new Date() / 1000);
 const NUMBER_OF_CYLES = 6.2;
-const SECONDS_IN_WEEK = 60 * 10;
+const SECONDS_IN_WEEK = 60 * 2;
 const EXPIRATION_DATE = CREATION_DATE + SECONDS_IN_WEEK * NUMBER_OF_CYLES;
 
 task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
@@ -126,9 +126,9 @@ task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
 
 task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
     .setAction(async (taskArgs, hre) => {
-        const STAKED_AMOUNT = hre.ethers.parseEther("0.001");
+        const STAKED_AMOUNT = hre.ethers.parseEther("0.001");// 0.001
         const oracleAddress = getContractAddress('PhysicalActivityOracle', hre.network.name);
-        const chainLinkUpkeepAddress = "0xb83E47C2bC239B3bf370bc41e1459A34b41238D0";
+        const chainLinkUpkeepAddress = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"; //"0xb83E47C2bC239B3bf370bc41e1459A34b41238D0";
 
         const FitnessUnbreakableVowFactory = await hre.ethers.getContractFactory('FitnessUnbreakableVow');
         const oracle = await hre.ethers.getContractAt("PhysicalActivityOracle", oracleAddress);
@@ -149,7 +149,7 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
         saveContractAddress('FitnessUnbreakableVow', contractAddress, hre.network.name);
 
         console.log('⚠️ Verify contract source code in Etherscan with: ');
-        console.log(`npm run verify:${hre.network.name} ${contractAddress} "${oracleAddress}" "${CREATION_DATE}" "${EXPIRATION_DATE}"`);
+        console.log(`npm run verify:${hre.network.name} ${contractAddress} "${oracleAddress}" "${chainLinkUpkeepAddress}" "${CREATION_DATE}" "${EXPIRATION_DATE}"`);
     })
 
 task('SetUpkeepAddress', "Add the upkeep")
@@ -211,7 +211,7 @@ const config: HardhatUserConfig = {
         },
         sepolia: {
             url: process.env['sepolia.RPC_URL'],
-            accounts: [process.env['test.WALLET_PRIVATE_KEY']!]
+            accounts: [process.env['prod.WALLET_PRIVATE_KEY']!]
         },
         ganache: {
             url: "http://127.0.0.1:7545",

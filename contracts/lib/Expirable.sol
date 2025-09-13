@@ -16,9 +16,9 @@ abstract contract Expirable is IExpirable {
     uint8 private immutable NUMBER_OF_WEEKS;
 
     constructor(uint256 creationDate, uint256 expirationDate) {
+        NUMBER_OF_WEEKS = uint8((expirationDate - creationDate) / SECONDS_IN_A_WEEK);
         CREATION_DATE = creationDate;
-        EXPIRATION_DATE = expirationDate;
-        NUMBER_OF_WEEKS = uint8((EXPIRATION_DATE - CREATION_DATE) / SECONDS_IN_A_WEEK);
+        EXPIRATION_DATE = creationDate + NUMBER_OF_WEEKS * SECONDS_IN_A_WEEK; // Force multiple of
     }
 
     modifier notExpired() {
@@ -42,10 +42,12 @@ abstract contract Expirable is IExpirable {
     function getWeekIndexOf(uint256 timestamp) internal view returns (uint8) {
         require(timestamp >= CREATION_DATE, "!! Wibbly Wobbly Timey Wimey !!");
 
+        if (timestamp >= EXPIRATION_DATE) return NUMBER_OF_WEEKS - 1;
+
         uint8 weekIndex = uint8((timestamp - CREATION_DATE) / SECONDS_IN_A_WEEK);
 
         // If expired, pretend it's the last week always
-        if (weekIndex >= NUMBER_OF_WEEKS) return NUMBER_OF_WEEKS - 1;
+        //if (weekIndex >= NUMBER_OF_WEEKS) return NUMBER_OF_WEEKS - 1;
 
         return weekIndex;
     }

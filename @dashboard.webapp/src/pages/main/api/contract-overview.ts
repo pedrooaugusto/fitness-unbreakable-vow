@@ -1,4 +1,4 @@
-import type { GetContractOverviewResponse } from './types'
+import type { Currency, GetContractOverviewResponse } from '../types'
 
 export async function getContractOverview(): Promise<GetContractOverviewResponse> {
     const response = await fetch('http://localhost:3000/api/overview')
@@ -18,13 +18,19 @@ async function getConversionRates() {
     return { usd: data.ethereum.usd as number, brl: data.ethereum.brl as number, eth: 1 };
 }
 
-export async function convert(overview: GetContractOverviewResponse, currency: 'usd' | 'brl' | 'eth' = 'usd') {
+export async function convert(overview: GetContractOverviewResponse, currency: Currency = 'usd') {
     const exchangeRate = (await getConversionRates())[currency]
 
     return {
         ...overview,
         currentBalance: overview.currentBalance * exchangeRate,
         initialStakedAmount: overview.initialStakedAmount * exchangeRate,
-        penaltyAmount: overview.penaltyAmount * exchangeRate
-    }
+        penaltyAmount: overview.penaltyAmount * exchangeRate,
+        pastWeeksGoalsResult: overview.pastWeeksGoalsResult.map(item => {
+            if (item.penaltyDetails == undefined) return item;
+            const { penaltyDetails } = item;
+
+            return {...item, penaltyDetails: {...penaltyDetails, amount: penaltyDetails.amount * exchangeRate} }
+        })
+    };
 }

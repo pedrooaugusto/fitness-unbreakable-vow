@@ -8,7 +8,8 @@ import { console } from "./lib/Config.sol";
 import { WeeklyGoalListable } from './lib/WeeklyGoalListable.sol';
 
 event NoPenaltyApplied();
-event PenaltyApplied(uint256 penaltyAmount, address receiver);
+event PenaltyApplied(uint8 weekIndex, address enforcer);
+event PhysicalActivityRecordProcessed(uint8 indexed weekIndex, uint16 runDistanceMeters, uint8 gymVisits, uint8 healthySleepNights);
 event VowExpired(uint256 releasedFunds, address receiver);
 
 /**
@@ -89,10 +90,12 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener {
         emit VowExpired(balance, msg.sender);
     }
 
-    function onNewPhysicalActivityRecord(uint8 weekIndex, PhysicalActivityRecord memory record) external {
+    function onNewPhysicalActivityRecord(uint8 weekIndex, PhysicalActivityRecord calldata record) external {
         console.log("Processing new record.");
 
         putWeek(weekIndex, buildWeeklyGoalFrom(record));
+
+        emit PhysicalActivityRecordProcessed(weekIndex, record.runDistanceMeters, record.gymVisits, record.healthySleepNights);
     }
 
     /** 
@@ -111,22 +114,22 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener {
         uint256 penaltyAmount = calculatePenaltyAmount();
 
         if(isBeingCalledByUpkeep()) {
-            sendPenaltyToCharity(penaltyAmount);
+            sendPenaltyToCharity(weekIndex, penaltyAmount);
         } else {
-            sendPenaltyToCaller(penaltyAmount);
+            sendPenaltyToCaller(weekIndex, penaltyAmount);
         }
     }
 
-    function sendPenaltyToCaller(uint256 penaltyAmount) private {
+    function sendPenaltyToCaller(uint8 weekIndex, uint256 penaltyAmount) private {
         payable(msg.sender).transfer(penaltyAmount);
 
-        emit PenaltyApplied(penaltyAmount, msg.sender);
+        emit PenaltyApplied(weekIndex, msg.sender);
     }
 
-    function sendPenaltyToCharity(uint256 penaltyAmount) private {
+    function sendPenaltyToCharity(uint8 weekIndex, uint256 penaltyAmount) private {
         payable(GIVETH_WALLET_ADDRESS).transfer(penaltyAmount);
 
-        emit PenaltyApplied(penaltyAmount, GIVETH_WALLET_ADDRESS);
+        emit PenaltyApplied(weekIndex, msg.sender);
     }
 
     function calculatePenaltyAmount() private view returns (uint256) {

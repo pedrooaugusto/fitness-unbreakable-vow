@@ -8,7 +8,7 @@ abstract contract PhysicalActivityRecordListable {
 
     mapping(uint8 => PhysicalActivityRecord) public physicalActivityRecords;
 
-    function push(PhysicalActivityRecord memory record, uint8 weekNumber) internal {
+    function merge(PhysicalActivityRecord memory record, uint8 weekNumber) internal returns (PhysicalActivityRecord memory) {
         PhysicalActivityRecord storage existingRecord = physicalActivityRecords[weekNumber];
 
         if(existingRecord.isNull()) {
@@ -17,7 +17,7 @@ abstract contract PhysicalActivityRecordListable {
             existingRecord.mergeWith(record);
         }
 
-        physicalActivityRecords[weekNumber].timestamp = uint32(block.timestamp);
+        return existingRecord;
     }
 
     function get(uint8 weekNumber) internal view returns (PhysicalActivityRecord memory) {

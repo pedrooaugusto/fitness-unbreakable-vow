@@ -44,7 +44,7 @@ section {
         font-weight: 700;
         line-height: normal;
 
-        & img {
+        & span {
             margin-right: 5px;
         }
     }
@@ -81,6 +81,21 @@ section.overview {
         @media (max-width: 520px) {
             flex-flow: column;
             gap: 10px;
+        }
+
+        .finance.card {
+            .currency-dropdown-wrapper {
+                display: flex;
+                justify-content: space-between; 
+                margin-bottom: 10px;
+                select {
+                    background: black;
+                    color: white;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    outline: none;
+                }
+            }
         }
     }
 
@@ -135,6 +150,11 @@ section.overview {
             font-weight: 400;
             line-height: normal;
             margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            svg {
+                transform: scale(0.85);
+            }
         }
 
         & > .value {
@@ -226,6 +246,12 @@ section.current-week-results {
             align-items: center;
             flex-flow: column;
             padding: 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+
+            &:hover {
+                transform: translateY(-5px);
+            }
 
             &.met {
                 background: var(--met, #016b2b);
@@ -288,6 +314,10 @@ section.current-week-results {
 section.past-weeks-results {
     background: var(--card, #171717);
 
+    --center: #2196f3;
+    --start-0: color-mix(in srgb, var(--center) 50%, black);
+    --start-1: color-mix(in srgb, var(--center) 60%, black);
+
     .weeks-list {
         display: flex;
         flex-wrap: wrap;
@@ -307,6 +337,12 @@ section.past-weeks-results {
             min-width: 120px;
             min-height: 75px;
             padding: 5px 0px;
+            transition: transform 0.3s ease-in-out;
+            cursor: pointer;
+
+            &:hover {
+                transform: translateY(-5px);
+            }
 
             .title {
                 font-size: 16px;
@@ -319,6 +355,126 @@ section.past-weeks-results {
             &.met {
                 background: var(--met, #016b2b);
             }
+
+            &.not-met-pending-penalty {
+                background: linear-gradient(45deg, var(--start-0), var(--start-1), var(--center), var(--center), var(--start-1), var(--start-0));
+                animation: tilt-n-move-shaking 0.7s infinite, shine 0.7s infinite; /* The animation lasts 2 seconds, repeats infinitely, and alternates direction */
+            }
+
+            &.not-met-unclaimed-penalty {
+                background-color:darkgray;
+            }
         }
     }
+}
+
+
+.modal-wrapper .modal .main > div:first-child {
+    line-height: 1.4rem;
+    max-height: 450px;
+    overflow-y: auto;
+        
+    @media (max-width: 700px) {
+        max-height: 400px;
+    }
+
+    ul {
+        padding-inline-start: 40px;
+        margin-block-start: 10px;
+        margin-block-end: 0px;
+    }
+
+    h4:not(:first-of-type) {
+        margin-top: 10px;
+    }
+
+    h4 {
+        font-weight: bold;
+    }
+
+    a {
+        color: #f06543;
+        font-weight: bold;
+        text-decoration: none;
+    }
+}
+
+.past-week-details-modal {
+    pre.code {
+        margin-top: 10px;
+        word-break: break-all;
+        text-wrap: wrap;
+        background: black;
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    &.penalty-applied {
+        p {
+            margin-top: 10px;
+        }
+
+        li a {
+            font-weight: 400;
+        }
+    }
+}
+
+.connect-to-wallet {
+    border: solid 1px transparent;
+    border-radius: 4px;
+    color: white;
+    font-size: 16px;
+    padding: 7px 10px;
+    cursor: pointer;
+    box-shadow: 1px 1px 5px #000000;
+    --center: #ff3d00;
+    --start-0: color-mix(in srgb, var(--center) 50%, black);
+    --start-1: color-mix(in srgb, var(--center) 60%, black);
+    background: var(--center);
+
+    &:active {
+        box-shadow: none;
+    }
+
+    &:hover {
+        border-color: #000000;
+    }
+
+    &.connected {
+        font-weight: bold;
+        background: linear-gradient(45deg, var(--start-0), var(--start-1), var(--center), var(--center), var(--start-1), var(--start-0));
+        &:hover {
+            border-color: var(--center);
+        }
+    }
+}
+
+@keyframes shine5 {
+    0% {
+        background-size: 100%;
+    }
+    100% {
+        background-size: 400%;
+    }
+}
+
+@keyframes pulse-glow {
+    0% {
+        box-shadow: 0 0 5px 2px #ffc107; /* Starting shadow */
+    }
+    50% {
+        box-shadow: 0 0 15px 8px #ffc107; /* Peak shadow */
+    }
+    100% {
+        box-shadow: 0 0 5px 2px #ffc107; /* Back to start */
+    }
+}
+
+@keyframes tilt-n-move-shaking {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(3px, -3px) rotate(3deg); }
+  50% { transform: translate(0, 0) rotate(0eg); }
+  75% { transform: translate(-3px, -3px) rotate(-3deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
 }

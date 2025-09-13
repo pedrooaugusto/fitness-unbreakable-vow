@@ -36,18 +36,49 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "uint256",
-        "name": "penaltyAmount",
-        "type": "uint256"
+        "internalType": "uint8",
+        "name": "weekIndex",
+        "type": "uint8"
       },
       {
         "indexed": false,
         "internalType": "address",
-        "name": "receiver",
+        "name": "enforcer",
         "type": "address"
       }
     ],
     "name": "PenaltyApplied",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint8",
+        "name": "weekIndex",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "runDistanceMeters",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "gymVisits",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "healthySleepNights",
+        "type": "uint8"
+      }
+    ],
+    "name": "PhysicalActivityRecordProcessed",
     "type": "event"
   },
   {

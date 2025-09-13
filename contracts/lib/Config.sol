@@ -5,7 +5,7 @@ import { console as HardhatConsole } from "hardhat/console.sol";
 import { ChainlinkFunctionsMock } from "./ChainlinkFunctionsMock.sol";
 
 library Config {
-    uint256 public constant SECONDS_IN_SEVEN_DAYS = 10 minutes; //7 days;
+    uint256 public constant SECONDS_IN_SEVEN_DAYS = 2 minutes; //7 days;
 }
 
 library console {

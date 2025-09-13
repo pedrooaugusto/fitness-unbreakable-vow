@@ -50,7 +50,8 @@ abstract contract WeeklyGoalListable is Expirable {
             // 1. A past week week with an unsasigned status
             //    is considered a failed week.
             if (status == WeeklyGoalStatus.NULL) {
-                weeklyGoal.status = WeeklyGoalStatus.FAILED_PENALTY_APPLIED;
+                // This line cost me one BRL cent and is not necessary, but it looks right.
+                weeklyGoal.status = WeeklyGoalStatus.FAILED_PENDING_PENALTY;
                 lastSettledWeek = weekIndex;
                 return int8(weekIndex);
             }
@@ -60,7 +61,8 @@ abstract contract WeeklyGoalListable is Expirable {
                 //    status where the goals were NOT MET, is
                 //    considered a failed week.
                 if (weeklyGoal.wasWasNotCompleted()) {
-                    weeklyGoal.status = WeeklyGoalStatus.FAILED_PENALTY_APPLIED;
+                    // This line cost me one BRL cent and is not necessary, but it looks right.
+                    weeklyGoal.status = WeeklyGoalStatus.FAILED_PENDING_PENALTY;
                     lastSettledWeek = weekIndex;
                     return int8(weekIndex);
                 }
@@ -71,15 +73,20 @@ abstract contract WeeklyGoalListable is Expirable {
                 weeklyGoal.status = WeeklyGoalStatus.COMPLETED;
                 lastSettledWeek = weekIndex;
             }
+
+            // This should never happen really...
+            if (status == WeeklyGoalStatus.FAILED_PENDING_PENALTY) {
+                lastSettledWeek = weekIndex;
+
+                return int8(weekIndex);
+            }
         }
 
         return -1;
     }
 
     function putWeek(uint8 recordWeekIndex, WeeklyGoal memory record) internal {
-        bool isNull = weeklyGoalsRecords[recordWeekIndex].status == WeeklyGoalStatus.NULL;
-
-        if (isNull && getCurrentWeekIndex() == recordWeekIndex) {
+        if (getCurrentWeekIndex() == recordWeekIndex) {
             weeklyGoalsRecords[recordWeekIndex] = record;
             weeklyGoalsRecordsLastEntryKey = recordWeekIndex;
         } else {
@@ -91,19 +98,36 @@ abstract contract WeeklyGoalListable is Expirable {
         uint8 currentWeekIndex = getCurrentWeekIndex();
 
         WeeklyGoal[] memory records = new WeeklyGoal[](currentWeekIndex + 1);
-        for (uint8 i = 0; i <= currentWeekIndex; i++) {
+        for (uint8 i = 0; i < currentWeekIndex; i++) {
             records[i] = weeklyGoalsRecords[i];
+            WeeklyGoalStatus status = records[i].status;
+
+            if (status == WeeklyGoalStatus.NULL) {
+                records[i].status = WeeklyGoalStatus.FAILED_PENDING_PENALTY;
+            } else if (status == WeeklyGoalStatus.PENDING_END_OF_WEEK) {
+                records[i].status = records[i].isCompleted() ? WeeklyGoalStatus.COMPLETED : WeeklyGoalStatus.FAILED_PENDING_PENALTY;
+            }
         }
 
+        records[currentWeekIndex] = weeklyGoalsRecords[currentWeekIndex];
         if (records[currentWeekIndex].status == WeeklyGoalStatus.NULL) {
             records[currentWeekIndex].status = WeeklyGoalStatus.PENDING_END_OF_WEEK;
+        }
+
+        // O.o
+        if (isContractExpired()) {
+            for (uint8 i = 0; i <= currentWeekIndex; i++) {
+                if (records[i].status == WeeklyGoalStatus.PENDING_END_OF_WEEK || records[i].status == WeeklyGoalStatus.FAILED_PENDING_PENALTY) {
+                    records[i].status = WeeklyGoalStatus.NULL;
+                }
+            }
         }
 
         return records;
     }
 
     function buildWeeklyGoalFrom(
-        PhysicalActivityRecord memory record
+        PhysicalActivityRecord calldata record
     ) internal pure returns (WeeklyGoal memory) {
         // TODO: Rename this, wentToTheGymAtLeastTwice, ranAtLeast2KmInOneGo, sleptWellForAtLeast2Nights;
         bool wentoToTheGymEnoughTimes = record.gymVisits >= 1;

@@ -1,22 +1,44 @@
 export enum WeeklyGoalStatus {
-    UNKNOWN,
+    NULL,
     COMPLETED,
     PENDING_END_OF_WEEK,
     FAILED_PENDING_PENALTY,
     FAILED_PENALTY_APPLIED
 }
 
-export interface WeeklyGoalResult {
+export type Network = 'sepolia' | 'arbitrum' | 'localhost';
+
+export interface WeeklyGoal {
     status: WeeklyGoalStatus;
-    gymVisitsGoalMet: boolean;
-    run2KmGoalMet: boolean;
-    sleptWellGoalMet: boolean;
+    goals: {
+        gymVisitsGoalMet: boolean;
+        run2KmGoalMet: boolean;
+        sleptWellGoalMet: boolean;
+    },
+    penaltyDetails?: PenaltyApplied;
+}
+
+export interface ContractEvent {
+    transactionHash: string;
+}
+
+export interface PhysicalActivityRecordProcessed extends ContractEvent {
+    weekIndex: number,
+    runDistanceMeters: number,
+    gymVisits: number,
+    healthySleepNights: number,
+}
+
+export interface PenaltyApplied extends ContractEvent {
+    weekIndex: number,
+    enforcer: string,
+    enforcedByUpkeeper: boolean,
+    amount: number,
 }
 
 export interface GetContractOverviewResponse {
     contractAddress: string;
     oracleAddress: string;
-    isContractExpired: boolean;
 
     startDate: number;
     expirationDate: number;
@@ -35,5 +57,26 @@ export interface GetContractOverviewResponse {
         healthySleepNights: number;
     };
 
-    pastWeeksGoalsResult: WeeklyGoalResult[];
+    pastWeeksGoalsResult: WeeklyGoal[];
+    isContractExpired: boolean;
+    network: Network
 }
+
+export interface GetWeekDetailsResponse {
+    weekIndex: number;
+    goals: {
+        status: number;
+        gymVisitsGoalMet: boolean;
+        run2KmGoalMet: boolean;
+        sleptWellGoalMet: boolean;
+        gymVisits: number;
+        highestDistanceRanInMeters: number;
+        healthySleepNights: number;
+    };
+    history: ({
+        transactionHash: string;
+        blockNumber: number;
+    } & PhysicalActivityRecordProcessed)[]
+}
+
+export type Currency = "usd" | "brl" | "eth";
