@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { console as HardhatConsole } from "hardhat/console.sol";
+// import { console as HardhatConsole } from "hardhat/console.sol";
 import { ChainlinkFunctionsMock } from "./ChainlinkFunctionsMock.sol";
 
 library Config {
@@ -10,11 +10,11 @@ library Config {
 
 library console {
     function log(string memory message) internal pure {
-        HardhatConsole.log(message);
+        // HardhatConsole.log(message);
     }
 
     function log(string memory message1, string memory message2) internal pure {
-        HardhatConsole.log(message1, message2);
+        // HardhatConsole.log(message1, message2);
     }
 }
 

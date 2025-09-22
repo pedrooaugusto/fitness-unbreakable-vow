@@ -48,31 +48,25 @@ struct WeeklyGoal {
 
 library WeeklyGoalFunctions {
     function isCompleted(
-        WeeklyGoal memory self
+        WeeklyGoal memory self,
+        uint8 requiredNumberOfGoals
     ) internal pure returns (bool) {
-        bool ran2km = self.ran2km;
-        bool sleptWell = self.sleptWell;
-        bool wentoToTheGymEnoughTimes = self.wentoToTheGymEnoughTimes;
+        uint8 ran2km = self.ran2km ? 1 : 0;
+        uint8 sleptWell = self.sleptWell ? 1 : 0;
+        uint8 wentoToTheGymEnoughTimes = self.wentoToTheGymEnoughTimes ? 1 : 0;
 
-        if ((wentoToTheGymEnoughTimes && ran2km) || (wentoToTheGymEnoughTimes && sleptWell) || (ran2km && sleptWell)) {
-            return true;
-        } else {
-            return false;
-        }
+        return (ran2km + sleptWell + wentoToTheGymEnoughTimes) >= requiredNumberOfGoals;
     }
 
     function wasWasNotCompleted(
-        WeeklyGoal storage self
+        WeeklyGoal storage self,
+        uint8 requiredNumberOfGoals
     ) internal view returns (bool) {
-        bool ran2km = self.ran2km;
-        bool sleptWell = self.sleptWell;
-        bool wentoToTheGymEnoughTimes = self.wentoToTheGymEnoughTimes;
+        uint8 ran2km = self.ran2km ? 1 : 0;
+        uint8 sleptWell = self.sleptWell ? 1 : 0;
+        uint8 wentoToTheGymEnoughTimes = self.wentoToTheGymEnoughTimes ? 1 : 0;
 
-        if ((wentoToTheGymEnoughTimes && ran2km) || (wentoToTheGymEnoughTimes && sleptWell) || (ran2km && sleptWell)) {
-            return false;
-        } else {
-            return true;
-        }
+        return (ran2km + sleptWell + wentoToTheGymEnoughTimes) < requiredNumberOfGoals;
     }
 }
 

@@ -6,7 +6,7 @@
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
     "build": "npm run minify-verifier-script && npx hardhat compile",
-    "start": "npx hardhat node",
+    "start": "npx hardhat node --hostname 0.0.0.0 | grep -Ev \"Mined empty block|eth_getLogs|eth_blockNumber|hardhat_metadata\"",
     "deploy": "npx hardhat ignition deploy ./ignition/modules/$CONTRACT --network $NETWORK $RESET",
     "deploy:sepolia": "npx hardhat --network sepolia DeployPhysicalActivityOracle",
     "verify:sepolia": "npx hardhat verify --network sepolia",

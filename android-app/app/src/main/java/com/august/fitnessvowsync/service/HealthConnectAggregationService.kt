@@ -6,20 +6,23 @@ import androidx.health.connect.client.records.SleepSessionRecord
 import com.august.fitnessvowsync.health.HealthConnectClient
 import com.august.fitnessvowsync.health.totalDistance
 import com.august.fitnessvowsync.helpers.TimeRange
+import java.time.Instant
 import javax.inject.Inject
 
 class HealthConnectAggregationService @Inject constructor(private val client: HealthConnectClient) {
     companion object {
-        private const val HEALTH_SLEEP_DURATION_MS = (6.5 * 60 * 60 * 1000).toLong() // 7,5 hours
-        private const val GAP_THRESHOLD_MS = 40 * 60 * 1000
+        // TODO: Change this (allow fake data)
+        private const val HEALTHY_SLEEP_DURATION_MS = 0 //(6.5 * 60 * 60 * 1000).toLong() // 7,5 hours
+        // TODO: Change this (allow fake data)
+        private const val MERGE_SLEEP_SESSION_THRESHOLD_MS = 0 //40 * 60 * 1000
         private const val SLEEP_HEART_RATE_LOWER_BOUND = 55.0
         private const val SLEEP_HEART_RATE_UPPER_BOUND = 75.0
     }
 
-    suspend fun longestDistanceRan(): Double {
-        val runSessions = client.readRunningSessionRecords(TimeRange.lastSevenDays())
+    suspend fun longestDistanceRan(periodStart: Instant, periodEnd: Instant): Int {
+        val runSessions = client.readRunningSessionRecords(TimeRange.between(periodStart, periodEnd))
 
-        if (runSessions.isEmpty()) return 0.0
+        if (runSessions.isEmpty()) return 0
 
         var longestRunSession: ExerciseSessionRecord? = null
 
@@ -35,15 +38,15 @@ class HealthConnectAggregationService @Inject constructor(private val client: He
             }
         }
 
-        if (longestRunSession == null) return 0.0;
+        if (longestRunSession == null) return 0;
 
         Log.i("FitVow", "The longest running session by distance happened between ${longestRunSession.startTime} and ${longestRunSession.endTime} with ${longestRunSession.totalDistance}m")
 
-        return longestRunSession.totalDistance
+        return longestRunSession.totalDistance.toInt()
     }
 
-    suspend fun numberOfHealthyNightsOfSleep(): Int {
-        val sleepSessions = client.readSleepSessionRecords(TimeRange.lastSevenDays()).sortedBy { it.startTime }
+    suspend fun numberOfHealthyNightsOfSleep(periodStart: Instant, periodEnd: Instant): Int {
+        val sleepSessions = client.readSleepSessionRecords(TimeRange.between(periodStart, periodEnd)).sortedBy { it.startTime }
 
         if (sleepSessions.isEmpty()) return 0
 
@@ -54,7 +57,7 @@ class HealthConnectAggregationService @Inject constructor(private val client: He
         var healthyNightsCount = 0
 
         for ((startMs, endMs) in mergedSessions) {
-            if ((endMs - startMs) < HEALTH_SLEEP_DURATION_MS) continue
+            if ((endMs - startMs) < HEALTHY_SLEEP_DURATION_MS) continue
 
             val avgBpm = client.getAverageHeartRate(TimeRange.between(startMs, endMs))
 
@@ -81,7 +84,7 @@ class HealthConnectAggregationService @Inject constructor(private val client: He
             val thisEnd = toEpochMillis(sessions[i].endTime)
 
             val gap = thisStart - currentEnd
-            if (gap <= GAP_THRESHOLD_MS) {
+            if (gap <= MERGE_SLEEP_SESSION_THRESHOLD_MS) {
                 if (thisEnd > currentEnd) currentEnd = thisEnd
             } else {
                 mergedSessions.add(currentStart to currentEnd)

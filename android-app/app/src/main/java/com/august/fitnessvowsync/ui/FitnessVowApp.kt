@@ -1,7 +1,9 @@
 package com.august.fitnessvowsync.ui
 
+import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,57 +15,89 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.august.fitnessvowsync.model.AddPhysicalActivityRecordRequest
-import com.august.fitnessvowsync.model.AddPhysicalActivityRecordTransaction
-import com.august.fitnessvowsync.service.IPhysicalActivityRecordsService
-import com.august.fitnessvowsync.service.PreviewPhysicalActivityRecordsService
+import com.august.fitnessvowsync.donotuse.FakeDataProducerDoNotUse
+import com.august.fitnessvowsync.model.PhysicalActivityRecord
+import com.august.fitnessvowsync.model.PhysicalActivityRecordImpl
+import com.august.fitnessvowsync.model.SyncedPhysicalActivityRecord
+import com.august.fitnessvowsync.service.GymVisitService
+import com.august.fitnessvowsync.service.PhysicalActivityOracleService
+import com.august.fitnessvowsync.service.SyncPhysicalActivityRecordService
+import com.august.fitnessvowsync.ui.components.AppNameSection
 import com.august.fitnessvowsync.ui.components.PhysicalActivityDetailsCard
 import com.august.fitnessvowsync.ui.components.SyncNowButton
-import com.august.fitnessvowsync.ui.components.SyncedPhysicalActivityTransaction
+import com.august.fitnessvowsync.ui.components.SyncedPhysicalActivityRecordCard
 import com.august.fitnessvowsync.ui.components.TextWithIcon
 import com.august.fitnessvowsync.ui.components.TransactionPanel
+import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FitnessVowApp(activityRecordsService: IPhysicalActivityRecordsService, setupGeofencing: () -> Unit) {
+fun FitnessVowApp(
+    syncPhysicalActivityService: SyncPhysicalActivityRecordService,
+    oracleService: PhysicalActivityOracleService,
+    gymVisitService: GymVisitService,
+    navigateToSettings: () -> Unit,
+    donNotUse: FakeDataProducerDoNotUse?,
+) {
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
 
-    var nextRecordToSync by remember { mutableStateOf(AddPhysicalActivityRecordRequest()) }
     var isSyncing by remember { mutableStateOf(false) }
-    var synOperationTransaction by remember { mutableStateOf(AddPhysicalActivityRecordTransaction()) }
-    var syncedRecordsTransactions by remember { mutableStateOf<List<AddPhysicalActivityRecordTransaction>>(emptyList()) }
-
+    var currentWeek by remember { mutableIntStateOf(0) }
+    var nextRecordToSync by remember { mutableStateOf<PhysicalActivityRecord>(PhysicalActivityRecordImpl()) }
+    var syncedRecord by remember { mutableStateOf<SyncedPhysicalActivityRecord?>(null) }
+    var syncedRecordsList by remember { mutableStateOf<List<SyncedPhysicalActivityRecord>>(emptyList()) }
 
     val syncRecord: suspend () -> Unit = {
         isSyncing = true
-        synOperationTransaction = activityRecordsService.syncPhysicalActivityRecord()
-        syncedRecordsTransactions = activityRecordsService.getSyncedRecordsTransactions()
+
+        syncedRecord = syncPhysicalActivityService.syncCurrentPhysicalActivityRecord()
+        syncedRecordsList = syncPhysicalActivityService.getSyncedPhysicalActivityRecords()
+        nextRecordToSync = syncPhysicalActivityService.getCurrentPhysicalActivityRecord()
+        currentWeek = oracleService.getCurrentWeekIndex().toInt()
+
         isSyncing = false
     }
 
-    LaunchedEffect(activityRecordsService) {
-        nextRecordToSync = activityRecordsService.getNextSyncPhysicalActivityRecord()
-        syncedRecordsTransactions = activityRecordsService.getSyncedRecordsTransactions()
+    //TODO: Remove this
+    val __debugPleaseRemove__randomValueFor: suspend (String) -> Unit = { goal: String ->
+        when (goal) {
+            "run" -> donNotUse?.addFakeRunningSession((nextRecordToSync.runDistanceMeters + 500).toLong())
+            "sleep" -> donNotUse?.addFakeSleepSession((60).toLong())
+            "gym" -> donNotUse?.addFakeGymVisit()
+        }
+
+        nextRecordToSync = syncPhysicalActivityService.getCurrentPhysicalActivityRecord()
+        currentWeek = oracleService.getCurrentWeekIndex().toInt()
     }
 
-    LaunchedEffect(key1 = synOperationTransaction) {
+    LaunchedEffect(syncPhysicalActivityService) {
+        nextRecordToSync = syncPhysicalActivityService.getCurrentPhysicalActivityRecord()
+        syncedRecordsList = syncPhysicalActivityService.getSyncedPhysicalActivityRecords()
+        currentWeek = oracleService.getCurrentWeekIndex().toInt()
+    }
+
+    LaunchedEffect(key1 = syncedRecord?.timestamp?.epochSecond) {
         delay(10000)
-        synOperationTransaction = AddPhysicalActivityRecordTransaction()
+        syncedRecord = null
     }
 
     LaunchedEffect(Unit) {
-        setupGeofencing()
+        try {
+            gymVisitService.setupGymGeofence(context)
+        } catch (se: SecurityException) {
+            Log.e("FitVow", "Unexpected error permission already granted: ", se)
+        }
     }
 
     Scaffold(
@@ -77,45 +111,38 @@ fun FitnessVowApp(activityRecordsService: IPhysicalActivityRecordsService, setup
                 .padding(16.dp)
                 .fillMaxSize(),
         ) {
-            Spacer(modifier = Modifier.height(14.dp))
+            SettingsButton(navigateToSettings)
             AppNameSection()
             Spacer(modifier = Modifier.height(36.dp))
-            NextSyncSection(nextRecordToSync)
+            NextSyncSection(nextRecordToSync, currentWeek, __debugPleaseRemove__randomValueFor)
             Spacer(modifier = Modifier.height(36.dp))
-            SyncHistorySection(syncedRecordsTransactions)
-            Spacer(modifier = Modifier.height(36.dp))
+            SyncHistorySection(syncedRecordsList)
+            Spacer(modifier = Modifier.height(32.dp))
             SyncNowSection(
                 syncNextRecord = syncRecord,
                 isSyncing = isSyncing,
-                transactionUrlOnBlockExplorer = synOperationTransaction.blockExplorerUrl
+                syncedRecord = syncedRecord
             )
         }
     }
 }
 
 @Composable
-fun AppNameSection() {
-    val gradient = Brush.linearGradient(
-        colors = listOf(Color(0xff818cf8), Color(0xffc084fc))
-    )
-
-    TextWithIcon(
-        icon = Icons.Default.CloudSync,
-        text = "FitVow - Sync",
-        iconColor = Color.White,
-        iconModifier = Modifier.size(40.dp),
-        fontWeight = FontWeight.Bold,
-        textStyle = TextStyle(fontSize = 36.sp, brush = gradient),
-        horizontalArrangement = Arrangement.Center
-    )
-}
-
-@Composable
-fun NextSyncSection(nextRecordToSync: AddPhysicalActivityRecordRequest) {
+fun NextSyncSection(
+    nextRecordToSync: PhysicalActivityRecord,
+    currentWeek: Int,
+    onClickGoalCard: (suspend (goal: String) -> Unit)?
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
         TextWithIcon(icon = Icons.Default.Sync, text = "Next Sync Data")
+        Text(
+            text = "Weekly goals data that will be submitted for week #%s.".format(currentWeek),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Normal,
+            color = Color(0xff9ca3af)
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -126,9 +153,27 @@ fun NextSyncSection(nextRecordToSync: AddPhysicalActivityRecordRequest) {
             val formattedHealthySleepNights = "%02d".format(nextRecordToSync.healthySleepNights)
             val formattedGymVisits = "%02d".format(nextRecordToSync.gymVisits)
 
-            PhysicalActivityDetailsCard(icon = Icons.Default.DirectionsRun, Color(0xff4ade80), title = "Distance Ran", value = formattedDistance)
-            PhysicalActivityDetailsCard(icon = Icons.Default.Bed, Color(0xfff87171), title = "7h30m Sleep", value = formattedHealthySleepNights)
-            PhysicalActivityDetailsCard(icon = Icons.Default.FitnessCenter, Color(0xfffacc15), title = "Gym Visits", value = formattedGymVisits)
+            PhysicalActivityDetailsCard(
+                icon = Icons.Default.DirectionsRun,
+                iconColor = Color(0xff4ade80),
+                title = "Distance Ran",
+                value = formattedDistance,
+                onClick = { onClickGoalCard?.invoke("run") }
+            )
+            PhysicalActivityDetailsCard(
+                icon = Icons.Default.Bed,
+                iconColor = Color(0xfff87171),
+                title = "8h Sleep",
+                value = formattedHealthySleepNights,
+                onClick = { onClickGoalCard?.invoke("sleep") }
+            )
+            PhysicalActivityDetailsCard(
+                icon = Icons.Default.FitnessCenter,
+                iconColor =Color(0xfffacc15),
+                title = "Gym Visits",
+                value = formattedGymVisits,
+                onClick = { onClickGoalCard?.invoke("gym") }
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -138,12 +183,7 @@ fun NextSyncSection(nextRecordToSync: AddPhysicalActivityRecordRequest) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = Icons.Outlined.Timer,
-                contentDescription = "Clock",
-                tint = Color(0xff9ca3af),
-                modifier = Modifier.size(18.dp)
-            )
+            Icon(imageVector = Icons.Outlined.Timer, contentDescription = "Clock", tint = Color(0xff9ca3af), modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(5.dp))
             Text(text = "Next automatic sync in: 00:00:00", fontSize = 14.sp, fontWeight = FontWeight.Normal, color = Color(0xff9ca3af))
         }
@@ -152,34 +192,51 @@ fun NextSyncSection(nextRecordToSync: AddPhysicalActivityRecordRequest) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SyncHistorySection(syncedRecordsTransactions: List<AddPhysicalActivityRecordTransaction>) {
+fun SyncHistorySection(syncedRecords: List<SyncedPhysicalActivityRecord>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = 350.dp) // Limit height so it scrolls,
+            .heightIn(max = 325.dp)
     ) {
         TextWithIcon(icon = Icons.Outlined.Timer, text = "Sync History")
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Scrollable list with animation on item placement
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             reverseLayout = true
         ) {
             items(
-                items = syncedRecordsTransactions,
+                items = syncedRecords,
                 key = { it.timestamp }
             ) { record ->
-                SyncedPhysicalActivityTransaction(record, Modifier.animateItemPlacement())
+                SyncedPhysicalActivityRecordCard(record, Modifier.animateItemPlacement())
             }
         }
     }
 }
 
 @Composable
-fun SyncNowSection(syncNextRecord: suspend () -> Unit, isSyncing: Boolean, transactionUrlOnBlockExplorer: String) {
+fun SettingsButton(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.End,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Settings,
+            contentDescription = Icons.Default.Settings.name,
+            tint = Color.White,
+            modifier = Modifier.size(24.dp).clickable { onClick() },
+        )
+    }
+}
+
+@Composable
+fun SyncNowSection(syncNextRecord: suspend () -> Unit, isSyncing: Boolean, syncedRecord: SyncedPhysicalActivityRecord?) {
     val coroutineScope = rememberCoroutineScope()
 
     Column {
@@ -191,11 +248,11 @@ fun SyncNowSection(syncNextRecord: suspend () -> Unit, isSyncing: Boolean, trans
         Spacer(modifier = Modifier.height(24.dp))
 
         AnimatedVisibility(
-            visible = transactionUrlOnBlockExplorer.isNotEmpty(),
+            visible = !syncedRecord?.transaction.isNullOrEmpty(),
             enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
             exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
         ) {
-            TransactionPanel(transactionUrlOnBlockExplorer = transactionUrlOnBlockExplorer)
+            TransactionPanel(transactionUrl = syncedRecord?.transaction)
         }
     }
 }
@@ -203,7 +260,13 @@ fun SyncNowSection(syncNextRecord: suspend () -> Unit, isSyncing: Boolean, trans
 @Preview(showBackground = true)
 @Composable
 fun FitnessVowPreview() {
-    _root_ide_package_.com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme {
-        FitnessVowApp(PreviewPhysicalActivityRecordsService()) {}
+   FitnessVowSyncTheme {
+        FitnessVowApp(
+            syncPhysicalActivityService = SyncPhysicalActivityRecordService.PreviewSyncPhysicalActivityRecordsService(),
+            gymVisitService = GymVisitService.PreviewGymVisitService(),
+            donNotUse = null,
+            oracleService = PhysicalActivityOracleService.PreviewPhysicalActivityOracleService(),
+            navigateToSettings = {}
+        )
     }
 }

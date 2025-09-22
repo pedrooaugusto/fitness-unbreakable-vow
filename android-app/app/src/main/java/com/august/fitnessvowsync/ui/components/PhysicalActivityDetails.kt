@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,19 +31,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
-import com.august.fitnessvowsync.model.AddPhysicalActivityRecordTransaction
+import com.august.fitnessvowsync.model.SyncedPhysicalActivityRecord
+import kotlinx.coroutines.launch
 import java.math.BigInteger
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun RowScope.PhysicalActivityDetailsCard(icon: ImageVector, iconColor: Color, title: String, value: String) {
+fun RowScope.PhysicalActivityDetailsCard(icon: ImageVector, iconColor: Color, title: String, value: String, onClick: suspend () -> Unit) {
+    val coroutineScope = rememberCoroutineScope()
+
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(10.dp))
             .background(Color(0xff1f2937))
-            .clickable {  }
+            .clickable { coroutineScope.launch { onClick() } }
             .padding(12.dp)
             .weight(1f),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -60,10 +64,10 @@ fun RowScope.PhysicalActivityDetailsCard(icon: ImageVector, iconColor: Color, ti
 }
 
 @Composable
-fun SyncedPhysicalActivityTransaction(syncRecordTransaction: AddPhysicalActivityRecordTransaction, modifier: Modifier) {
+fun SyncedPhysicalActivityRecordCard(record: SyncedPhysicalActivityRecord, modifier: Modifier) {
     val context = LocalContext.current
-    val formattedDate = formatEpochSeconds(syncRecordTransaction.timestamp)
-    val formattedDetails = String.format("Distance: %sm, Good Sleep: %s, Gym Visits: %s", syncRecordTransaction.runDistanceMeters, syncRecordTransaction.healthySleepNights, syncRecordTransaction.gymVisits)
+    val formattedDate = formatInstant(record.timestamp)
+    val formattedDetails = String.format("Week: #%s, Run: %sm, 8h Sleep: %s, Gym Visits: %s", record.weekIndex, record.runDistanceMeters, record.healthySleepNights, record.gymVisits)
 
     Row(
         modifier = modifier
@@ -71,7 +75,7 @@ fun SyncedPhysicalActivityTransaction(syncRecordTransaction: AddPhysicalActivity
             .clip(RoundedCornerShape(10.dp))
             .background(Color(0xff1f2937))
             .clickable {
-                val intent = Intent(Intent.ACTION_VIEW, syncRecordTransaction.blockExplorerUrl.toUri())
+                val intent = Intent(Intent.ACTION_VIEW, record.transactionUrl.toUri())
 
                 context.startActivity(intent)
             }
@@ -118,8 +122,7 @@ fun SyncedPhysicalActivityTransaction(syncRecordTransaction: AddPhysicalActivity
     }
 }
 
-private fun formatEpochSeconds(epochSeconds: BigInteger): String {
-    val instant = Instant.ofEpochSecond(epochSeconds.longValueExact())
+private fun formatInstant(instant: Instant): String {
     val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss").withZone(ZoneId.systemDefault())
 
     return formatter.format(instant)

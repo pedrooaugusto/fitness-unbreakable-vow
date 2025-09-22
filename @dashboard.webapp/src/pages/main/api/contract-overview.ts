@@ -1,7 +1,9 @@
+import { API_HOST } from '../../utils';
 import type { Currency, GetContractOverviewResponse } from '../types'
 
+
 export async function getContractOverview(): Promise<GetContractOverviewResponse> {
-    const response = await fetch('http://localhost:3000/api/overview')
+    const response = await fetch(`${API_HOST}/overview`)
 
     const { body } = await response.json()
 

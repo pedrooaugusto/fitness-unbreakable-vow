@@ -1,8 +1,5 @@
 package com.august.fitnessvowsync.ui
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,55 +26,69 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.ActivityCompat
-import androidx.health.connect.client.HealthConnectClient
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.august.fitnessvowsync.service.PermissionService
+import com.august.fitnessvowsync.ui.components.AppNameSection
 import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RequiredPermissions(client: HealthConnectClient?, requestPermission: (name: String) -> Unit, content: @Composable (() -> Unit)) {
-    val context = LocalContext.current
+fun RequiredPermissions(
+    registerAppAsRecordPublisher: suspend () -> Unit,
+    navigateToMain: () -> Unit,
+    permissionService: PermissionService
+) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
-
-
+    var publicKeyRegistered by remember { mutableStateOf(false) }
     val permissions = remember {
         mutableStateMapOf(
-            "fineLocation" to false,
-            "backgroundLocation" to false,
-            "notifications" to false,
-            "healthConnect" to false
+            PermissionService.Permission.FINE_LOCATION to false,
+            PermissionService.Permission.BACKGROUND_LOCATION to false,
+            PermissionService.Permission.NOTIFICATION to false,
+            PermissionService.Permission.HEALTH_CONNECT to false,
+            PermissionService.Permission.ETHER_WALLET to false,
         )
     }
 
+    val allPermissionsGranted = permissions.all { it.value }
+
     suspend fun updatePermissions() {
-        permissions["fineLocation"] = hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-        permissions["backgroundLocation"] = hasPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-        permissions["notifications"] = hasPermission(context, Manifest.permission.POST_NOTIFICATIONS)
-        permissions["healthConnect"] = client?.let { hasHealthConnectPermissions(it) } == true
+        for (permissionName in permissions.keys) {
+            permissions[permissionName] = permissionService.hasPermission(permissionName)
+        }
     }
 
-    // Run once at composition
-    LaunchedEffect(Unit) {
-        updatePermissions()
+    LaunchedEffect(allPermissionsGranted) {
+        if (allPermissionsGranted && !publicKeyRegistered) {
+            registerAppAsRecordPublisher()
+            publicKeyRegistered = true
+        }
+    }
+
+    LaunchedEffect(allPermissionsGranted, publicKeyRegistered) {
+        if (allPermissionsGranted && publicKeyRegistered) {
+            navigateToMain()
+        }
     }
 
     // Observe lifecycle for ON_RESUME and run suspend logic properly
@@ -97,12 +108,6 @@ fun RequiredPermissions(client: HealthConnectClient?, requestPermission: (name: 
         }
     }
 
-    val allPermissionsGranted = permissions.all { it.value }
-
-    if (allPermissionsGranted) {
-        return content()
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -116,7 +121,6 @@ fun RequiredPermissions(client: HealthConnectClient?, requestPermission: (name: 
 
         Spacer(modifier = Modifier.height(36.dp))
 
-        // Title and Description
         Text(
             text = "Permissions Required",
             fontSize = 24.sp,
@@ -145,10 +149,8 @@ fun RequiredPermissions(client: HealthConnectClient?, requestPermission: (name: 
             items(getPermissionItems()) { item ->
                 PermissionItem(
                     item = item,
-                    isGranted = permissions[item.key] ?: false,
-                    onRequest = {
-                        requestPermission(item.key)
-                    }
+                    isGranted = permissions[item.key] == true,
+                    onRequest = { permissionService.requestPermission(item.key) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -204,7 +206,7 @@ fun PermissionItem(item: PermissionItemData, isGranted: Boolean, onRequest: () -
 }
 
 data class PermissionItemData(
-    val key: String,
+    val key: PermissionService.Permission,
     val title: String,
     val description: String,
     val icon: ImageVector
@@ -214,29 +216,35 @@ fun getPermissionItems(): List<PermissionItemData> {
     // Use placeholder icons from Material Icons for simplicity
     return listOf(
         PermissionItemData(
-            "fineLocation",
+            PermissionService.Permission.FINE_LOCATION,
             "Access Fine Location",
             "Required to accurately measure gym visits.",
             Icons.Default.CheckCircle
         ),
         PermissionItemData(
-            "backgroundLocation",
+            PermissionService.Permission.BACKGROUND_LOCATION,
             "Access Background Location",
             "Required to accurately measure gym visits.",
             Icons.Default.CheckCircle
         ),
         PermissionItemData(
-            "notifications",
+            PermissionService.Permission.NOTIFICATION,
             "Send Notifications",
             "Used to provide important alerts about sync status.",
             Icons.Default.CheckCircle
         ),
         PermissionItemData(
-            "healthConnect",
+            PermissionService.Permission.HEALTH_CONNECT,
             "Connect to Health Connect",
             "Syncs physical activity data from your device.",
             Icons.Default.CheckCircle
-        )
+        ),
+        PermissionItemData(
+            PermissionService.Permission.ETHER_WALLET,
+            "Connect Wallet",
+            "Wallet access is needed to publish records to oracle.",
+            Icons.Default.CheckCircle
+        ),
     )
 }
 
@@ -245,25 +253,6 @@ fun getPermissionItems(): List<PermissionItemData> {
 @Composable
 fun RequiredPermissionsPreview() {
     FitnessVowSyncTheme {
-        RequiredPermissions(null, { permissionId -> 0u }) {
-
-        }
+        RequiredPermissions({}, {}, PermissionService.PreviewPermissionService())
     }
-}
-
-fun hasPermission(context: Context, permission: String): Boolean {
-    return ActivityCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-}
-
-suspend fun hasHealthConnectPermissions(client: HealthConnectClient): Boolean {
-    val requiredPermissions = setOf(
-        "android.permission.health.READ_EXERCISE",
-        "android.permission.health.READ_DISTANCE",
-        "android.permission.health.READ_HEART_RATE",
-        "android.permission.health.READ_SLEEP"
-    )
-
-    val grantedPermissions = client.permissionController.getGrantedPermissions()
-
-    return requiredPermissions.all { it in grantedPermissions }
 }

@@ -1,7 +1,8 @@
+import { API_HOST } from "../../utils";
 import type { GetWeekDetailsResponse } from "../types";
 
 export async function getWeekDetails(weekIndex: string): Promise<GetWeekDetailsResponse> {
-    const response = await fetch(`http://localhost:3000/api/week-details/${weekIndex}`);
+    const response = await fetch(`${API_HOST}/week-details/${weekIndex}`);
 
     const { body } = await response.json()
 

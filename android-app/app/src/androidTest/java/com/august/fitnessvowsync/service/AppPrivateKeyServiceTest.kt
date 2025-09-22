@@ -2,13 +2,12 @@ package com.august.fitnessvowsync.service
 
 import com.august.fitnessvowsync.dagger.KeyStoreModule
 import com.august.fitnessvowsync.mapper.PhysicalActivityRecordMapper
-import com.august.fitnessvowsync.model.AddPhysicalActivityRecordRequest
 import org.junit.Ignore
 import org.junit.Test
 import java.math.BigInteger
 
 class AppPrivateKeyServiceTest {
-    private val privateKeyService = AppPrivateKeyService(KeyStoreModule().provideKeyStore())
+    /*private val privateKeyService = AppPrivateKeyService(KeyStoreModule().provideKeyStore())
     private val physicalActivityRecordMapper = PhysicalActivityRecordMapper("HARDHAT")
     private val record = AddPhysicalActivityRecordRequest(BigInteger.valueOf(1000), (2000), (3), (0))
 
@@ -29,5 +28,5 @@ class AppPrivateKeyServiceTest {
 
         println(signature)
         println(privateKeyService.getPublicKey())
-    }
+    }*/
 }

@@ -7,6 +7,7 @@ import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.records.Record
 import androidx.health.connect.client.records.SleepSessionRecord
+import androidx.health.connect.client.records.metadata.DataOrigin
 import androidx.health.connect.client.request.AggregateRequest
 import com.august.fitnessvowsync.helpers.WeakHashMapDelegate
 import kotlinx.coroutines.Dispatchers
@@ -17,10 +18,18 @@ import kotlin.reflect.KClass
 
 private val totalDistanceMap = WeakHashMap<ExerciseSessionRecord, Double>()
 
-class HealthConnectClient @Inject constructor(private var healthConnectClient: androidx.health.connect.client.HealthConnectClient) {
+class HealthConnectClient @Inject constructor(
+    private var healthConnectClient: androidx.health.connect.client.HealthConnectClient
+) {
+    //TODO: Remove app fake data
+    private val dataOriginFilter = setOf(
+        DataOrigin("com.sec.android.app.shealth"),
+        DataOrigin("com.august.fitnessvowsync")
+    )
+
     suspend fun <T: Record> readRecords(recordType: KClass<T>, timeRangeFilter: TimeRangeFilter): List<T> {
         return withContext(Dispatchers.IO) {
-            healthConnectClient.readRecords(ReadRecordsRequest(recordType, timeRangeFilter)).records
+            healthConnectClient.readRecords(ReadRecordsRequest(recordType, timeRangeFilter, dataOriginFilter)).records
         }
     }
 
@@ -38,13 +47,13 @@ class HealthConnectClient @Inject constructor(private var healthConnectClient: a
         return readRecords(SleepSessionRecord::class, timeRangeFilter)
     }
 
-    suspend fun readHeartRateRecords(timeRangeFilter: TimeRangeFilter): List<HeartRateRecord> {
-        return readRecords(HeartRateRecord::class, timeRangeFilter)
-    }
-
     suspend fun getAverageHeartRate(timeRangeFilter: TimeRangeFilter): Long {
         return withContext(Dispatchers.IO) {
-            val response = healthConnectClient.aggregate(AggregateRequest(metrics = setOf(HeartRateRecord.BPM_AVG), timeRangeFilter = timeRangeFilter))
+            val response = healthConnectClient.aggregate(AggregateRequest(
+                metrics = setOf(HeartRateRecord.BPM_AVG),
+                timeRangeFilter = timeRangeFilter,
+                dataOriginFilter = dataOriginFilter
+            ))
 
             response[HeartRateRecord.BPM_AVG] ?: 0
         }

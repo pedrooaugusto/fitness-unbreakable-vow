@@ -1,3 +1,8 @@
+import java.util.Properties
+
+val addresses = Properties().apply { load(file(".addresses").inputStream()) }
+val envVars = Properties().apply { load(file(".env").inputStream()) }
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -17,6 +22,18 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val Network: String = addresses["LastUsedNetwork"] as String
+        val PhysicalActivityOracleAddress: String = addresses["$Network.PhysicalActivityOracle"] as String
+        val FitnessUnbreakableVowAddress: String = addresses["$Network.FitnessUnbreakableVow"] as String
+        val WalletPrivateKey: String = envVars["$Network.WALLET_PRIVATE_KEY"] as String // Idk, Rick...
+        val RpcUrl: String = envVars["$Network.RPC_URL"] as String
+
+        buildConfigField("String", "PHYSICAL_ACTIVITY_ORACLE_ADDRESS", "\"${PhysicalActivityOracleAddress}\"")
+        buildConfigField("String", "FITNESS_UNBREAKABLE_VOW_ADDRESS", "\"${FitnessUnbreakableVowAddress}\"")
+        buildConfigField("String", "NETWORK", "\"${Network}\"")
+        buildConfigField("String", "WALLET_PRIVATE_KEY", "\"${WalletPrivateKey}\"")
+        buildConfigField("String", "RPC_URL", "\"${RpcUrl}\"")
     }
 
     buildTypes {
@@ -36,6 +53,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
@@ -72,6 +90,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
 
     implementation("com.google.dagger:dagger:2.50")
+    implementation("androidx.navigation:navigation-compose:2.8.3")
     kapt("com.google.dagger:dagger-compiler:2.50")
 
     // Something to do with records not being supported

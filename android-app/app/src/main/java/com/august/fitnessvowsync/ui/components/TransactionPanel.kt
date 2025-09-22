@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 
 @Composable
-fun TransactionPanel(transactionUrlOnBlockExplorer: String) {
+fun TransactionPanel(transactionUrl: String?) {
     val context = LocalContext.current
 
     Card(
@@ -45,7 +45,9 @@ fun TransactionPanel(transactionUrlOnBlockExplorer: String) {
                 color = Color.White,
                 textDecoration = TextDecoration.Underline,
                 modifier = Modifier.padding(16.dp).clickable {
-                    val intent = Intent(Intent.ACTION_VIEW, transactionUrlOnBlockExplorer.toUri())
+                    if (transactionUrl == null) return@clickable
+
+                    val intent = Intent(Intent.ACTION_VIEW, transactionUrl.toUri())
 
                     context.startActivity(intent)
                 }

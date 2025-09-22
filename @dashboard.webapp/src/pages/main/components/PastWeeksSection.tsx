@@ -77,6 +77,10 @@ export const PastWeeksSection: React.FC<PastWeeksSectionProps> = ({
                                         currency={currency}
                                         vowAddress={overview.contractAddress}
                                         penaltyAmount={overview.penaltyAmount}
+                                        requiredNumberOfCompletedGoals={overview.requiredNumberOfCompletedGoals}
+                                        gymVisitsGoal={overview.gymVisitsGoal}
+                                        runDistanceGoal={overview.runDistanceGoal}
+                                        healthySleepNightsGoal={overview.healthySleepNightsGoal}
                                     />
                                 );
                             })
@@ -90,6 +94,10 @@ export const PastWeeksSection: React.FC<PastWeeksSectionProps> = ({
 function PastWeekCard({
     week,
     weekIndex,
+    requiredNumberOfCompletedGoals,
+    gymVisitsGoal,
+    runDistanceGoal,
+    healthySleepNightsGoal,
     openModal,
     network,
     currency,
@@ -104,6 +112,10 @@ function PastWeekCard({
     currency: Currency;
     penaltyDetails?: PenaltyApplied;
     vowAddress: string;
+    requiredNumberOfCompletedGoals: number;
+    gymVisitsGoal: number,
+    runDistanceGoal: number,
+    healthySleepNightsGoal: number,
 } & WithModalProps) {
     const { goals, status } = week;
 
@@ -138,6 +150,10 @@ function PastWeekCard({
             network={network}
             currency={currency}
             closeModal={closeModal}
+            requiredNumberOfCompletedGoals={requiredNumberOfCompletedGoals}
+            gymVisitsGoal={gymVisitsGoal}
+            runDistanceGoal={runDistanceGoal}
+            healthySleepNightsGoal={healthySleepNightsGoal}
         />
     );
 
@@ -153,7 +169,7 @@ function PastWeekCard({
             <div className="title">Week {weekIndex}</div>
             <div className="value">
                 {isStatusPending && "Claim Fine!"}
-                {isStatusFinal && <>{numberOfGoalsMet}/2 Goals</>}
+                {isStatusFinal && <>{numberOfGoalsMet}/{requiredNumberOfCompletedGoals} Goals</>}
                 {isStatusNull && "Unclaimed!"}
             </div>
             <div className="icon">
@@ -184,6 +200,10 @@ interface PastWeekDetailsModalProps {
     vowAddress: string;
     currency: Currency;
     status: WeeklyGoalStatus;
+    requiredNumberOfCompletedGoals: number;
+    gymVisitsGoal: number,
+    runDistanceGoal: number,
+    healthySleepNightsGoal: number,
     penaltyAmount?: number;
     closeModal: () => void;
 }
@@ -211,20 +231,22 @@ function PastWeekDetailsModal(props: Omit<PastWeekDetailsModalProps, 'weekDetail
     }
 }
 
-function TargetGoalsList({ weekDetails }: { weekDetails: GetWeekDetailsResponse }) {
+function TargetGoalsList(props: { weekDetails: GetWeekDetailsResponse; gymVisitsGoal: number; runDistanceGoal: number; healthySleepNightsGoal: number }) {
+    const { weekDetails, gymVisitsGoal, runDistanceGoal, healthySleepNightsGoal } = props;
+
     return (
         <ul>
             <li>
                 {weekDetails.goals.run2KmGoalMet ? "✔️" : "❌"}🏃 Running session of
-                at least 2 km. (<small>{weekDetails.goals.highestDistanceRanInMeters} / 2,000 m</small>).
+                at least {runDistanceGoal} meters. (<small>{weekDetails.goals.highestDistanceRanInMeters} / {runDistanceGoal} meters</small>).
             </li>
             <li>
                 {weekDetails.goals.sleptWellGoalMet ? "✔️" : "❌"}🛏️ Sleeping 8+
-                hours on at least 2 nights. (<small>{weekDetails.goals.healthySleepNights} / 2 nights</small>).
+                hours on at least {healthySleepNightsGoal} nights. (<small>{weekDetails.goals.healthySleepNights} / {healthySleepNightsGoal} nights</small>).
             </li>
             <li>
                 {weekDetails.goals.gymVisitsGoalMet ? "✔️" : "❌"}💪 Going to the
-                gym at least once. (<small>{weekDetails.goals.gymVisits} / 1 visit</small>).
+                gym at least {gymVisitsGoal} times. (<small>{weekDetails.goals.gymVisits} / {gymVisitsGoal} visits</small>).
             </li>
         </ul>
     );
@@ -279,7 +301,7 @@ function PastWeekFailedDetailsModal({
                     This week was marked as failed because not enough goals were
                     met:
                 </p>
-                <TargetGoalsList weekDetails={props.weekDetails} />
+                <TargetGoalsList {...props} weekDetails={props.weekDetails} />
                 <h4>💸 Fine Applied</h4>
                 <p>
                     A fine of {totalPenaltyAmount} was deducted from the
@@ -328,6 +350,7 @@ function PastWeekSucceedDetailsModal({
     weekDetails,
     network,
     closeModal,
+    ...props
 }: PastWeekDetailsModalProps) {
     return (
         <div className="main">
@@ -337,7 +360,7 @@ function PastWeekSucceedDetailsModal({
                     This week was marked as success because enough goals were
                     met:
                 </p>
-                <TargetGoalsList weekDetails={weekDetails} />
+                <TargetGoalsList {...props} weekDetails={weekDetails} />
                 <h4>🤑 No Fine Applied</h4>
                 <p>
                     Since the weekly goals were completed no fine was applied
@@ -382,6 +405,7 @@ function PastWeekFailedClaimRewardDetailsModal({
     vowAddress,
     network,
     closeModal,
+    ...props
 }: PastWeekDetailsModalProps & { penaltyAmount?: number }) {
     const enforcerReward = formatCurrency(penaltyAmount! / 2, currency);
     const enforceFuncUrl = getAddressBlockExplorerUrl(vowAddress, network) + "#writeContract#F1";
@@ -495,7 +519,7 @@ function PastWeekFailedClaimRewardDetailsModal({
             <div className="past-week-details-modal">
                 <h4>❌ Missed Weekly Goals</h4>
                 <p>Not enough goals were met this week:</p>
-                <TargetGoalsList weekDetails={weekDetails} />
+                <TargetGoalsList {...props} weekDetails={weekDetails} />
                 <h4>💰 Collect the fine</h4>
                 <p>
                     Because the weekly goals were not met, a fine is now available to be collected.

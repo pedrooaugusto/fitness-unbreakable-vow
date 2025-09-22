@@ -31,6 +31,10 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         pastWeeksGoalsRaw,
         isContractExpired,
         upkeeperAddress,
+        gymVisitsGoal,
+        healthySleepNightsGoal,
+        runDistanceGoal,
+        requiredNumberOfCompletedGoals,
     ] = await executeMulticall(FitnessUnbreakableVow, [
         "PHYSICAL_ACTIVITY_ORACLE",
         "CREATION_DATE",
@@ -40,7 +44,11 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         "getCurrentWeekIndex",
         "getAllWeeklyGoalsRecords",
         "isContractExpired",
-        "CHAINLINK_UPKEEP_ADDRESS"
+        "CHAINLINK_UPKEEP_ADDRESS",
+        "GYM_VISITS_GOAL",
+        "HEALTHY_SLEEP_NIGHTS_GOAL",
+        "RUN_DISTANCE_GOAL",
+        "REQUIRED_NUMBER_OF_COMPLETED_GOALS"
     ]);
 
     const [[, currentWeekRecord], secondsInAWeek] = await executeMulticall(PhysicalActivityOracle, [
@@ -60,13 +68,6 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
             amount: Number(ethers.formatEther(penaltyAmount)),
             enforcedByUpkeeper: penaltyApplied.enforcer === upkeeperAddress
         }));
-
-    /*const physicalActivityRecordsAdded = await getEventsLocal<PhysicalActivityRecordProcessed>(
-        FitnessUnbreakableVow,
-        'PhysicalActivityRecordProcessed',
-        ['weekIndex'],
-        ['weekIndex', 'runDistanceMeters', 'gymVisits', 'healthySleepNights']
-    );*/
 
     const pastWeeksGoalsResult: WeeklyGoal[] = pastWeeksGoalsRaw.map((r: any, index: number) => ({
         status: Number(r.status),// == 0 ? 3 : Number(r.status) as WeeklyGoalStatus,
@@ -93,6 +94,10 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         pastWeeksGoalsResult,
         isContractExpired,
         secondsInAWeek: Number(secondsInAWeek),
-        network: NETWORK
+        network: NETWORK,
+        gymVisitsGoal: Number(gymVisitsGoal),
+        runDistanceGoal: Number(runDistanceGoal),
+        healthySleepNightsGoal: Number(healthySleepNightsGoal),
+        requiredNumberOfCompletedGoals: Number(requiredNumberOfCompletedGoals)
     };
 }

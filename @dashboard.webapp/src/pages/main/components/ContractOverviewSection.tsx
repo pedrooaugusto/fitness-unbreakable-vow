@@ -311,7 +311,7 @@ function DonatedToCharityInfoModal(props: ForfeitedInfoModalProps) {
                 <p>
                     This amount reflects the share of fines allocated to the registered beneficiary, <a href={GIVETH_PAGE_URL} target="_blank">Giveth Charity</a>, as a result of enforcement actions under the Agreement.
                     <br /><br />
-                    Whenever the contract is in breach and the <a href={props.enforceVowFunctionUrl} target="_blank">#enforceAgreement</a> function is invoked, a fine of {props.penaltyAmount} of imposed, half of the fine is donated directly to Giveth Charity, with the other half transferred to the enforcing party.
+                    Whenever the contract is in breach and the <a href={props.enforceVowFunctionUrl} target="_blank">#enforceAgreement</a> function is invoked, a fine of {props.penaltyAmount} is imposed, half of the fine is donated directly to Giveth Charity, with the other half transferred to the enforcing party.
                     <br /><br />
                     If enforcement is carried out by the designated <b>Upkeeper</b> — an automated process that executes weekly — the entire fine is donated to Giveth Charity, ensuring full beneficiary allocation in the absence of a manual enforcer.
                 </p>

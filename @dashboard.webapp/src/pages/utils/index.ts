@@ -66,3 +66,5 @@ export function shortAddress(address: string) {
 }
 
 export const GIVETH_PAGE_URL = 'https://giveth.io/project/Giveth-Matching-Pool-0?tab=donations'
+
+export const API_HOST = `${location.protocol}//${location.hostname}:3000/api`;

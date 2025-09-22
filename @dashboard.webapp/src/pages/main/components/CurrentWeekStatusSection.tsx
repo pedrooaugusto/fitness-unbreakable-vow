@@ -24,14 +24,13 @@ export default function CurrentWeekStatusSection({
     openModal,
     closeModal,
 }: CurrentWeekStatusSectionProps) {
-    const { highestDistanceRanInMeters, healthySleepNights, gymVisits } =
-        overview.currentWeekMetrics;
-    const highestDistanceRanInKms =
-        Math.floor((highestDistanceRanInMeters / 1000) * 100) / 100;
+    const { highestDistanceRanInMeters, healthySleepNights, gymVisits } = overview.currentWeekMetrics;
+    const highestDistanceRanInKms = metersToKms(highestDistanceRanInMeters);
+    const runDistanceGoal = metersToKms(overview.runDistanceGoal);
 
-    const currentWeekGoals =
-        overview.pastWeeksGoalsResult[overview.pastWeeksGoalsResult.length - 1]
-            .goals;
+    const currentWeekIndex = overview.pastWeeksGoalsResult.length - 1;
+    const currentWeekGoals = overview.pastWeeksGoalsResult[currentWeekIndex].goals;
+
     const currentWeekGoalsMet = [
         currentWeekGoals.run2KmGoalMet,
         currentWeekGoals.gymVisitsGoalMet,
@@ -39,9 +38,7 @@ export default function CurrentWeekStatusSection({
     ].filter(Boolean).length;
 
     const totalPenaltyAmount = formatCurrency(overview.penaltyAmount, currency);
-    const enforceFunUrl =
-        getAddressBlockExplorerUrl(overview.contractAddress, overview.network) +
-        "#writeContract#F1";
+    const enforceFunUrl = getAddressBlockExplorerUrl(overview.contractAddress, overview.network) + "#writeContract#F1";
 
     return (
         <section className="current-week-results">
@@ -51,7 +48,7 @@ export default function CurrentWeekStatusSection({
                     text="Current Week Status"
                     subtext={
                         <>
-                            Failure to satisfy the required number (<b>2</b>) of Weekly Goals
+                            Failure to satisfy the required number (<b>{overview.requiredNumberOfCompletedGoals}</b>) of Weekly Goals
                             within the Weekly Term shall render the Pledger liable
                             for a Fine of {totalPenaltyAmount}, to be deducted from the contract
                             balance and transferred in full to the enforcing party. 
@@ -73,8 +70,8 @@ export default function CurrentWeekStatusSection({
                         met={currentWeekGoals.run2KmGoalMet}
                         description={
                             <>
-                                Run for 2km{" "}
-                                <small>({highestDistanceRanInKms}/2km)</small>
+                                Run for {runDistanceGoal}km{" "}
+                                <small>({highestDistanceRanInKms}/{runDistanceGoal}km)</small>
                             </>
                         }
                         onClick={() =>
@@ -84,6 +81,7 @@ export default function CurrentWeekStatusSection({
                                     totalPenaltyAmount={totalPenaltyAmount}
                                     enforceVowFunctionUrl={enforceFunUrl}
                                     currentValue={highestDistanceRanInKms}
+                                    requiredValue={overview.runDistanceGoal}
                                     goalMet={currentWeekGoals.run2KmGoalMet}
                                 />,
                                 "🏃 Running Session Goal"
@@ -95,7 +93,7 @@ export default function CurrentWeekStatusSection({
                         description={
                             <>
                                 Slept for 8h{" "}
-                                <small>({healthySleepNights}/2)</small>
+                                <small>({healthySleepNights}/{overview.healthySleepNightsGoal})</small>
                             </>
                         }
                         onClick={() =>
@@ -105,6 +103,7 @@ export default function CurrentWeekStatusSection({
                                     totalPenaltyAmount={totalPenaltyAmount}
                                     enforceVowFunctionUrl={enforceFunUrl}
                                     currentValue={healthySleepNights}
+                                    requiredValue={overview.healthySleepNightsGoal}
                                     goalMet={currentWeekGoals.sleptWellGoalMet}
                                 />,
                                 "🛏️ 8 Hours Sleep Goal"
@@ -115,7 +114,7 @@ export default function CurrentWeekStatusSection({
                         met={currentWeekGoals.gymVisitsGoalMet}
                         description={
                             <>
-                                Gym visits <small>({gymVisits}/1)</small>
+                                Gym visits <small>({gymVisits}/{overview.gymVisitsGoal})</small>
                             </>
                         }
                         onClick={() =>
@@ -125,6 +124,7 @@ export default function CurrentWeekStatusSection({
                                     totalPenaltyAmount={totalPenaltyAmount}
                                     enforceVowFunctionUrl={enforceFunUrl}
                                     currentValue={gymVisits}
+                                    requiredValue={overview.gymVisitsGoal}
                                     goalMet={currentWeekGoals.gymVisitsGoalMet}
                                 />,
                                 "💪 Gym Visits Goal"
@@ -133,9 +133,7 @@ export default function CurrentWeekStatusSection({
                     />
                 </div>
                 <div className="week-status">
-                    Overall Status:{" "}
-                    {currentWeekGoalsMet >= 2 ? "Success" : "Failed"} (Goals
-                    Met: {currentWeekGoalsMet}/2)
+                    Overall Status:{" "}{currentWeekGoalsMet >= overview.requiredNumberOfCompletedGoals ? "Success" : "Failed"} (Goals Met: {currentWeekGoalsMet}/{overview.requiredNumberOfCompletedGoals})
                 </div>
             </div>
         </section>
@@ -159,11 +157,7 @@ function WeeklyGoal(props: {
     );
 }
 
-function CurrentWeekInformation({
-    overview,
-}: {
-    overview: GetContractOverviewResponse;
-}) {
+function CurrentWeekInformation({ overview }: { overview: GetContractOverviewResponse }) {
     const {
         currentWeekNumber,
         currentDate,
@@ -182,9 +176,8 @@ function CurrentWeekInformation({
             {formatDate(currentWeekEndDate, null)}.
         </>
     );
-    const timeRemainingFormatted = timeRemaining(
-        currentWeekEndDate - currentDate
-    );
+
+    const timeRemainingFormatted = timeRemaining(currentWeekEndDate - currentDate);
 
     if (isContractExpired) {
         return (
@@ -208,18 +201,21 @@ type GoalModalProps = {
     closeModal: () => void;
     goalMet: boolean;
     currentValue: string | number;
+    requiredValue?: string | number;
     totalPenaltyAmount: string;
     enforceVowFunctionUrl: string;
 }
 
 function RunningSessionsGoalModal(props: GoalModalProps) {
+    const goalDistance = metersToKms(Number(props.requiredValue));
+
     return (
         <div className="main">
             <GoalDetails
                 requirement={
                     <p>
                         Within each seven-day period (“Weekly Term”), the Pledger (<em style={{ fontFamily: "cursive" }}>P.S</em>) shall complete{" "}
-                        <strong> at least one (1) running session of two (2) kilometers or more</strong>.
+                        <strong> at least one (1) running session of {goalDistance} kilometers or more</strong>.
                     </p>
                 }
                 verificationBulletPoints={
@@ -241,7 +237,7 @@ function RunningSessionsGoalModal(props: GoalModalProps) {
                 }
                 currentStatus={
                     <p>
-                        {props.currentValue} km / 2 km: <b>{props.goalMet ? 'Met' : 'Not Met'}</b>
+                        {props.currentValue} km / {goalDistance} km: <b>{props.goalMet ? 'Met' : 'Not Met'}</b>
                     </p>
                 }
                 {...props}
@@ -262,7 +258,7 @@ function SleepGoalModal(props: GoalModalProps) {
                 requirement={
                     <p>
                         Within each seven-day period (“Weekly Term”), the Pledger (<em style={{ fontFamily: "cursive" }}>P.S</em>) shall achieve{" "}
-                        <strong>at least two (2) separate nights of eight (8) or more hours of sleep</strong>.
+                        <strong>at least {props.requiredValue} separate nights of eight (8) or more hours of sleep</strong>.
                     </p>
                 }
                 verificationBulletPoints={
@@ -283,7 +279,7 @@ function SleepGoalModal(props: GoalModalProps) {
                 }
                 currentStatus={
                     <p>
-                        {props.currentValue} / 2 nights: <b>{props.goalMet ? 'Met' : 'Not Met'}</b>
+                        {props.currentValue} / {props.requiredValue} nights: <b>{props.goalMet ? 'Met' : 'Not Met'}</b>
                     </p>
                 }
                 {...props}
@@ -304,7 +300,7 @@ function GymVisitsGoalModal(props: GoalModalProps) {
                 requirement={
                     <p>
                         Within each seven-day period (“Weekly Term”), the Pledger (<em style={{ fontFamily: "cursive" }}>P.S</em>) shall complete{" "}
-                        <strong>at least two (2) verified gym visits</strong>.
+                        <strong>at least {props.requiredValue} verified gym visits</strong>.
                     </p>
                 }
                 verificationBulletPoints={
@@ -317,7 +313,7 @@ function GymVisitsGoalModal(props: GoalModalProps) {
                 }
                 currentStatus={
                     <p>
-                        {props.currentValue} / 2 visits: <b>{props.goalMet ? 'Met' : 'Not Met'}</b>
+                        {props.currentValue} / {props.requiredValue} visits: <b>{props.goalMet ? 'Met' : 'Not Met'}</b>
                     </p>
                 }
                 {...props}
@@ -356,8 +352,7 @@ function GoalDetails(props: GoalDetailsProps) {
                 </li>
                 {props.verificationBulletPoints}
                 <li>
-                    Upon verification, the Weekly Goal is deemed{" "}
-                    <strong>Met</strong>.
+                    Upon verification, the Weekly Goal is deemed <strong>Met</strong>.
                 </li>
             </ul>
 
@@ -400,3 +395,5 @@ function GoalDetails(props: GoalDetailsProps) {
         </div>
     );
 }
+
+const metersToKms = (distance: number) =>  Math.floor((distance / 1000) * 100) / 100;

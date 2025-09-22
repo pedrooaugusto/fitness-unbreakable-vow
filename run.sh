@@ -25,7 +25,16 @@ buildContractJavaClient() {
 copyEnvVars() {
     echo "Copying env vars to Android app and Server."
     cp .env @dashboard.server/.env
-    cp .env android-app/.env
+
+    network="$1"
+
+    if [ "$network" = "localhost" ]; then
+        grep -E "^(${network}\.WALLET_PRIVATE_KEY|${network}\.RPC_URL)=" .env > android-app/app/.env
+    else
+        grep -E "^(${network}\.RPC_URL)=" .env > android-app/app/.env
+        echo "${network}.WALLET_PRIVATE_KEY=" >> android-app/app/.env
+    fi
+
     echo -e "\n\n\n"
 }
 
@@ -40,7 +49,7 @@ case "$1" in
         compileContracts
         buildContractJavaClient
         copyContractAbiToServer
-        copyEnvVars
+        copyEnvVars "$2"
         echo "Done."
         ;;
     deploy)
@@ -63,8 +72,9 @@ case "$1" in
         fi
 
         echo "Copying new addresses to server and android app"
-        cp contracts/.addresses @dashboard.server/src/abi/addresses.json
-        cp contracts/.addresses android-app/app/src/main/resources/addresses.json
+        cp contracts/.addresses @dashboard.server/src/abi/.addresses
+        cp contracts/.addresses android-app/app/.addresses
+        copyEnvVars "$2"
         echo "Done."
         ;;
     enforce)

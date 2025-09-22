@@ -1,5 +1,7 @@
+import { ContractFactory } from "ethers";
 import { PhysicalActivityRecordStruct } from "../typechain-types/contracts/PhysicalActivityOracle";
 import { sign, verify } from "./keys";
+import { HardhatRuntimeEnvironment } from "hardhat/types/runtime";
 
 export async function signPhysicalActivityRecord(record: PhysicalActivityRecordStruct) {
     const data = new Uint32Array([
@@ -28,4 +30,25 @@ export async function test() {
     const result = await verify(rawKeyArrayBuffer, data);
 
     console.log(result);
+}
+
+export async function connectOrDeploy(address: string, name: string, hre: HardhatRuntimeEnvironment) {
+    const deployedBytecode = await hre.ethers.provider.getCode(address);
+    const artifact = await hre.artifacts.readArtifact(name);
+    const Factory = await hre.ethers.getContractFactory(name);
+
+    // Hardhat artifact has deployedBytecode (runtime code)
+    if (deployedBytecode !== artifact.deployedBytecode) {
+        console.log("Deploying new contract: " + name);
+
+        const contract = await Factory.deploy();
+
+        await contract.waitForDeployment();
+
+        return contract;
+    } else {
+        console.log("Attaching to existing contract: " + name + ", " + address);
+
+        return Factory.attach(address);
+    }
 }

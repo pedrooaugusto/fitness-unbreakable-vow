@@ -7,6 +7,11 @@ import {Expirable} from "./Expirable.sol";
 abstract contract WeeklyGoalListable is Expirable {
     using WeeklyGoalFunctions for WeeklyGoal;
 
+    uint8 public constant GYM_VISITS_GOAL = 2;
+    uint8 public constant HEALTHY_SLEEP_NIGHTS_GOAL = 2;
+    uint16 public constant RUN_DISTANCE_GOAL = 2000;
+    uint8 public constant REQUIRED_NUMBER_OF_COMPLETED_GOALS = 2;
+
     uint8 private lastSettledWeek = 255; // [255 + 1 == -1 + 1] :-)
     uint8 public weeklyGoalsRecordsLastEntryKey;
     mapping(uint8 => WeeklyGoal) public weeklyGoalsRecords;
@@ -60,7 +65,7 @@ abstract contract WeeklyGoalListable is Expirable {
                 // 1. A past week with 'wiat for end of the week'
                 //    status where the goals were NOT MET, is
                 //    considered a failed week.
-                if (weeklyGoal.wasWasNotCompleted()) {
+                if (weeklyGoal.wasWasNotCompleted(REQUIRED_NUMBER_OF_COMPLETED_GOALS)) {
                     // This line cost me one BRL cent and is not necessary, but it looks right.
                     weeklyGoal.status = WeeklyGoalStatus.FAILED_PENDING_PENALTY;
                     lastSettledWeek = weekIndex;
@@ -105,7 +110,7 @@ abstract contract WeeklyGoalListable is Expirable {
             if (status == WeeklyGoalStatus.NULL) {
                 records[i].status = WeeklyGoalStatus.FAILED_PENDING_PENALTY;
             } else if (status == WeeklyGoalStatus.PENDING_END_OF_WEEK) {
-                records[i].status = records[i].isCompleted() ? WeeklyGoalStatus.COMPLETED : WeeklyGoalStatus.FAILED_PENDING_PENALTY;
+                records[i].status = records[i].isCompleted(REQUIRED_NUMBER_OF_COMPLETED_GOALS) ? WeeklyGoalStatus.COMPLETED : WeeklyGoalStatus.FAILED_PENDING_PENALTY;
             }
         }
 
@@ -130,9 +135,9 @@ abstract contract WeeklyGoalListable is Expirable {
         PhysicalActivityRecord calldata record
     ) internal pure returns (WeeklyGoal memory) {
         // TODO: Rename this, wentToTheGymAtLeastTwice, ranAtLeast2KmInOneGo, sleptWellForAtLeast2Nights;
-        bool wentoToTheGymEnoughTimes = record.gymVisits >= 1;
-        bool ran2km = record.runDistanceMeters >= 2000;
-        bool sleptWell = record.healthySleepNights >= 2;
+        bool wentoToTheGymEnoughTimes = record.gymVisits >= GYM_VISITS_GOAL;
+        bool ran2km = record.runDistanceMeters >= RUN_DISTANCE_GOAL;
+        bool sleptWell = record.healthySleepNights >= HEALTHY_SLEEP_NIGHTS_GOAL;
 
         return
             WeeklyGoal(

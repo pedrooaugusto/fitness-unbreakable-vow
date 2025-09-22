@@ -43,6 +43,7 @@ export interface GetContractOverviewResponse {
     startDate: number;
     expirationDate: number;
     currentDate: number;
+    isContractExpired: boolean;
 
     initialStakedAmount: number;
     penaltyAmount: number;
@@ -58,9 +59,14 @@ export interface GetContractOverviewResponse {
     };
 
     pastWeeksGoalsResult: WeeklyGoal[];
-    isContractExpired: boolean;
-    network: Network
+    network: Network;
+
+    gymVisitsGoal: number;
+    healthySleepNightsGoal: number;
+    runDistanceGoal: number;
+    requiredNumberOfCompletedGoals: number;
 }
+
 
 export interface GetWeekDetailsResponse {
     weekIndex: number;

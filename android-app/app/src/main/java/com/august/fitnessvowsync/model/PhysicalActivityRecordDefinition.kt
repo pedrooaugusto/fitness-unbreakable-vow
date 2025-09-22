@@ -1,34 +1,28 @@
 package com.august.fitnessvowsync.model
 
 import java.math.BigInteger
+import java.time.Instant
 
-interface PhysicalActivityRecordDefinition {
-    val timestamp: BigInteger
+interface PhysicalActivityRecord {
+    val timestamp: Instant
     val runDistanceMeters: Int
     val healthySleepNights: Int
     val gymVisits: Int
 }
 
-data class AddPhysicalActivityRecordRequest(
-    override val timestamp: BigInteger = BigInteger.ZERO,
-    override val runDistanceMeters: Int = 0,
-    override val healthySleepNights: Int = 0,
-    override val gymVisits: Int = 0
-): PhysicalActivityRecordDefinition
-
-data class GetPhysicalActivityRecordResponse (
-    override val timestamp: BigInteger,
-    override val runDistanceMeters: Int,
-    override val healthySleepNights: Int,
-    override val gymVisits: Int,
-    val weekNumber: BigInteger
-): PhysicalActivityRecordDefinition
-
-data class AddPhysicalActivityRecordTransaction (
-    override val timestamp: BigInteger = BigInteger.ZERO,
+data class PhysicalActivityRecordImpl (
+    override val timestamp: Instant = Instant.MIN,
     override val runDistanceMeters: Int = 0,
     override val healthySleepNights: Int = 0,
     override val gymVisits: Int = 0,
-    val transactionHash: String = "",
-    val blockExplorerUrl: String = ""
-): PhysicalActivityRecordDefinition
+): PhysicalActivityRecord
+
+data class SyncedPhysicalActivityRecord (
+    override val timestamp: Instant,
+    override val runDistanceMeters: Int,
+    override val healthySleepNights: Int,
+    override val gymVisits: Int,
+    val transaction: String,
+    val transactionUrl: String,
+    val weekIndex: Int,
+): PhysicalActivityRecord

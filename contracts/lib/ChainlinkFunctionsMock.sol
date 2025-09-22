@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
-import { console } from "./Config.sol";
+
+import { console } from "hardhat/console.sol";
 
 interface ChainLinkCaller {
     function handleOracleFulfillment(bytes32 requestId, bytes memory response, bytes memory err) external;
 }
+
+event ExcuteCodeRequest(string[] codeToExecuteArgs);
+event ExcuteCodeResponse(bool sourceIsVerified, uint32 timestamp, uint16 runDistanceMeters, uint8 healthySleepNights, uint8 gymVisits);
 
 /**
  * @title A version of of Chainlink Functions. This contract can receive arbitrary
@@ -25,6 +29,8 @@ contract ChainlinkFunctionsMock {
         callerAddress = ChainLinkCaller(msg.sender);
         requestId += 1;
 
+        emit ExcuteCodeRequest(codeToExecuteArgs);
+
         return bytes32(requestId);
     }
 
@@ -44,6 +50,10 @@ contract ChainlinkFunctionsMock {
         ChainLinkCaller callerAddressCopy = callerAddress;
 
         emptyCodeToExecute();
+
+        (bool sourceIsVerified, uint32 timestamp, uint16 runDistanceMeters, uint8 healthySleepNights, uint8 gymVisits) = abi.decode(data, (bool, uint32, uint16, uint8, uint8));
+
+        emit ExcuteCodeResponse(sourceIsVerified, timestamp, runDistanceMeters, healthySleepNights, gymVisits);
 
         try callerAddressCopy.handleOracleFulfillment(bytes32(requestId), data, bytes("")) {
         } catch Error(string memory errorMessage) {

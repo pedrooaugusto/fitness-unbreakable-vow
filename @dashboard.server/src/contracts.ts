@@ -2,16 +2,17 @@ import { Contract, ethers, Result } from 'ethers';
 import { abi as PhysicalActivityOracleAbi } from './abi/PhysicalActivityOracle.json';
 import { abi as FitnessUnbreakableVowAbi } from './abi/FitnessUnbreakableVow.json';
 import { abi as MulticallAbi } from './abi/Multicall3.json';
-import { __LastUsedNetwork, FitnessUnbreakableVow as FitnessUnbreakableVowAddresses, PhysicalActivityOracle as PhysicalActivityOracleAddresses } from './abi/addresses.json';
 import * as dotenv from 'dotenv';
+import path from 'path';
 
 dotenv.config();
+dotenv.config({ path:  path.join(__dirname, 'abi', '.addresses')});
 
-export const NETWORK = __LastUsedNetwork as keyof typeof FitnessUnbreakableVowAddresses;
-const RPC_URL = process.env[NETWORK + '.RPC_URL']
+export const NETWORK = process.env.LastUsedNetwork;
+const RPC_URL = process.env[NETWORK + '.RPC_URL'];
 
-export const FitnessUnbreakableVowAddress = FitnessUnbreakableVowAddresses[NETWORK];
-export const PhysicalActivityOracleAddress = PhysicalActivityOracleAddresses[NETWORK];
+export const FitnessUnbreakableVowAddress = process.env[NETWORK + '.' + 'FitnessUnbreakableVow']!;
+export const PhysicalActivityOracleAddress = process.env[NETWORK + '.' + 'PhysicalActivityOracle']!;
 export const MULTICALL_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11"; // Ethereum mainnet / Arbitrum / Sepolia deploy
 
 export const provider = new ethers.JsonRpcProvider(RPC_URL);

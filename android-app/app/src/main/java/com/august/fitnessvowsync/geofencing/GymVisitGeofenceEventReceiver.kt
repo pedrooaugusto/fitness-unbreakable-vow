@@ -5,17 +5,17 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.august.fitnessvowsync.MyApplication
-import com.august.fitnessvowsync.service.GeofencingService
-import com.august.fitnessvowsync.service.GymVisitRecord
+import com.august.fitnessvowsync.service.GymVisitService
+import com.august.fitnessvowsync.service.GymVisitService.GymVisitRecord
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingEvent
 import java.time.Instant
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.minutes
 
-class GymGeofenceReceiver : BroadcastReceiver() {
+class GymVisitGeofenceEventReceiver : BroadcastReceiver() {
     @Inject
-    lateinit var geofencingService: GeofencingService
+    lateinit var gymVisitService: GymVisitService
 
     override fun onReceive(context: Context, intent: Intent) {
         Log.i("FitVow - Sync", "Geofence event received.")
@@ -46,7 +46,7 @@ class GymGeofenceReceiver : BroadcastReceiver() {
 
             val time = Instant.ofEpochMilli(geofencingEvent.triggeringLocation!!.time)
 
-            geofencingService.addGymVisit(GymVisitRecord(time, 20.minutes))
+            gymVisitService.addGymVisit(GymVisitRecord(time, 20.minutes))
         }
     }
 }

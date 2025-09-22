@@ -37,8 +37,6 @@ export function useVowEnforcer(targetNetwork: Network, vowAddress: string): UseV
     const [selectedSigner, setSelectedSigner] = React.useState<JsonRpcSigner | null>(null);
 
     const enforceVow = async () => {
-        //setWallets(wallets.map(thisWallet => ({ ...thisWallet, connected: !thisWallet.connected })));
-        //return;
         try {
             const contract = new ethers.Contract(vowAddress, VOW_ABI, selectedSigner);
             const tx = await contract.enforceAgreement() as TransactionResponse;
@@ -53,8 +51,6 @@ export function useVowEnforcer(targetNetwork: Network, vowAddress: string): UseV
             return transactionReceipt;
         } catch (err) {
             console.error("Contract call failed:", err);
-
-            //return { hash: '0xabcx22', parsedLogs: [{ name: 'NoPenaltyApplied' }] }
 
             throw err;
         }
@@ -148,8 +144,3 @@ const parseLogs = (contract: Contract, logs: Log[] = []) => {
 
     return parsedLogs;
 }
-/*const walletCurrentNetwork = await getWalletCurrentNetwork(wallet);
-
-if (walletCurrentNetwork != targetNetwork) {
-    throw new Error(`Contract not available in ${walletCurrentNetwork}. Please manually switch the network to ${targetNetwork} in ${walletName} refresh the page and try again.`);
-}*/

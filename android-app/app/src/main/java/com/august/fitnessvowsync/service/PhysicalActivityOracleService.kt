@@ -1,65 +1,128 @@
 package com.august.fitnessvowsync.service
 
 import android.util.Log
+import com.august.fitnessvowsync.contract.ContractProvider
 import com.august.fitnessvowsync.contract.PhysicalActivityOracle
 import com.august.fitnessvowsync.mapper.PhysicalActivityRecordMapper
-import com.august.fitnessvowsync.model.AddPhysicalActivityRecordRequest
-import com.august.fitnessvowsync.model.GetPhysicalActivityRecordResponse
+import com.august.fitnessvowsync.model.PhysicalActivityRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.math.BigInteger
+import java.time.Instant
 import javax.inject.Inject
 
-class PhysicalActivityOracleService @Inject constructor(
-    private val privateKeyService: AppPrivateKeyService,
-    private val physicalActivityOracle: PhysicalActivityOracle,
-    private val physicalActivityRecordMapper: PhysicalActivityRecordMapper
-) {
-    suspend fun addPhysicalActivityRecord(record: AddPhysicalActivityRecordRequest): String {
-        return withContext(Dispatchers.IO) {
-            Log.i("FitVow", "Sending activity record to oracle. Record ${record}.")
+interface PhysicalActivityOracleService {
+    suspend fun addPhysicalActivityRecord(record: PhysicalActivityRecord): String
+    suspend fun registerAppAsRecordPublisher()
 
-            val recordAsUint32ByteArray = physicalActivityRecordMapper.toUint32ByteArray(record)
-            val signature = privateKeyService.sign(recordAsUint32ByteArray)
-            val contractRecord = physicalActivityRecordMapper.toContractPhysicalActivityRecord(record)
+    suspend fun getCreationDate(): BigInteger
 
-            Log.i("FitVow", "Record signed with public key: ${privateKeyService.getPublicKey()}")
-            Log.i("FitVow", "Record signature: ${signature}")
+    suspend fun getCurrentWeekIndex(): BigInteger
 
-            val transaction = physicalActivityOracle.pushPhysicalActivityRecord(signature, contractRecord).send()
+    suspend fun getSecondsInWeek(): BigInteger
 
-            Log.i("FitVow", "Activity record submitted. Transaction hash: ${transaction.transactionHash}.")
+    suspend fun getCurrentWeekStartAndEnd(): Pair<Instant, Instant>
 
-            transaction.transactionHash
-        }
-    }
+    class DefaultPhysicalActivityOracleService @Inject constructor(
+        private val privateKeyService: AppPrivateKeyService,
+        private val physicalActivityOracle: ContractProvider<PhysicalActivityOracle>,
+        private val physicalActivityRecordMapper: PhysicalActivityRecordMapper
+    ): PhysicalActivityOracleService {
+        override suspend fun addPhysicalActivityRecord(record: PhysicalActivityRecord): String {
+            return withContext(Dispatchers.IO) {
+                Log.i("FitVow", "Sending activity record to oracle. Record ${record}.")
 
-    suspend fun registerAppAsRecordPublisher() {
-        return withContext(Dispatchers.IO) {
-            try {
-                privateKeyService.createIfNotExists()
+                val recordAsUint32ByteArray = physicalActivityRecordMapper.toUint32ByteArray(record)
+                val signature = privateKeyService.sign(recordAsUint32ByteArray)
+                val contractRecord = physicalActivityRecordMapper.toContractPhysicalActivityRecord(record)
 
-                val publicKey = privateKeyService.getPublicKey()
-                val currentPublicKey = physicalActivityOracle.BASE64_PUBLIC_KEY().send()
+                Log.i("FitVow", "Record signed with public key: ${privateKeyService.getPublicKey()}")
+                Log.i("FitVow", "Record signature: ${signature}")
 
-                if (publicKey == currentPublicKey) return@withContext
+                val transaction = physicalActivityOracle.get().pushPhysicalActivityRecord(signature, contractRecord).send()
 
-                val transaction = physicalActivityOracle.setPublicKey(publicKey).send()
+                Log.i("FitVow", "Activity record submitted. Transaction hash: ${transaction.transactionHash}.")
 
-                Log.i("FitVow", "Public key has been registered. Transaction hash: ${transaction.transactionHash}")
-                Log.i("FitVow", "Public key has been registered. Public key: ${publicKey}")
-            } catch (e: Exception) {
-                Log.e("FitVow", "Failed to register publisher: ${e.message}", e)
-
-                throw e
+                transaction.transactionHash
             }
         }
+
+        override suspend fun registerAppAsRecordPublisher() {
+            return withContext(Dispatchers.IO) {
+                try {
+                    privateKeyService.createIfNotExists()
+
+                    val publicKey = privateKeyService.getPublicKey()
+                    val currentPublicKey = physicalActivityOracle.get().BASE64_PUBLIC_KEY().send()
+
+                    if (publicKey == currentPublicKey) return@withContext
+
+                    //TODO: Remove
+                    val transaction = physicalActivityOracle.get().setPublicKey(publicKey).send()
+
+                    Log.i("FitVow", "Public key has been registered. Transaction hash: ${transaction.transactionHash}")
+                    Log.i("FitVow", "Public key has been registered. Public key: ${publicKey}")
+                } catch (e: Exception) {
+                    Log.e("FitVow", "Failed to register publisher: ${e.message}", e)
+
+                    throw e
+                }
+            }
+        }
+
+        override suspend fun getCreationDate(): BigInteger {
+            return withContext(Dispatchers.IO) {
+                physicalActivityOracle.get().CREATION_DATE().send()
+            }
+        }
+
+        override suspend fun getCurrentWeekIndex(): BigInteger {
+            return withContext(Dispatchers.IO) {
+                physicalActivityOracle.get().currentWeekIndex.send()
+            }
+        }
+
+        override suspend fun getSecondsInWeek(): BigInteger {
+            return withContext(Dispatchers.IO) {
+                physicalActivityOracle.get().SECONDS_IN_A_WEEK().send()
+            }
+        }
+
+        override suspend fun getCurrentWeekStartAndEnd(): Pair<Instant, Instant> {
+            val secondsInWeek = getSecondsInWeek()
+            val creationDate = getCreationDate()
+            val currentWeekIndex = getCurrentWeekIndex()
+
+            val currentWeekStartDate = creationDate + currentWeekIndex * secondsInWeek
+            val currentWeekEndDate = currentWeekStartDate + secondsInWeek
+
+            return Pair(Instant.ofEpochSecond(currentWeekStartDate.toLong()), Instant.ofEpochSecond(currentWeekEndDate.toLong()))
+        }
     }
 
-    suspend fun getLatestPhysicalActivityRecord(): GetPhysicalActivityRecordResponse {
-        return withContext(Dispatchers.IO) {
-            val result = physicalActivityOracle.currentWeekPhysicalActivityRecord.send()
+    class PreviewPhysicalActivityOracleService: PhysicalActivityOracleService {
+        override suspend fun addPhysicalActivityRecord(record: PhysicalActivityRecord): String {
+            TODO("Not yet implemented")
+        }
 
-            physicalActivityRecordMapper.toGetPhysicalActivityRecordResponse(result.component1(), result.component2())
+        override suspend fun registerAppAsRecordPublisher() {
+            TODO("Not yet implemented")
+        }
+
+        override suspend fun getCreationDate(): BigInteger {
+            TODO("Not yet implemented")
+        }
+
+        override suspend fun getCurrentWeekIndex(): BigInteger {
+            TODO("Not yet implemented")
+        }
+
+        override suspend fun getSecondsInWeek(): BigInteger {
+            TODO("Not yet implemented")
+        }
+
+        override suspend fun getCurrentWeekStartAndEnd(): Pair<Instant, Instant> {
+            TODO("Not yet implemented")
         }
     }
 }

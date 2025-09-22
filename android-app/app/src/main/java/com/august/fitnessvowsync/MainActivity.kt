@@ -1,43 +1,49 @@
 package com.august.fitnessvowsync
 
 import android.Manifest
-import android.content.SharedPreferences
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresPermission
-import androidx.core.app.ActivityCompat
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.health.connect.client.HealthConnectClient
-import androidx.lifecycle.lifecycleScope
-import com.august.fitnessvowsync.contract.FitnessUnbreakableVow
-import com.august.fitnessvowsync.geofencing.GymGeofenceCreator
-import com.august.fitnessvowsync.helpers.NotificationService
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.august.fitnessvowsync.contract.ContractSettingsService
+import com.august.fitnessvowsync.donotuse.FakeDataProducerDoNotUse
+import com.august.fitnessvowsync.mapper.BlockExplorerUrlMapper
+import com.august.fitnessvowsync.service.GymVisitService
+import com.august.fitnessvowsync.service.PermissionService
 import com.august.fitnessvowsync.service.PhysicalActivityOracleService
-import com.august.fitnessvowsync.service.PhysicalActivityRecordsService
+import com.august.fitnessvowsync.service.SyncPhysicalActivityRecordService
 import com.august.fitnessvowsync.ui.FitnessVowApp
 import com.august.fitnessvowsync.ui.RequiredPermissions
+import com.august.fitnessvowsync.ui.Settings
 import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+
 class MainActivity : ComponentActivity() {
-    private val LOCATION_PERMISSION_REQUEST_CODE = 1001
-    @Inject
-    lateinit var fitnessUnbreakableVow: FitnessUnbreakableVow
     @Inject
     lateinit var physicalActivityOracleService: PhysicalActivityOracleService
     @Inject
-    lateinit var physicalActivityRecordsService: PhysicalActivityRecordsService
+    lateinit var syncPhysicalActivityRecordService: SyncPhysicalActivityRecordService
     @Inject
-    lateinit var gymGeofenceCreator: GymGeofenceCreator
-    @Inject
-    lateinit var notificationService: NotificationService
+    lateinit var gymVisitService: GymVisitService
     @Inject
     lateinit var healthConnectClient: HealthConnectClient
     @Inject
-    lateinit var encryptedPreferences: SharedPreferences
+    lateinit var settingsService: ContractSettingsService.ContractSettingsServiceImpl
+    @Inject
+    lateinit var blockExplorerUrlMapper: BlockExplorerUrlMapper
+    @Inject
+    lateinit var fakeDataProducerDoNotUse: FakeDataProducerDoNotUse
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION])
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,53 +54,49 @@ class MainActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
 
-        lifecycleScope.launch {
-            physicalActivityOracleService.registerAppAsRecordPublisher()
-        }
-
         enableEdgeToEdge()
 
         setContent {
+            val navigationController = rememberNavController()
+            val navigateToSettings = { navigationController.navigate("settings") }
+            val navigateToMain = { navigationController.navigate("main") }
+            val navigateToPermission = { navigationController.navigate("permissions") }
+
+            val permissionService = PermissionService.PermissionServiceImpl(this, navigateToSettings, healthConnectClient, settingsService)
+
             FitnessVowSyncTheme {
-                RequiredPermissions(
-                    client = healthConnectClient,
-                    requestPermission = { id -> requestPermission(id) }
+                NavHost(
+                    navController = navigationController,
+                    startDestination = "permissions",
+                    enterTransition = { slideInHorizontally(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300)) },
+                    exitTransition = { slideOutHorizontally(animationSpec = tween(300)) + fadeOut(animationSpec = tween(300)) },
+                    popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(300)) + fadeIn(animationSpec = tween(300)) },
+                    popExitTransition = { slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(300)) + fadeOut(animationSpec = tween(300)) }
                 ) {
-                    FitnessVowApp(physicalActivityRecordsService, { setupGeofence() })
+                    composable("main") {
+                        FitnessVowApp(
+                            syncPhysicalActivityService = syncPhysicalActivityRecordService,
+                            gymVisitService = gymVisitService,
+                            oracleService = physicalActivityOracleService,
+                            navigateToSettings = navigateToSettings,
+                            donNotUse = fakeDataProducerDoNotUse
+                        )
+                    }
+                    composable("permissions") {
+                        RequiredPermissions(
+                            registerAppAsRecordPublisher = { physicalActivityOracleService.registerAppAsRecordPublisher() },
+                            navigateToMain = navigateToMain,
+                            permissionService = permissionService
+                        )
+                    }
+                    composable("settings") {
+                        Settings(
+                            navigateToPermission = navigateToPermission,
+                            settingsService = settingsService
+                        )
+                    }
                 }
             }
-        }
-    }
-
-    private fun requestPermission(permissionName: String) {
-        if (permissionName == "fineLocation") return showPermissionDialog(Manifest.permission.ACCESS_FINE_LOCATION)
-        if (permissionName == "backgroundLocation") return showPermissionDialog(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-        if (permissionName == "notifications") return showPermissionDialog(Manifest.permission.POST_NOTIFICATIONS)
-        if (permissionName == "healthConnect") return openHealthConnectApp()
-
-    }
-
-    private fun showPermissionDialog(permissionId: String) {
-        ActivityCompat.requestPermissions(this, arrayOf(permissionId),LOCATION_PERMISSION_REQUEST_CODE)
-    }
-
-    private fun openHealthConnectApp() {
-        val intent = packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
-
-        if (intent != null) {
-            startActivity(intent)
-        } else {
-            Toast.makeText(this, "Health Connect app is not installed", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION])
-    private fun setupGeofence() {
-        val gymGeofenceEnabled = gymGeofenceCreator.isGymGeofenceEnabled()
-
-        if (!gymGeofenceEnabled) {
-            gymGeofenceCreator.createGymGeofence(applicationContext)
-            notificationService.showGeofenceNotification("Geofence monitoring has started.", applicationContext)
         }
     }
 }

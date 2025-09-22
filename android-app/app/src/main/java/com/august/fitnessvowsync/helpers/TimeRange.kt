@@ -33,7 +33,12 @@ class TimeRange {
 
         @JvmStatic
         fun between(startTime: Long, endTime: Long): TimeRangeFilter {
-            return TimeRangeFilter.between(Instant.ofEpochMilli(startTime), Instant.ofEpochMilli(endTime))
+            return between(Instant.ofEpochMilli(startTime), Instant.ofEpochMilli(endTime))
+        }
+
+        @JvmStatic
+        fun between(startTime: Instant, endTime: Instant): TimeRangeFilter {
+            return TimeRangeFilter.between(startTime, endTime)
         }
     }
 }

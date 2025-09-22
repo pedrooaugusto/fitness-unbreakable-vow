@@ -1,29 +1,13 @@
 import '@nomicfoundation/hardhat-toolbox';
 import { HardhatUserConfig, task } from "hardhat/config";
-import path from 'path';
-import fs from 'fs';
-import { signPhysicalActivityRecord } from './scripts/utils';
+import { connectOrDeploy, signPhysicalActivityRecord } from './scripts/utils';
 import { executeCode } from './scripts/execute-code-oracle';
 import { PUBLIC_KEY } from './scripts/keys';
 import * as dotenv from 'dotenv';
+import { getContractAddress, saveContractAddress } from './scripts/addresses';
+import { ChainlinkFunctionsMock, ChainlinkFunctionsMock__factory } from './typechain-types';
 
 dotenv.config();
-
-function getContractAddress(contractName: string, network: string) {
-    const addressesFile = path.join(__dirname, "contracts", ".addresses");
-
-    return JSON.parse(fs.readFileSync(addressesFile, "utf8"))[contractName][network];
-}
-
-function saveContractAddress(contractName: string, contractAddress: string, network: string) {
-    const addressesFile = path.join(__dirname, "contracts", ".addresses");
-    const deployedAddresses = JSON.parse(fs.readFileSync(addressesFile, "utf8"));
-
-    deployedAddresses[contractName] = { ...deployedAddresses[contractName] || {}, [network]: contractAddress };
-    deployedAddresses['__LastUsedNetwork'] = network;
-
-    fs.writeFileSync(addressesFile, JSON.stringify(deployedAddresses, null, 2));
-}
 
 task('GetPhysicalActivityRecord', "Queries dailySteps from oracle `PhysicalActivityOracle`.")
     .setAction(async (taskArgs, hre) => {
@@ -166,10 +150,7 @@ task('SetUpkeepAddress', "Add the upkeep")
 
 task('MockChainLinkOracle', "Deploys an mock Chainlink oracle.")
     .setAction(async (taskArgs, hre) => {
-        const ChainlinkFunctionsMock = await hre.ethers.getContractFactory("ChainlinkFunctionsMock");
-        const contract = await ChainlinkFunctionsMock.deploy();
-
-        await contract.waitForDeployment();
+        const contract = await connectOrDeploy(getContractAddress('ChainlinkFunctionsMock', hre.network.name), 'ChainlinkFunctionsMock', hre) as ChainlinkFunctionsMock;
 
         const contractAddress = await contract.getAddress();
         saveContractAddress('ChainlinkFunctionsMock', contractAddress, hre.network.name);
@@ -178,26 +159,24 @@ task('MockChainLinkOracle', "Deploys an mock Chainlink oracle.")
 
         console.log('\n\n⚠️ Starting server to listen for requests to execute code.');
 
-        while (true) {
-            const hasCodeToExecute = await contract.hasCodeToExecute();
+        contract.on(contract.filters.ExcuteCodeRequest(), async(arg: any) => {
+            console.log('Received request to execute code: ', arg.args);
+            const code = await contract.getCodeToExecute();
+            const args = await contract.getCodeToExecuteArgs();
 
-            console.log('Has Query to execute: ', hasCodeToExecute);
+            const output = await executeCode(code, args);
 
-            if (hasCodeToExecute) {
-                console.log('\tExecuting code.');
+            const response = await contract.setCodeToExecuteResponse(output);
 
-                const code = await contract.getCodeToExecute();
-                const args = await contract.getCodeToExecuteArgs();
+            await response.wait();
+        });
 
-                const output = await executeCode(code, args);
+        contract.on(contract.filters.ExcuteCodeResponse(), async(arg: any) => {
+            console.log('Received execute code response: ', arg.args);
+            console.log('==================================================================================');
+        });
 
-                const response = await contract.setCodeToExecuteResponse(output);
-
-                await response.wait();
-            }
-
-            await wait(3000);
-        }
+        await new Promise(() => {});
     })
 
 const config: HardhatUserConfig = {
@@ -206,12 +185,12 @@ const config: HardhatUserConfig = {
         hardhat: {
             mining: {
                 auto: true, // Disable automining
-                interval: 5000, // Mine a new block every 5 seconds (in ms)
+                interval: 6000, //Mine a new block every 5 seconds (in ms)
             }
         },
         sepolia: {
             url: process.env['sepolia.RPC_URL'],
-            accounts: [process.env['prod.WALLET_PRIVATE_KEY']!]
+            accounts: [process.env['sepolia.WALLET_PRIVATE_KEY']!]
         },
         ganache: {
             url: "http://127.0.0.1:7545",
@@ -220,7 +199,7 @@ const config: HardhatUserConfig = {
         arbitrum: {
             url: "https://arb1.arbitrum.io/rpc",
             chainId: 42161,
-            accounts: [process.env['prod.WALLET_PRIVATE_KEY']!]
+            accounts: [process.env['arbitrum.WALLET_PRIVATE_KEY']!]
         }
     },
     etherscan: {

@@ -3,14 +3,13 @@ package com.august.fitnessvowsync.service
 import com.august.fitnessvowsync.dagger.KeyStoreModule
 import com.august.fitnessvowsync.dagger.Web3jModule
 import com.august.fitnessvowsync.mapper.PhysicalActivityRecordMapper
-import com.august.fitnessvowsync.model.AddPhysicalActivityRecordRequest
 import org.junit.Test
 import java.math.BigInteger
 
 import org.junit.Assert.*
 
 class PhysicalActivityOracleServiceTest {
-    private val web3jModule = Web3jModule()
+    /*private val web3jModule = Web3jModule()
     private val networkName = web3jModule.provideNetwork()
     private val web3j = web3jModule.provideWeb3j(web3jModule.provideNetworkRpcUrl(networkName))
     private val credentials = web3jModule.provideWalletCredentials(networkName)
@@ -20,7 +19,7 @@ class PhysicalActivityOracleServiceTest {
 
     private val physicalActivityOracleService = PhysicalActivityOracleService(privateKeyService, physicalActivityOracle, physicalActivityRecordMapper)
 
-    /*@Test
+    @Test
     fun shouldSendActivityRecord() {
         physicalActivityOracleService.registerAppAsRecordPublisher()
 

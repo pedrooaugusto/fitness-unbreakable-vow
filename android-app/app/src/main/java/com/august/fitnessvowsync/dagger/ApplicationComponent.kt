@@ -4,7 +4,7 @@ import dagger.Component
 import javax.inject.Singleton
 import com.august.fitnessvowsync.MyApplication
 import com.august.fitnessvowsync.geofencing.BootReceiver
-import com.august.fitnessvowsync.geofencing.GymGeofenceReceiver
+import com.august.fitnessvowsync.geofencing.GymVisitGeofenceEventReceiver
 
 @Singleton
 @Component(modules = [
@@ -13,14 +13,16 @@ import com.august.fitnessvowsync.geofencing.GymGeofenceReceiver
     KeyStoreModule::class,
     HealthConnectModule::class,
     EncryptedSharedPreferencesModule::class,
-    GeofencingModule::class
+    GeofencingModule::class,
+    SyncPhysicalActivityRecordModule::class,
+    SettingsModule::class
 ])
 interface ApplicationComponent {
     fun inject(application: MyApplication)
 
     fun inject(receiver: BootReceiver)
 
-    fun inject(receiver: GymGeofenceReceiver)
+    fun inject(receiver: GymVisitGeofenceEventReceiver)
 
     fun mainActivityComponentBuilder(): MainActivityComponent.Builder
 }

@@ -19,6 +19,8 @@ class GymGeofenceCreator @Inject constructor (private val geofencingClient: Geof
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION])
     fun createGymGeofence(context: Context) {
+        Log.i("FitVow", "Trying to create gym geofence.")
+
         val gymLat = -22.895458330852602
         val gymLng = -43.27282316079158
         val radiusInMeters = 150f
@@ -36,7 +38,7 @@ class GymGeofenceCreator @Inject constructor (private val geofencingClient: Geof
             .addGeofence(geofence)
             .build()
 
-        val intent = Intent(context, GymGeofenceReceiver::class.java)
+        val intent = Intent(context, GymVisitGeofenceEventReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             0,
