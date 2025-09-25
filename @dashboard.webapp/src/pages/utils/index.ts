@@ -22,13 +22,15 @@ export function timeRemaining(secondsToExpire: number) {
     const days = Math.floor(secondsToExpire / (60 * 60 * 24));
     const hours = Math.floor((secondsToExpire % (60 * 60 * 24)) / (60 * 60));
     const minutes = Math.floor((secondsToExpire % (60 * 60)) / 60);
+    const seconds = Math.floor(secondsToExpire % 60);
 
     const result = [];
     if (days > 0) result.push(`${days}d`);
     if (hours > 0) result.push(`${hours}h`);
-    if (minutes > 0) result.push(`${minutes}min`);
+    if (minutes > 0) result.push(`${minutes}m`);
+    if (seconds > 0) result.push(`${seconds}s`);
 
-    return result.length > 0 ? result.join(" ") : "a few seconds";
+    return result.join(" ");
 }
 
 export function formatDate(

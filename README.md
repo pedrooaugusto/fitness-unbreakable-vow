@@ -1,70 +1,65 @@
-## TODO
-set appropirate gas amount in contracts and client
-handle contract expiration gracefuly in the ui
+# **FitVow Smart Contract**
 
-## **FitnessUnbreakableVow Smart Contract**
-
-This smart contract creates a self-enforced physical fitness commitment backed by financial penalties and decentralized accountability.
+This smart contract creates a self-enforced health and wellness commitment backed by financial penalties and decentralized accountability.
 
 ---
 
-### **1. Commitment Overview**
+## **1. Commitment Overview**
 
-* **Duration:** 3 months (12 weeks)
-* **Stake:** \$150 USD (or equivalent in a stablecoin such as USDC), locked within the smart contract.
+- **Duration:** 3 months (12 weeks)  
+- **Stake:** $150 USD (or equivalent in a stablecoin such as USDC), locked within the smart contract.  
 
-This stake acts as collateral to incentivize goal completion. It will be gradually reduced if activity goals are not met.
-
----
-
-### **2. Weekly Fitness Goals & Verification**
-
-To remain in good standing each week, the contract owner must complete at least **two** of the following verifiable goals:
-
-* **Run:** A running session of at least 2 km (measured via Smart Watch).
-* **Healthy Sleep:** Log at least two nights with 7 hours and 30 minutes or more of sleep (measured via Smart Watch).
-* **Gym Visit:** Verified physical presence at a registered gym (verified via Android Geofence).
-
-#### **Data Integrity & Verification Process**
-
-* Metrics are collected via a dedicated Android app.
-* The app is safeguarded against tampering through validation using the **Google Play Integrity API**.
-* Verified data is submitted to an **Oracle Contract**, which acts as a tamper-resistant record store accessible to this and other smart contracts.
-* For why this works read: https://chatgpt.com/share/686c6c1d-e19c-800f-b26d-721d2970aef4
+This stake acts as collateral to incentivize goal completion. It will be gradually reduced if health and habit goals are not met.  
 
 ---
 
-### **3. Enforcement & Penalty Mechanism**
+## **2. Weekly Health Goals & Verification**
 
-If the contract fails to verify that weekly goals were completed:
+To remain in good standing each week, the **Pledger** must complete at least **two** of the following verifiable obligations:
 
-* **Penalty:** \$8 USD (or equivalent) is deducted from the staked balance.
-* **Recipient:**
+- **Run:** A running session of at least 2 km (measured via Smart Watch).  
+- **Healthy Sleep:** Log at least two nights with 7h30m or more of sleep (measured via Smart Watch).  
+- **Gym Visit:** Verified presence at a registered gym (via Android Geofence).  
 
-  * If the `enforceTerms()` function is called by an individual user, they receive the penalty as a reward for enforcement.
-  * If enforcement is performed by a designated third-party "upkeeper" (e.g., automation services like Chainlink Keepers), the penalty is instead routed to the [Giveth Charity Foundation](https://giveth.io/project/Giveth-Matching-Pool-0) at
-    [`0x6e8873085530406995170Da467010565968C7C62`](https://etherscan.io/address/0x6e8873085530406995170Da467010565968C7C62), ensuring they contribute to a positive cause rather than being returned to the contract's owner.
+### **Data Integrity & Verification Process**
 
-
-This structure encourages community accountability and automates consequences.
+- Metrics are collected via the **FitVow Android App**.  
+- Each record is signed on-device with a hardware-protected private key (Android Keystore / TEE).  
+- Signed records are submitted to a **PhysicalActivityOracle Contract**, which validates the signatures and makes the data available to the vow contract.  
+- A **sign-and-forget build mechanism** ensures app authenticity:  
+  - APKs are signed once with an ephemeral key that is immediately discarded.  
+  - Because the signing key is unrecoverable, new modified builds cannot replace the installed app.  
+  - Reinstallation would erase all original keys and records, preventing fraudulent continuation.  
 
 ---
 
-### **4. Contract Completion & Fund Release**
+## **3. Enforcement & Penalty Mechanism**
+
+If the contract fails to verify that weekly obligations were completed:
+
+- **Fine:** $8 USD (or equivalent) is deducted from the staked balance.  
+- **Distribution:**  
+  - If the `enforceAgreement()` function is called by an individual user, the fine is split equally between the caller (the **Enforcer**) and the **Giveth Charity Foundation** at  
+    [`0x6e8873085530406995170Da467010565968C7C62`](https://etherscan.io/address/0x6e8873085530406995170Da467010565968C7C62).  
+  - If enforcement is performed by the designated **Upkeeper** (e.g., Chainlink Automation), **100% of the fine** is routed to the Charity.  
+
+---
+
+## **4. Contract Completion & Fund Release**
 
 At the end of the 3-month term:
 
-* Any remaining staked funds are automatically released and returned to the contract owner’s wallet.
-* No additional user action is required.
+- Any remaining staked funds are automatically released and returned to the **Pledger’s wallet**.  
+- No further enforcement or obligations remain.  
 
 ---
 
-### 5. Trust & Decentralization Model
+## **5. Trust & Decentralization Model**
 
-The **FitnessUnbreakableVow** operates on a trust model that leverages decentralization:
+The **FitVow Agreement** operates under a decentralized trust model:
 
-* **Smart Contract Trust:** The core logic of the vow is immutable and transparently verifiable on the blockchain.
-* **Data Integrity:** Trust in activity data relies on the integrity of the Android app and its attestation via the Google Play Integrity API.
-* **Oracle Dependency:** The contract depends on the designated Oracle Contract for verified activity records.
-* **Automated Enforcement:** The "anyone-can-call" `enforceTerms()` mechanism, combined with upkeepers, decentralizes the monitoring and enforcement process.
-
+- **Immutable Logic:** All rules are codified in the smart contract, transparently auditable on-chain.  
+- **Tamper Resistance:** Records are signed by the app using hardware-protected keys, validated on-chain by the Oracle.  
+- **Sign-and-Forget Distribution:** Ephemeral APK signing prevents the developer from re-issuing modified versions with the same identity.  
+- **Open Enforcement:** Any address may invoke `enforceAgreement()` against a breaching Pledger, decentralizing accountability.  
+- **Charity Guarantee:** The Upkeeper ensures enforcement even if no enforcer acts, routing fines fully to Charity.  

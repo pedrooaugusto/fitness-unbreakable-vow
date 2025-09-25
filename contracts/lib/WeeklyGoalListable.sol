@@ -101,30 +101,35 @@ abstract contract WeeklyGoalListable is Expirable {
 
     function listAllWeeks() internal view returns (WeeklyGoal[] memory) {
         uint8 currentWeekIndex = getCurrentWeekIndex();
+        bool isContractExpired = isContractExpired();
 
         WeeklyGoal[] memory records = new WeeklyGoal[](currentWeekIndex + 1);
         for (uint8 i = 0; i < currentWeekIndex; i++) {
             records[i] = weeklyGoalsRecords[i];
             WeeklyGoalStatus status = records[i].status;
 
-            if (status == WeeklyGoalStatus.NULL) {
+            if (status == WeeklyGoalStatus.NULL && isContractExpired == false) {
                 records[i].status = WeeklyGoalStatus.FAILED_PENDING_PENALTY;
             } else if (status == WeeklyGoalStatus.PENDING_END_OF_WEEK) {
-                records[i].status = records[i].isCompleted(REQUIRED_NUMBER_OF_COMPLETED_GOALS) ? WeeklyGoalStatus.COMPLETED : WeeklyGoalStatus.FAILED_PENDING_PENALTY;
+                if (records[i].isCompleted(REQUIRED_NUMBER_OF_COMPLETED_GOALS)) {
+                    records[i].status = WeeklyGoalStatus.COMPLETED;
+                } else {
+                    records[i].status = isContractExpired ? WeeklyGoalStatus.NULL : WeeklyGoalStatus.FAILED_PENDING_PENALTY;
+                }
             }
         }
 
         records[currentWeekIndex] = weeklyGoalsRecords[currentWeekIndex];
+
         if (records[currentWeekIndex].status == WeeklyGoalStatus.NULL) {
             records[currentWeekIndex].status = WeeklyGoalStatus.PENDING_END_OF_WEEK;
         }
 
-        // O.o
-        if (isContractExpired()) {
-            for (uint8 i = 0; i <= currentWeekIndex; i++) {
-                if (records[i].status == WeeklyGoalStatus.PENDING_END_OF_WEEK || records[i].status == WeeklyGoalStatus.FAILED_PENDING_PENALTY) {
-                    records[i].status = WeeklyGoalStatus.NULL;
-                }
+        if (isContractExpired) {
+            if (records[currentWeekIndex].isCompleted(REQUIRED_NUMBER_OF_COMPLETED_GOALS)) {
+                records[currentWeekIndex].status = WeeklyGoalStatus.COMPLETED;
+            } else {
+                records[currentWeekIndex].status = WeeklyGoalStatus.NULL;
             }
         }
 

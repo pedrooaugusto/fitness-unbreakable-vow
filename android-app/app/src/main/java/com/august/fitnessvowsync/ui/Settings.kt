@@ -1,7 +1,7 @@
 package com.august.fitnessvowsync.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -45,6 +47,7 @@ fun Settings(
     navigateToPermission: () -> Unit,
     settingsService: ContractSettingsService
 ) {
+    val focusManager = LocalFocusManager.current
     var walletPrivateKey by remember { mutableStateOf(BuildConfig.WALLET_PRIVATE_KEY) }
 
     val saveSettings = {
@@ -56,7 +59,8 @@ fun Settings(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0F0F1A))
-            .padding(16.dp),
+            .padding(16.dp)
+            .pointerInput(Unit) { detectTapGestures(onTap = { focusManager.clearFocus() }) },
     ) {
         Spacer(modifier = Modifier.height(36.dp))
 
@@ -82,10 +86,46 @@ fun Settings(
         TextField(
             value = walletPrivateKey,
             onValueChange = { value -> walletPrivateKey = value },
+            singleLine = true,
             label = { Text("Account Private Key") } ,
             supportingText = {
                 Text("Account used to interact with contracts in the blockchain.", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
             }
+        )
+
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextField(
+            value = settingsService.getRegisteredPublicKey() ?: "<unknown>",
+            readOnly = true,
+            singleLine = true,
+            onValueChange = {},
+            label = { Text("Oracle Public Key") } ,
+            supportingText = {
+                Text("The oracle will only accept physical activity data signed with this key.", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+            }
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextField(
+            value = settingsService.getPhysicalActivityRecordOracleAddress(),
+            readOnly = true,
+            singleLine = true,
+            onValueChange = {},
+            label = { Text("Physical Activity Record Oracle Address") } ,
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextField(
+            value = settingsService.getNetwork(),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            readOnly = true,
+            onValueChange = {},
+            label = { Text("Network") } ,
         )
 
         Spacer(modifier = Modifier.weight(1f))

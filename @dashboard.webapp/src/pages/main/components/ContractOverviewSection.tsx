@@ -9,6 +9,7 @@ import { formatCurrency, formatDate, getAddressBlockExplorerUrl, GIVETH_PAGE_URL
 import { WeeklyGoalStatus, type Currency, type GetContractOverviewResponse } from "../types";
 import { SectionTitle } from "../../components/SectionTitle";
 import type { WithModalProps } from "../../components/modal";
+import LiveTimeCountdown from "./LiveTimeCountdown";
 
 interface ContractOverviewSectionProps extends WithModalProps {
     overview: GetContractOverviewResponse;
@@ -20,7 +21,6 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
     const numberOfPenalties = overview.pastWeeksGoalsResult.filter(week => week.status === WeeklyGoalStatus.FAILED_PENALTY_APPLIED).length;
     const [givenToCharity, givenToStrangers] = calculatePenalties(overview.pastWeeksGoalsResult);
     const currentBalancePercent = (overview.currentBalance / overview.initialStakedAmount - 1) * 100;
-    const daysRemaining = timeRemaining(overview.expirationDate - overview.currentDate);
     const currentBalancePercentText = `${currentBalancePercent > 0 ? '+' : ''}${currentBalancePercent.toFixed(1)}%`;
     const totalWeeks = Math.floor((overview.expirationDate - overview.startDate) / overview.secondsInAWeek) - 1;
     const enforceFunctionUrl = getAddressBlockExplorerUrl(overview.contractAddress, overview.network) + "#writeContract#F1";
@@ -146,7 +146,9 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             />
                             <StatInfoCard
                                 title="Time Until Expiration"
-                                value={daysRemaining}
+                                value={
+                                    <LiveTimeCountdown endDate={new Date(overview.expirationDate * 1000)} />
+                                }
                             />
                             <StatInfoCard
                                 title="Week Info"

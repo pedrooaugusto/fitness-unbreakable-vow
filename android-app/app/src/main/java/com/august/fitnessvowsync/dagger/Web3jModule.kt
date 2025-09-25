@@ -23,7 +23,7 @@ class Web3jModule {
             BuildConfig.FITNESS_UNBREAKABLE_VOW_ADDRESS,
             web3j,
             credentials,
-            DefaultGasProvider()
+            DefaultGasProvider() // TODO: fix this
         )}
 
         return ContractProvider(contractSettings, createContract)
@@ -36,7 +36,7 @@ class Web3jModule {
             BuildConfig.PHYSICAL_ACTIVITY_ORACLE_ADDRESS,
             web3j,
             credentials,
-            DefaultGasProvider()
+            DefaultGasProvider() // TODO: fix this
         )}
 
         return ContractProvider(contractSettings, createContract)

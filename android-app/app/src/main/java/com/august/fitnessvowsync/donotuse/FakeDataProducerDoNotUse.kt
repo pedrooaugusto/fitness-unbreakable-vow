@@ -86,6 +86,5 @@ class FakeDataProducerDoNotUse @Inject constructor(
         gymVisitService.addGymVisit(visitRecord)
 
         Log.i("FitVow", "Adding fake gym visit: $visitRecord")
-
     }
 }

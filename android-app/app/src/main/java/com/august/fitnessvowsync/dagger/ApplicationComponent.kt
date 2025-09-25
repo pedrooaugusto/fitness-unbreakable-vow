@@ -14,7 +14,7 @@ import com.august.fitnessvowsync.geofencing.GymVisitGeofenceEventReceiver
     HealthConnectModule::class,
     EncryptedSharedPreferencesModule::class,
     GeofencingModule::class,
-    SyncPhysicalActivityRecordModule::class,
+    PhysicalActivityRecordServicesModule::class,
     SettingsModule::class
 ])
 interface ApplicationComponent {

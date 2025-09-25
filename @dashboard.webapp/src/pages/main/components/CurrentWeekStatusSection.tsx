@@ -1,4 +1,4 @@
-import type { JSX, ReactElement } from "react";
+import { useEffect, type JSX, type ReactElement } from "react";
 import {
     formatCurrency,
     formatDate,
@@ -12,6 +12,7 @@ import XIcon from "../../../assets/x-circle-icon";
 import { SectionTitle } from "../../components/SectionTitle";
 import type { GetContractOverviewResponse } from "../types";
 import type { WithModalProps } from "../../components/modal";
+import LiveTimeCountdown from "./LiveTimeCountdown";
 
 interface CurrentWeekStatusSectionProps extends WithModalProps {
     overview: GetContractOverviewResponse;
@@ -51,7 +52,7 @@ export default function CurrentWeekStatusSection({
                             Failure to satisfy the required number (<b>{overview.requiredNumberOfCompletedGoals}</b>) of Weekly Goals
                             within the Weekly Term shall render the Pledger liable
                             for a Fine of {totalPenaltyAmount}, to be deducted from the contract
-                            balance and transferred in full to the enforcing party. 
+                            balance and distributed between the enforcing party (You) and the Giveth Charity. 
                             Such enforcement may be executed by invoking the{' '}
                             <a
                                 style={{ color: "#f06543" }}
@@ -160,7 +161,6 @@ function WeeklyGoal(props: {
 function CurrentWeekInformation({ overview }: { overview: GetContractOverviewResponse }) {
     const {
         currentWeekNumber,
-        currentDate,
         startDate,
         secondsInAWeek,
         isContractExpired,
@@ -177,16 +177,16 @@ function CurrentWeekInformation({ overview }: { overview: GetContractOverviewRes
         </>
     );
 
-    const timeRemainingFormatted = timeRemaining(currentWeekEndDate - currentDate);
-
     if (isContractExpired) {
         return (
             <div className="week-information">
-                {weekDurationInfo} Since the contract has expired, no further
-                actions can be taken.
+                {weekDurationInfo} Since the contract has expired, no further actions can be taken.
             </div>
         );
     }
+
+    
+    const timeRemainingFormatted = <LiveTimeCountdown endDate={new Date(currentWeekEndDate * 1000)} />;
 
     return (
         <div className="week-information">

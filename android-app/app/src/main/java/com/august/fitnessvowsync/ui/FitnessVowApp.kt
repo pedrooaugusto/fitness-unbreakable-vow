@@ -8,10 +8,15 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.HourglassTop
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.august.fitnessvowsync.donotuse.FakeDataProducerDoNotUse
+import com.august.fitnessvowsync.helpers.TimeHelpers
 import com.august.fitnessvowsync.model.PhysicalActivityRecord
 import com.august.fitnessvowsync.model.PhysicalActivityRecordImpl
 import com.august.fitnessvowsync.model.SyncedPhysicalActivityRecord
@@ -39,6 +45,7 @@ import com.august.fitnessvowsync.ui.components.TransactionPanel
 import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,20 +58,36 @@ fun FitnessVowApp(
 ) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val state = rememberPullToRefreshState()
+    var isRefreshing by remember { mutableStateOf(false) }
 
     var isSyncing by remember { mutableStateOf(false) }
     var currentWeek by remember { mutableIntStateOf(0) }
+    var endOfWeek by remember { mutableStateOf(Instant.now().plusSeconds(3725 * 25)) }
     var nextRecordToSync by remember { mutableStateOf<PhysicalActivityRecord>(PhysicalActivityRecordImpl()) }
     var syncedRecord by remember { mutableStateOf<SyncedPhysicalActivityRecord?>(null) }
     var syncedRecordsList by remember { mutableStateOf<List<SyncedPhysicalActivityRecord>>(emptyList()) }
+
+    val fetchData: suspend () -> Unit = {
+        currentWeek = oracleService.getCurrentWeekIndex().toInt()
+        endOfWeek = oracleService.getCurrentWeekStartAndEnd().second
+        nextRecordToSync = syncPhysicalActivityService.getCurrentPhysicalActivityRecord()
+        syncedRecordsList = syncPhysicalActivityService.getSyncedPhysicalActivityRecords()
+    }
+
+    val refreshScreen: suspend () -> Unit = {
+        isRefreshing = true
+        fetchData()
+        isRefreshing = false
+    }
 
     val syncRecord: suspend () -> Unit = {
         isSyncing = true
 
         syncedRecord = syncPhysicalActivityService.syncCurrentPhysicalActivityRecord()
-        syncedRecordsList = syncPhysicalActivityService.getSyncedPhysicalActivityRecords()
-        nextRecordToSync = syncPhysicalActivityService.getCurrentPhysicalActivityRecord()
-        currentWeek = oracleService.getCurrentWeekIndex().toInt()
+        fetchData()
 
         isSyncing = false
     }
@@ -77,14 +100,11 @@ fun FitnessVowApp(
             "gym" -> donNotUse?.addFakeGymVisit()
         }
 
-        nextRecordToSync = syncPhysicalActivityService.getCurrentPhysicalActivityRecord()
-        currentWeek = oracleService.getCurrentWeekIndex().toInt()
+        fetchData()
     }
 
     LaunchedEffect(syncPhysicalActivityService) {
-        nextRecordToSync = syncPhysicalActivityService.getCurrentPhysicalActivityRecord()
-        syncedRecordsList = syncPhysicalActivityService.getSyncedPhysicalActivityRecords()
-        currentWeek = oracleService.getCurrentWeekIndex().toInt()
+        fetchData()
     }
 
     LaunchedEffect(key1 = syncedRecord?.timestamp?.epochSecond) {
@@ -100,29 +120,36 @@ fun FitnessVowApp(
         }
     }
 
-    Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) { detectTapGestures(onTap = { focusManager.clearFocus() }) },
-        containerColor = Color(0xff111827)
-    ) { padding ->
-        Column(
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { coroutineScope.launch { refreshScreen() } },
+        state = state
+    ) {
+        Scaffold(
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxSize(),
-        ) {
-            SettingsButton(navigateToSettings)
-            AppNameSection()
-            Spacer(modifier = Modifier.height(36.dp))
-            NextSyncSection(nextRecordToSync, currentWeek, __debugPleaseRemove__randomValueFor)
-            Spacer(modifier = Modifier.height(36.dp))
-            SyncHistorySection(syncedRecordsList)
-            Spacer(modifier = Modifier.height(32.dp))
-            SyncNowSection(
-                syncNextRecord = syncRecord,
-                isSyncing = isSyncing,
-                syncedRecord = syncedRecord
-            )
+                .fillMaxSize()
+                .pointerInput(Unit) { detectTapGestures(onTap = { focusManager.clearFocus() }) },
+            containerColor = Color(0xff111827)
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState())
+                    .fillMaxSize(),
+            ) {
+                SettingsButton(navigateToSettings)
+                AppNameSection()
+                Spacer(modifier = Modifier.height(36.dp))
+                NextSyncSection(nextRecordToSync, currentWeek, endOfWeek, __debugPleaseRemove__randomValueFor)
+                Spacer(modifier = Modifier.height(36.dp))
+                SyncHistorySection(syncedRecordsList)
+                Spacer(modifier = Modifier.height(32.dp))
+                SyncNowSection(
+                    syncNextRecord = syncRecord,
+                    isSyncing = isSyncing,
+                    syncedRecord = syncedRecord
+                )
+            }
         }
     }
 }
@@ -131,8 +158,15 @@ fun FitnessVowApp(
 fun NextSyncSection(
     nextRecordToSync: PhysicalActivityRecord,
     currentWeek: Int,
+    endOfWeek: Instant,
     onClickGoalCard: (suspend (goal: String) -> Unit)?
 ) {
+    val timeRemaining = TimeHelpers.formatTimeRemaining(endOfWeek)
+    val weekTimeRemaining = when {
+        timeRemaining.isEmpty() -> "Week #$currentWeek has ended"
+        else -> "Week #$currentWeek ends in $timeRemaining"
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -183,9 +217,9 @@ fun NextSyncSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            Icon(imageVector = Icons.Outlined.Timer, contentDescription = "Clock", tint = Color(0xff9ca3af), modifier = Modifier.size(18.dp))
+            Icon(imageVector = Icons.Outlined.HourglassTop, contentDescription = "Calendar", tint = Color(0xff9ca3af), modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(5.dp))
-            Text(text = "Next automatic sync in: 00:00:00", fontSize = 14.sp, fontWeight = FontWeight.Normal, color = Color(0xff9ca3af))
+            Text(text = weekTimeRemaining, fontSize = 14.sp, fontWeight = FontWeight.Normal, color = Color(0xff9ca3af))
         }
     }
 }

@@ -12,11 +12,27 @@ const MainPage = WithModal(function(props) {
     const [overview, setOverview] = useState<GetContractOverviewResponse | null>(null);
     const [currency, setCurrency] = useState<Currency>("usd");
 
+    const { currentWeekNumber, startDate, secondsInAWeek, isContractExpired } = overview || {};
+
     useEffect(() => {
         getContractOverview().then(async (data) => {
             setOverview(await convert(data, currency));
         });
     }, [currency]);
+    
+    useEffect(() => {
+        if (startDate == null || currentWeekNumber == null || secondsInAWeek == null || isContractExpired) return;
+
+        const currentWeekStartDate = startDate + currentWeekNumber * secondsInAWeek;
+        const currentWeekEndDate = (currentWeekStartDate + secondsInAWeek) * 1000;
+
+        const timeout = currentWeekEndDate - new Date().getTime();
+        const timeoutId = window.setTimeout(() => {
+            getContractOverview().then(async (data) => setOverview(await convert(data, currency)));
+        }, timeout);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [currentWeekNumber, startDate, secondsInAWeek, isContractExpired, currency])
 
     if (!overview) return <Loading />;
 
@@ -24,10 +40,10 @@ const MainPage = WithModal(function(props) {
         <div className="page main-page">
             <header className="main-header">
                 <div className="logo-container">
-                    <img src={AppLogo} alt="HealthStake Logo" />
-                    <h1>HealthStake</h1>
+                    <img src={AppLogo} alt="FitVow Logo" />
+                    <h1>FitVow</h1>
                 </div>
-                <div className="tagline">Lock funds, unlock better habits.</div>
+                <div className="tagline">Where health meets wealth — <b>and both are on the line.</b></div>
             </header>
             <ContractOverviewSection
                 openModal={props.openModal}
