@@ -15,6 +15,11 @@
         "internalType": "uint256",
         "name": "expirationDate",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "secondsInOneWeek",
+        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
@@ -113,6 +118,32 @@
   },
   {
     "inputs": [],
+    "name": "GRACE_PERIOD",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "NUMBER_OF_WEEKS",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "ORACLE_UPDATE_LISTENER",
     "outputs": [
       {
@@ -126,12 +157,25 @@
   },
   {
     "inputs": [],
-    "name": "SECONDS_IN_A_WEEK",
+    "name": "SECONDS_IN_ONE_WEEK",
     "outputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getContractPhase",
+    "outputs": [
+      {
+        "internalType": "enum ContractPhase",
+        "name": "",
+        "type": "uint8"
       }
     ],
     "stateMutability": "view",
@@ -211,19 +255,6 @@
     "name": "handleOracleFulfillment",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "isContractExpired",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {

@@ -8,6 +8,8 @@ export enum WeeklyGoalStatus {
 
 export type Network = 'sepolia' | 'arbitrum' | 'localhost';
 
+export enum ContractPhase { ACTIVE, GRACE, FULLY_EXPIRED }
+
 export interface WeeklyGoal {
     status: WeeklyGoalStatus;
     goals: {
@@ -42,13 +44,14 @@ export interface GetContractOverviewResponse {
 
     startDate: number;
     expirationDate: number;
+    gracePeriod: number;
     currentDate: number;
     isContractExpired: boolean;
+    contractPhase: ContractPhase;
 
     initialStakedAmount: number;
     penaltyAmount: number;
     currentBalance: number;
-    isPenaltyLikely: boolean;
 
     secondsInAWeek: number;
     currentWeekNumber: number;

@@ -29,7 +29,8 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         penaltyAmount,
         currentWeekNumber,
         pastWeeksGoalsRaw,
-        isContractExpired,
+        contractPhase,
+        gracePeriod,
         upkeeperAddress,
         gymVisitsGoal,
         healthySleepNightsGoal,
@@ -43,7 +44,8 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         "PENALTY_AMOUNT",
         "getCurrentWeekIndex",
         "getAllWeeklyGoalsRecords",
-        "isContractExpired",
+        "getContractPhase",
+        "GRACE_PERIOD",
         "CHAINLINK_UPKEEP_ADDRESS",
         "GYM_VISITS_GOAL",
         "HEALTHY_SLEEP_NIGHTS_GOAL",
@@ -53,7 +55,7 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
 
     const [[, currentWeekRecord], secondsInAWeek] = await executeMulticall(PhysicalActivityOracle, [
         'getCurrentWeekPhysicalActivityRecord',
-        'SECONDS_IN_A_WEEK'
+        'SECONDS_IN_ONE_WEEK'
     ]);
 
     const currentWeekMetrics = {
@@ -88,11 +90,12 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         initialStakedAmount: Number(ethers.formatEther(initialStakedAmount)),
         penaltyAmount: Number(ethers.formatEther(penaltyAmount)),
         currentBalance: Number(ethers.formatEther(contractBalance)),
-        isPenaltyLikely: false,
         currentWeekNumber: Number(currentWeekNumber),
         currentWeekMetrics,
         pastWeeksGoalsResult,
-        isContractExpired,
+        isContractExpired: Number(contractPhase) != 0,
+        contractPhase: Number(contractPhase),
+        gracePeriod: Number(gracePeriod),
         secondsInAWeek: Number(secondsInAWeek),
         network: NETWORK,
         gymVisitsGoal: Number(gymVisitsGoal),

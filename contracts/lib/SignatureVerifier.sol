@@ -76,7 +76,7 @@ abstract contract SignatureVerifier is FunctionsClient {
     }
 
     function fulfillRequest(bytes32 requestId, bytes memory response, bytes memory err) internal override {
-        console.log("Received Response from chainlink oracle");
+        console.log("[PhysicalActivityOracle] Received signature verification response form chainlink.");
 
         if (s_lastRequestId != requestId) {
             revert("UnexpectedRequestID");
@@ -85,7 +85,7 @@ abstract contract SignatureVerifier is FunctionsClient {
         if (err.length != 0) {
             signatureVerificationComplete(true, false, PhysicalActivityRecord(0, 0, 0, 0));
         } else {
-            console.log("Decoding response from chainlink");
+            console.log("[PhysicalActivityOracle] Decoding signature verification response");
 
             (
                 bool sourceIsVerified,
@@ -102,7 +102,6 @@ abstract contract SignatureVerifier is FunctionsClient {
     }
 
     function createRequest(string calldata signature, PhysicalActivityRecord calldata record) private view returns (FunctionsRequest.Request memory) {        
-        console.log("Creating chainlink request.");
 
         FunctionsRequest.Request memory request;
 
@@ -124,7 +123,7 @@ abstract contract SignatureVerifier is FunctionsClient {
     }
 
     function sendRequest(FunctionsRequest.Request memory request) private returns (bytes32) {
-        console.log("Calling chainlink to execute code.");
+        console.log("[PhysicalActivityOracle] Calling chainlink oracle to verify signature.");
 
         // DEBUG ONLY
         if (chainlinkParams.networkName == ChainLinkFunctionsParamsProvider.HARDHAT_NETWORK_HASH) {

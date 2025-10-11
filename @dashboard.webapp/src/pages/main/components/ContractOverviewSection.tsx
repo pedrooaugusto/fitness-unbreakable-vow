@@ -6,7 +6,7 @@ import CalendarIcon from "../../../assets/calendar-icon";
 import ArticleIcon from "../../../assets/article-icon";
 import LinkIcon from "../../../assets/link-icon";
 import { formatCurrency, formatDate, getAddressBlockExplorerUrl, GIVETH_PAGE_URL, timeRemaining } from "../../utils";
-import { WeeklyGoalStatus, type Currency, type GetContractOverviewResponse } from "../types";
+import { ContractPhase, WeeklyGoalStatus, type Currency, type GetContractOverviewResponse } from "../types";
 import { SectionTitle } from "../../components/SectionTitle";
 import type { WithModalProps } from "../../components/modal";
 import LiveTimeCountdown from "./LiveTimeCountdown";
@@ -139,7 +139,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                                 value={formatDate(overview.expirationDate)}
                                 openModal={() => 
                                     openModal(
-                                        <EndDateInfoModal closeModal={closeModal} />,
+                                        <EndDateInfoModal closeModal={closeModal} gracePeriod={timeRemaining(overview.gracePeriod)} />,
                                         'End Date Info'
                                     )
                                 }
@@ -147,7 +147,14 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             <StatInfoCard
                                 title="Time Until Expiration"
                                 value={
-                                    <LiveTimeCountdown endDate={new Date(overview.expirationDate * 1000)} />
+                                    overview.contractPhase === ContractPhase.GRACE ? 
+                                        <>
+                                            <small>grace{' '}</small>
+                                            <LiveTimeCountdown endDate={new Date((overview.expirationDate + overview.gracePeriod) * 1000)} />
+                                        </> :
+                                        <>
+                                            <LiveTimeCountdown endDate={new Date(overview.expirationDate * 1000)} />
+                                        </>
                                 }
                             />
                             <StatInfoCard
@@ -345,14 +352,14 @@ function StartDateInfoModal(props: { closeModal: () => void; }) {
     );
 }
 
-function EndDateInfoModal(props: { closeModal: () => void; }) {
+function EndDateInfoModal(props: { closeModal: () => void; gracePeriod: string}) {
     return (
         <div className="main">
             <div className="weekly-goal-modal">
                 <p>
-                    The End Date marks the formal termination of the Agreement. From this point forward, no further obligations may be undertaken, and no additional breaches may be enforced.
+                    The End Date marks the formal termination of the Agreement. From this point forward, no new physical activity data may be submitted. However, during the subsequent grace period of <b>{props.gracePeriod}</b>, outstanding breaches may still be enforced through the contract.
                     <br /><br />
-                    Upon reaching the End Date, the contract enters final settlement. All remaining funds in escrow are released back to the <b>Pledger (P.S.)</b>, after deduction of any fines previously imposed. The Agreement is then deemed fully concluded, and no subsequent claims may be brought under its terms.
+                    Upon expiration of the grace period, the Agreement is considered fully concluded. All remaining funds in escrow are released back to the Pledger (P.S.), after deduction of any fines previously imposed. Once the grace period has elapsed, no further actions or claims may be brought under its terms.
                 </p>
             </div>
             <div className="actions">

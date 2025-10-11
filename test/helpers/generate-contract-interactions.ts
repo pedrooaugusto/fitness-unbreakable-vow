@@ -1,7 +1,5 @@
 import { PhysicalActivityRecordStruct } from "../../typechain-types/contracts/PhysicalActivityOracle";
 
-const SEVEN_DAYS_IN_SECONDS = 60 * 60 * 24 * 7;
-
 export type PushActivityRecordInteraction = {
     type: 'PUSH_ACTIVITY_RECORD',
     data: { useWrongSignature?: Boolean } & PhysicalActivityRecordStruct;
@@ -27,7 +25,7 @@ export default function createContractInteractions(numberOfWeeks: number) {
     const weeks = new Array(numberOfWeeks) as ContractInteractionsInWeek[];
 
     for (let i = 0; i < weeks.length; i++) {
-        const interactions = new Array(randomBetween(0, 4)) as ContractInteraction[];
+        const interactions = new Array(randomBetween(1, 4)) as ContractInteraction[];
 
         for (let j = 0; j < interactions.length; j++) {
             interactions[j] = createRandomContractInteraction();

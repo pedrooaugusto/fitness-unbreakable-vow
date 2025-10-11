@@ -15,6 +15,7 @@ library PhysicalActivityRecordFunctions {
         self.gymVisits = Math.max8(self.gymVisits, newRecord.gymVisits);
         self.runDistanceMeters = Math.max16(self.runDistanceMeters, newRecord.runDistanceMeters);
         self.healthySleepNights = Math.max8(self.healthySleepNights, newRecord.healthySleepNights);
+        self.timestamp = newRecord.timestamp;
     }
 
     function isNull(
@@ -58,6 +59,14 @@ library WeeklyGoalFunctions {
         return (ran2km + sleptWell + wentoToTheGymEnoughTimes) >= requiredNumberOfGoals;
     }
 
+    function hasTerminalStatus(WeeklyGoal memory self) internal pure returns (bool) {
+        return self.status == WeeklyGoalStatus.COMPLETED || self.status == WeeklyGoalStatus.FAILED_PENALTY_APPLIED;
+    }
+
+    function isPendingEndOfWeek(WeeklyGoal memory self) internal pure returns (bool) {
+        return self.status == WeeklyGoalStatus.PENDING_END_OF_WEEK;
+    }
+
     function wasWasNotCompleted(
         WeeklyGoal storage self,
         uint8 requiredNumberOfGoals
@@ -71,6 +80,10 @@ library WeeklyGoalFunctions {
 }
 
 library Math {
+    function min256(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? b : a;
+    }
+
     function max16(uint16 a, uint16 b) internal pure returns (uint16) {
         return a > b ? a : b;
     }

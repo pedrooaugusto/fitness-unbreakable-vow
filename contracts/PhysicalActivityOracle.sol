@@ -7,7 +7,6 @@ import { Expirable } from './lib/Expirable.sol';
 import { PhysicalActivityRecord, PhysicalActivityRecordFunctions, Listener, Observable } from './lib/Types.sol';
 import { ChainLinkFunctionsParamsProvider, console } from "./lib/Config.sol";
 
-
 event PhysicalActivityRecordAdded();
 
 // TODO: Rename to WeeklyMetrics
@@ -16,8 +15,8 @@ contract PhysicalActivityOracle is SignatureVerifier, PhysicalActivityRecordList
 
     Listener public ORACLE_UPDATE_LISTENER;
 
-    constructor(string memory network, uint256 creationDate, uint256 expirationDate)
-        Expirable(creationDate, expirationDate)
+    constructor(string memory network, uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek)
+        Expirable(creationDate, expirationDate, secondsInOneWeek)
         SignatureVerifier(ChainLinkFunctionsParamsProvider.get(network)) {}
 
     /**
@@ -34,7 +33,12 @@ contract PhysicalActivityOracle is SignatureVerifier, PhysicalActivityRecordList
      * **`signatureVerificationComplete` callback function**, which is triggered once the oracle returns
      * its verification result.
      */
-    function pushPhysicalActivityRecord(string calldata signature, PhysicalActivityRecord calldata newRecord) external onlyOwner {
+    function pushPhysicalActivityRecord(string calldata signature, PhysicalActivityRecord calldata newRecord) external onlyOwner onlyWhileActive {
+        uint8 recordWeekIndex = getWeekIndexOf(uint256(newRecord.timestamp));
+        uint8 currentWeekIndex = getCurrentWeekIndex();
+
+        require(recordWeekIndex == currentWeekIndex, "!! Wibbly Wobbly Timey Wimey !!");
+
         verifySignature(signature, newRecord);
     }
 
@@ -70,11 +74,11 @@ contract PhysicalActivityOracle is SignatureVerifier, PhysicalActivityRecordList
 
         PhysicalActivityRecord memory mergedRecord = merge(newRecord, weekIndex);
 
-        console.log("Calling listener.");
-
         ORACLE_UPDATE_LISTENER.onNewPhysicalActivityRecord(weekIndex, mergedRecord);
 
         emit PhysicalActivityRecordAdded();
+
+        console.log("[PhysicalActivityOracle] Record added.");
     }
 
     function signatureVerificationComplete(

@@ -1,4 +1,3 @@
-import { time } from '@nomicfoundation/hardhat-toolbox/network-helpers';
 import hre from 'hardhat';
 import { loadChainlinkMockContract } from './load-chainlink-mock-contract';
 import ChainlinkServer from '../../scripts/chainlink-mock-server';
@@ -7,7 +6,10 @@ import { FitnessUnbreakableVow } from '../../typechain-types';
 
 export const STAKED_AMOUNT = hre.ethers.parseEther("8");
 export const SEVEN_DAYS_IN_SECONDS = 60 * 60 * 24 * 7;
-export const CONTRACT_VALIDITY_PERIOD = SEVEN_DAYS_IN_SECONDS * 4.2; // 28 days;
+export const NUMBER_OF_CYLES = 4.2;
+export const CONTRACT_VALIDITY_PERIOD = SEVEN_DAYS_IN_SECONDS * NUMBER_OF_CYLES; // 28 days;
+export const CREATION_DATE = Math.floor(+new Date() / 1000);
+export const EXPIRATION_DATE = CREATION_DATE + SEVEN_DAYS_IN_SECONDS * NUMBER_OF_CYLES;
 
 export async function deployContractFixture() {
     const [owner, otherAccount, otherAccount2] = await hre.ethers.getSigners();
@@ -16,10 +18,23 @@ export async function deployContractFixture() {
     const FitnessUnbreakableVow = await hre.ethers.getContractFactory("FitnessUnbreakableVow");
 
     const chainlinkMock = await loadChainlinkMockContract();
-    const physicalActivityOracle = await PhysicalActivityOracle.deploy("HARDHAT");
+
+    const physicalActivityOracle = await PhysicalActivityOracle.deploy("localhost", CREATION_DATE, EXPIRATION_DATE, SEVEN_DAYS_IN_SECONDS);
+    
+    await physicalActivityOracle.waitForDeployment();
+
+    console.log('[DeployContract] Set expiration date: ' + EXPIRATION_DATE);
+    console.log('[DeployContract] Actual expiration date: ' + await physicalActivityOracle.EXPIRATION_DATE());
+
     const oracleAddress = await physicalActivityOracle.getAddress();
-    const contractExpirationDate = (await time.latest()) + CONTRACT_VALIDITY_PERIOD;
-    const fitnessUnbreakableVow = await FitnessUnbreakableVow.deploy(oracleAddress, otherAccount2, contractExpirationDate, { value: STAKED_AMOUNT });
+    const fitnessUnbreakableVow = await FitnessUnbreakableVow.deploy(
+        oracleAddress,
+        otherAccount2,
+        await physicalActivityOracle.CREATION_DATE(),
+        await physicalActivityOracle.EXPIRATION_DATE(),
+        SEVEN_DAYS_IN_SECONDS,
+        { value: STAKED_AMOUNT }
+    );
 
     const transaction = await physicalActivityOracle.setPublicKey(PUBLIC_KEY);
     await transaction.wait();

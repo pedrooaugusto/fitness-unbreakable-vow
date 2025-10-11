@@ -59,6 +59,7 @@ export const PastWeeksSection: React.FC<PastWeeksSectionProps> = ({
                     {!isEmpty &&
                         pastWeeks
                             .map((week, index) => {
+                                // hide current week when the contract has not expired yet.
                                 const hide = !isContractExpired && index === currentWeekNumber;
 
                                 if (hide) {

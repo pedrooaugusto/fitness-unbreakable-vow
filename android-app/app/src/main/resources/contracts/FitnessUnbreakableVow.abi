@@ -20,6 +20,11 @@
         "internalType": "uint256",
         "name": "expirationDate",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "secondsInOneWeek",
+        "type": "uint256"
       }
     ],
     "stateMutability": "payable",
@@ -154,6 +159,19 @@
   },
   {
     "inputs": [],
+    "name": "GRACE_PERIOD",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "GYM_VISITS_GOAL",
     "outputs": [
       {
@@ -168,6 +186,19 @@
   {
     "inputs": [],
     "name": "HEALTHY_SLEEP_NIGHTS_GOAL",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "NUMBER_OF_WEEKS",
     "outputs": [
       {
         "internalType": "uint8",
@@ -232,7 +263,7 @@
   },
   {
     "inputs": [],
-    "name": "SECONDS_IN_A_WEEK",
+    "name": "SECONDS_IN_ONE_WEEK",
     "outputs": [
       {
         "internalType": "uint256",
@@ -300,10 +331,10 @@
   },
   {
     "inputs": [],
-    "name": "getCurrentWeekIndex",
+    "name": "getContractPhase",
     "outputs": [
       {
-        "internalType": "uint8",
+        "internalType": "enum ContractPhase",
         "name": "",
         "type": "uint8"
       }
@@ -313,12 +344,12 @@
   },
   {
     "inputs": [],
-    "name": "isContractExpired",
+    "name": "getCurrentWeekIndex",
     "outputs": [
       {
-        "internalType": "bool",
+        "internalType": "uint8",
         "name": "",
-        "type": "bool"
+        "type": "uint8"
       }
     ],
     "stateMutability": "view",

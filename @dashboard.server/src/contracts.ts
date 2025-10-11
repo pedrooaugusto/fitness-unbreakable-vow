@@ -1,14 +1,15 @@
+import * as dotenv from 'dotenv';
+import path from 'path';
 import { Contract, ethers, Result } from 'ethers';
 import { abi as PhysicalActivityOracleAbi } from './abi/PhysicalActivityOracle.json';
 import { abi as FitnessUnbreakableVowAbi } from './abi/FitnessUnbreakableVow.json';
 import { abi as MulticallAbi } from './abi/Multicall3.json';
-import * as dotenv from 'dotenv';
-import path from 'path';
+import { Network } from './types';
 
 dotenv.config();
 dotenv.config({ path:  path.join(__dirname, 'abi', '.addresses')});
 
-export const NETWORK = process.env.LastUsedNetwork;
+export const NETWORK = process.env.LastUsedNetwork as Network;
 const RPC_URL = process.env[NETWORK + '.RPC_URL'];
 
 export const FitnessUnbreakableVowAddress = process.env[NETWORK + '.' + 'FitnessUnbreakableVow']!;

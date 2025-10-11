@@ -1,7 +1,6 @@
 pragma solidity ^0.8.28;
 
 import { PhysicalActivityRecord, PhysicalActivityRecordFunctions } from './Types.sol';
-import { Config } from './Config.sol';
 
 abstract contract PhysicalActivityRecordListable {
     using PhysicalActivityRecordFunctions for PhysicalActivityRecord;

@@ -11,13 +11,13 @@ class ChainlinkServer {
             throw new Error('Already running.');
         }
 
-        // console.log('Staring server!');
+        console.log('[ChainlinkServer] Staring server!');
         this.isRunning = true;
         this.main();
     }
 
     public stop() {
-        // console.log('Stoping server!');
+        console.log('[ChainlinkServer] Stoping server!');
         this.isRunning = false;
     }
 
@@ -27,27 +27,41 @@ class ChainlinkServer {
         if (this.contract !== null) {            
             const hasCodeToExecute = await this.contract.hasCodeToExecute();
 
-            // console.log('Has Code to execute: ', hasCodeToExecute);
+            // console.log('[CHAINLINK] Checking for code to execute: ' + hasCodeToExecute);
 
             if (hasCodeToExecute) {
-                // console.log('\tExecuting code.');
+                try {
+                    console.log('[ChainlinkServer] Executing code.');
 
-                const code = await this.contract.getCodeToExecute();
-                const args = await this.contract.getCodeToExecuteArgs();
+                    const code = await this.contract.getCodeToExecute();
+                    const args = await this.contract.getCodeToExecuteArgs();
 
-                const output = await executeCode(code, args);
+                    const output = await executeCode(code, args);
+                    
+                    console.log('[ChainlinkServer] Done executing code. Sending response.');
 
-                const response = await this.contract.setCodeToExecuteResponse(output);
+                    const response = await this.contract.setCodeToExecuteResponse(output);
 
-                await response.wait();
+                    const receipt = await response.wait();
+
+                    console.log('[ChainlinkServer] Response sent.');
+
+                    const parsedLogs = (receipt?.logs || []).map((log) => this.contract!.interface.parseLog(log));
+
+                    console.log('[ChainlinkServer] Execution Output: ', parsedLogs[0]?.args);
+
+                    // return receipt;
+                } catch(e) {
+                    console.error(e);
+                }
             }
         }
 
-        setTimeout(() => this.main(), 3000);
+        setTimeout(() => this.main(), 100);
     }
 
     public setContract(contract: ChainlinkFunctionsMock) {
-        // console.log('Setting contract!');
+        console.log('[ChainlinkServer] Setting contract!');
         this.contract = contract;
     }
 }

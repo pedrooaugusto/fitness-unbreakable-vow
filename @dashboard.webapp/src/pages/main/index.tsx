@@ -2,17 +2,18 @@ import "./style.css";
 import AppLogo from "../../assets/logo-icon.svg";
 import { useEffect, useState } from "react";
 import { convert, getContractOverview } from "./api/contract-overview";
-import type { Currency, GetContractOverviewResponse } from "./types";
+import { ContractPhase, type Currency, type GetContractOverviewResponse } from "./types";
 import ContractOverviewSection from "./components/ContractOverviewSection";
 import { WithModal } from "../components/modal";
 import { PastWeeksSection } from "./components/PastWeeksSection";
 import CurrentWeekStatusSection from "./components/CurrentWeekStatusSection";
+import { getWeekStardAndEndDate } from "../utils";
 
 const MainPage = WithModal(function(props) {
     const [overview, setOverview] = useState<GetContractOverviewResponse | null>(null);
     const [currency, setCurrency] = useState<Currency>("usd");
 
-    const { currentWeekNumber, startDate, secondsInAWeek, isContractExpired } = overview || {};
+    const { currentWeekNumber, startDate, secondsInAWeek, contractPhase, gracePeriod } = overview || {};
 
     useEffect(() => {
         getContractOverview().then(async (data) => {
@@ -21,18 +22,20 @@ const MainPage = WithModal(function(props) {
     }, [currency]);
     
     useEffect(() => {
-        if (startDate == null || currentWeekNumber == null || secondsInAWeek == null || isContractExpired) return;
+        if (startDate == null || currentWeekNumber == null || gracePeriod == null || secondsInAWeek == null || contractPhase === ContractPhase.FULLY_EXPIRED) return;
 
-        const currentWeekStartDate = startDate + currentWeekNumber * secondsInAWeek;
-        const currentWeekEndDate = (currentWeekStartDate + secondsInAWeek) * 1000;
+        const { weekEndDate: currentWeekEnd } = getWeekStardAndEndDate(startDate, currentWeekNumber, secondsInAWeek);
+        const isInGracePeriod = contractPhase === ContractPhase.GRACE;
 
-        const timeout = currentWeekEndDate - new Date().getTime();
+        const periodEnd = (currentWeekEnd + (isInGracePeriod ? gracePeriod : 0)) * 1000;
+
+        const timeout = periodEnd - new Date().getTime();
         const timeoutId = window.setTimeout(() => {
             getContractOverview().then(async (data) => setOverview(await convert(data, currency)));
-        }, timeout);
+        }, timeout + 4000);
 
         return () => window.clearTimeout(timeoutId);
-    }, [currentWeekNumber, startDate, secondsInAWeek, isContractExpired, currency])
+    }, [currentWeekNumber, startDate, secondsInAWeek, contractPhase, gracePeriod, currency])
 
     if (!overview) return <Loading />;
 

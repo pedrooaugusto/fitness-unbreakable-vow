@@ -1,16 +1,15 @@
-import { useEffect, type JSX, type ReactElement } from "react";
+import { type JSX, type ReactElement } from "react";
 import {
     formatCurrency,
     formatDate,
     getAddressBlockExplorerUrl,
     GIVETH_PAGE_URL,
-    timeRemaining,
 } from "../../utils";
 import CalendarIcon from "../../../assets/calendar-icon";
 import CheckCircleIcon from "../../../assets/check-circle-icon";
 import XIcon from "../../../assets/x-circle-icon";
 import { SectionTitle } from "../../components/SectionTitle";
-import type { GetContractOverviewResponse } from "../types";
+import { ContractPhase, type GetContractOverviewResponse } from "../types";
 import type { WithModalProps } from "../../components/modal";
 import LiveTimeCountdown from "./LiveTimeCountdown";
 
@@ -163,7 +162,7 @@ function CurrentWeekInformation({ overview }: { overview: GetContractOverviewRes
         currentWeekNumber,
         startDate,
         secondsInAWeek,
-        isContractExpired,
+        contractPhase,
     } = overview;
 
     const currentWeekStartDate = startDate + currentWeekNumber * secondsInAWeek;
@@ -177,7 +176,7 @@ function CurrentWeekInformation({ overview }: { overview: GetContractOverviewRes
         </>
     );
 
-    if (isContractExpired) {
+    if (contractPhase === ContractPhase.FULLY_EXPIRED) {
         return (
             <div className="week-information">
                 {weekDurationInfo} Since the contract has expired, no further actions can be taken.
@@ -185,6 +184,13 @@ function CurrentWeekInformation({ overview }: { overview: GetContractOverviewRes
         );
     }
 
+    if (contractPhase === ContractPhase.GRACE) {
+        return (
+            <div className="week-information">
+                {weekDurationInfo} Contract is in grace period, no more activity records can be submitted.
+            </div>
+        );
+    }
     
     const timeRemainingFormatted = <LiveTimeCountdown endDate={new Date(currentWeekEndDate * 1000)} />;
 

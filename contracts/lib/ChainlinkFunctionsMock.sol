@@ -23,7 +23,7 @@ contract ChainlinkFunctionsMock {
     ChainLinkCaller private callerAddress;
 
     function executeCode(string memory code, string[] memory args) external returns (bytes32) {
-        console.log("Received Request to executing code.");
+        console.log("[ChainlinkFunctionsMock] Received request to verify signature.");
         codeToExecute = code;
         codeToExecuteArgs = args;
         callerAddress = ChainLinkCaller(msg.sender);
@@ -47,6 +47,8 @@ contract ChainlinkFunctionsMock {
     }
 
     function setCodeToExecuteResponse(bytes memory data) external {
+        console.log("[ChainlinkFunctionsMock] Received signature verification response.");
+
         ChainLinkCaller callerAddressCopy = callerAddress;
 
         emptyCodeToExecute();
@@ -57,7 +59,7 @@ contract ChainlinkFunctionsMock {
 
         try callerAddressCopy.handleOracleFulfillment(bytes32(requestId), data, bytes("")) {
         } catch Error(string memory errorMessage) {
-            console.log("Failed to fullfill request: ", errorMessage);
+            console.log("[ChainlinkFunctionsMock] Failed to call listener: ", errorMessage);
         }
     }
 

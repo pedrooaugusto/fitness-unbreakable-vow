@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {PhysicalActivityRecord, WeeklyGoalStatus, WeeklyGoalFunctions, WeeklyGoal} from "./Types.sol";
-import {Expirable} from "./Expirable.sol";
+import { Expirable, ContractPhase } from "./Expirable.sol";
 
 abstract contract WeeklyGoalListable is Expirable {
     using WeeklyGoalFunctions for WeeklyGoal;
@@ -18,8 +18,9 @@ abstract contract WeeklyGoalListable is Expirable {
 
     constructor(
         uint256 creationDate,
-        uint256 expirationDate
-    ) Expirable(creationDate, expirationDate) {}
+        uint256 expirationDate,
+        uint256 secondsInOneWeek
+    ) Expirable(creationDate, expirationDate, secondsInOneWeek) {}
 
     /**
      * The function below is written the way it
@@ -40,13 +41,18 @@ abstract contract WeeklyGoalListable is Expirable {
         uint8 currentWeekIndex = getCurrentWeekIndex();
 
         // 1. Does not run for the current week, only past
-        //    weeks. Starts at the last week that has not
+        //    weeks*. Starts at the last week that has not
         //    been assigned a terminal status yet.
         uint8 weekIndex;
         unchecked { weekIndex = lastSettledWeek + 1; }
+
+        // 1. If the contract is not active anymore we also include
+        //    the current week.
+        uint8 includeCurrentWeek = !isContractActive() ? 1 : 0;
+
         for (
             weekIndex;
-            weekIndex < currentWeekIndex;
+            weekIndex < currentWeekIndex + includeCurrentWeek;
             weekIndex++
         ) {
             WeeklyGoal storage weeklyGoal = weeklyGoalsRecords[weekIndex];
@@ -101,37 +107,18 @@ abstract contract WeeklyGoalListable is Expirable {
 
     function listAllWeeks() internal view returns (WeeklyGoal[] memory) {
         uint8 currentWeekIndex = getCurrentWeekIndex();
-        bool isContractExpired = isContractExpired();
-
+        ContractPhase phase = getContractPhase();
         WeeklyGoal[] memory records = new WeeklyGoal[](currentWeekIndex + 1);
+
         for (uint8 i = 0; i < currentWeekIndex; i++) {
             records[i] = weeklyGoalsRecords[i];
-            WeeklyGoalStatus status = records[i].status;
 
-            if (status == WeeklyGoalStatus.NULL && isContractExpired == false) {
-                records[i].status = WeeklyGoalStatus.FAILED_PENDING_PENALTY;
-            } else if (status == WeeklyGoalStatus.PENDING_END_OF_WEEK) {
-                if (records[i].isCompleted(REQUIRED_NUMBER_OF_COMPLETED_GOALS)) {
-                    records[i].status = WeeklyGoalStatus.COMPLETED;
-                } else {
-                    records[i].status = isContractExpired ? WeeklyGoalStatus.NULL : WeeklyGoalStatus.FAILED_PENDING_PENALTY;
-                }
-            }
+            records[i].status = statusForPastWeek(records[i], phase);
         }
 
         records[currentWeekIndex] = weeklyGoalsRecords[currentWeekIndex];
 
-        if (records[currentWeekIndex].status == WeeklyGoalStatus.NULL) {
-            records[currentWeekIndex].status = WeeklyGoalStatus.PENDING_END_OF_WEEK;
-        }
-
-        if (isContractExpired) {
-            if (records[currentWeekIndex].isCompleted(REQUIRED_NUMBER_OF_COMPLETED_GOALS)) {
-                records[currentWeekIndex].status = WeeklyGoalStatus.COMPLETED;
-            } else {
-                records[currentWeekIndex].status = WeeklyGoalStatus.NULL;
-            }
-        }
+        records[currentWeekIndex].status = statusForCurrentWeek(records[currentWeekIndex], phase);
 
         return records;
     }
@@ -144,12 +131,52 @@ abstract contract WeeklyGoalListable is Expirable {
         bool ran2km = record.runDistanceMeters >= RUN_DISTANCE_GOAL;
         bool sleptWell = record.healthySleepNights >= HEALTHY_SLEEP_NIGHTS_GOAL;
 
-        return
-            WeeklyGoal(
-                WeeklyGoalStatus.PENDING_END_OF_WEEK,
-                wentoToTheGymEnoughTimes,
-                ran2km,
-                sleptWell
-            );
+        return WeeklyGoal(
+            WeeklyGoalStatus.PENDING_END_OF_WEEK,
+            wentoToTheGymEnoughTimes,
+            ran2km,
+            sleptWell
+        );
+    }
+
+    function statusForCurrentWeek(WeeklyGoal memory weeklyGoal, ContractPhase phase) private pure returns (WeeklyGoalStatus) {
+        // While active, the current week is always "pending end of week".
+        if (phase == ContractPhase.Active) return WeeklyGoalStatus.PENDING_END_OF_WEEK;
+
+        // If already settled (e.g., enforceAgreement() was called), keep it.
+        if (weeklyGoal.hasTerminalStatus()) return weeklyGoal.status;
+
+        // If goals were completed but week status not settled, mark as completed.
+        if (isCompleted(weeklyGoal)) return WeeklyGoalStatus.COMPLETED;
+
+        // If the contract is already fully expired, nothing else can happen.
+        if (phase == ContractPhase.FullyExpired) return WeeklyGoalStatus.NULL;
+
+        // Otherwise we're in grace and it's a failed-but-claimable week.
+        return WeeklyGoalStatus.FAILED_PENDING_PENALTY;
+    }
+
+    function statusForPastWeek(WeeklyGoal memory weeklyGoal, ContractPhase phase) private pure returns (WeeklyGoalStatus) {
+        // Already settled? If yes, just the return the status.
+        if (weeklyGoal.hasTerminalStatus()) return weeklyGoal.status;
+
+        // If the contract is fully expired:
+        if (phase == ContractPhase.FullyExpired) {
+            // Mark the week as completed if all the goals were.
+            if (weeklyGoal.isPendingEndOfWeek() && isCompleted(weeklyGoal)) return WeeklyGoalStatus.COMPLETED;
+
+            // Keep as null otherwise.
+            return WeeklyGoalStatus.NULL;
+        }
+
+        // Active or grace: if pending and completed mark as completed;
+        if (weeklyGoal.isPendingEndOfWeek() && isCompleted(weeklyGoal)) return WeeklyGoalStatus.COMPLETED;
+
+        // otherwise mark as failed pending penalty.
+        return WeeklyGoalStatus.FAILED_PENDING_PENALTY;
+    }
+
+    function isCompleted(WeeklyGoal memory weeklyGoal) private pure returns (bool) {
+        return weeklyGoal.isCompleted(REQUIRED_NUMBER_OF_COMPLETED_GOALS);
     }
 }

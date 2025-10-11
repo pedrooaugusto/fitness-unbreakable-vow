@@ -44,9 +44,9 @@ export async function executeCode(code: string, scriptArgs: string[]): Promise<U
 
     const { stdout, stderr } = await execPromise(buildRunDenoScriptCommand(fileToExecutePath, scriptArgs));
 
-    console.log(`Deno script stderr:\n${stderr}`);
+    //console.log(`Deno script stderr:\n${stderr}`);
 
-    console.log(`Deno script stdout: \n${stdout}`);
+    //console.log(`Deno script stdout: \n${stdout}`);
 
     return await fs.promises.readFile(path.join(MOCK_FOLDER, 'output.bin'));
 }

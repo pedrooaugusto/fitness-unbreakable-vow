@@ -83,8 +83,8 @@ task('EnforceVow', "Enforces the FitnessUnbreakableVow.")
 
 
 const CREATION_DATE = Math.floor(+new Date() / 1000);
-const NUMBER_OF_CYLES = 6.2;
-const SECONDS_IN_WEEK = 60 * 2;
+const NUMBER_OF_CYLES = 2.2;
+const SECONDS_IN_WEEK = 60 * 1;
 const EXPIRATION_DATE = CREATION_DATE + SECONDS_IN_WEEK * NUMBER_OF_CYLES;
 
 task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
@@ -93,7 +93,7 @@ task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
 
         const PhysicalActivityOracle = await hre.ethers.getContractFactory("PhysicalActivityOracle");
 
-        const contract = await PhysicalActivityOracle.deploy(networkName, CREATION_DATE, EXPIRATION_DATE);
+        const contract = await PhysicalActivityOracle.deploy(networkName, CREATION_DATE, EXPIRATION_DATE, SECONDS_IN_WEEK);
 
         await contract.waitForDeployment();
 
@@ -121,6 +121,7 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
             chainLinkUpkeepAddress,
             await oracle.CREATION_DATE(),
             await oracle.EXPIRATION_DATE(),
+            SECONDS_IN_WEEK,
             { value: STAKED_AMOUNT }
         );
 
@@ -134,18 +135,6 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
 
         console.log('⚠️ Verify contract source code in Etherscan with: ');
         console.log(`npm run verify:${hre.network.name} ${contractAddress} "${oracleAddress}" "${chainLinkUpkeepAddress}" "${CREATION_DATE}" "${EXPIRATION_DATE}"`);
-    })
-
-task('SetUpkeepAddress', "Add the upkeep")
-    .addParam('a', 'Upkeep address')
-    .setAction(async (taskArgs, hre) => {
-        const contractAddress = getContractAddress('FitnessUnbreakableVow', hre.network.name);
-
-        const contract = await hre.ethers.getContractAt("FitnessUnbreakableVow", contractAddress);
-
-        //const result = await contract.setChainlinkUpkeepAddress(taskArgs.a);
-
-        //await result.wait();
     })
 
 task('MockChainLinkOracle', "Deploys an mock Chainlink oracle.")
@@ -181,11 +170,12 @@ task('MockChainLinkOracle', "Deploys an mock Chainlink oracle.")
 
 const config: HardhatUserConfig = {
     solidity: "0.8.28",
+    defaultNetwork: "hardhat",
     networks: {
         hardhat: {
             mining: {
-                auto: true, // Disable automining
-                interval: 6000, //Mine a new block every 5 seconds (in ms)
+                auto: false,
+                interval: 1000, // Mine every 1s in real time just like a real network
             }
         },
         sepolia: {
@@ -227,7 +217,5 @@ const config: HardhatUserConfig = {
         coinmarketcap: process.env['GAS_REPORTER.COIN_MARKET_API_KEY']!,
     }
 };
-
-const wait = (t: number) => new Promise((res, rej) => setTimeout(res, t));
 
 export default config;

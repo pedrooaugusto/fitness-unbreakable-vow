@@ -50,14 +50,15 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener {
         address physicalActivityOracleAddress,
         address upkeepAddress,
         uint256 creationDate,
-        uint256 expirationDate
-    ) payable WeeklyGoalListable(creationDate, expirationDate) {
+        uint256 expirationDate,
+        uint256 secondsInOneWeek
+    ) payable WeeklyGoalListable(creationDate, expirationDate, secondsInOneWeek) {
         STAKED_AMOUNT = msg.value;
         CHAINLINK_UPKEEP_ADDRESS = upkeepAddress;
         PHYSICAL_ACTIVITY_ORACLE = physicalActivityOracleAddress;
-        PENALTY_AMOUNT = STAKED_AMOUNT / ((EXPIRATION_DATE - CREATION_DATE) / SECONDS_IN_A_WEEK);
+        PENALTY_AMOUNT = STAKED_AMOUNT / ((EXPIRATION_DATE - CREATION_DATE) / SECONDS_IN_ONE_WEEK);
 
-        syncWithOracle(physicalActivityOracleAddress, creationDate, expirationDate);
+        syncWithOracle(physicalActivityOracleAddress, creationDate, expirationDate, secondsInOneWeek);
     }
 
     /**
@@ -66,7 +67,7 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener {
      * @dev This function incentivizes meeting activity goals by imposing a financial penalty
      * for non-compliance, rewarding the caller who verifies the unmet goal.
      */
-    function enforceAgreement() external notExpired {
+    function enforceAgreement() external onlyBeforeFullExpiry {
         int8 weekIndex = findFirstFailedWeek();
 
         if (weekIndex != -1) {
@@ -80,7 +81,9 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener {
      * @notice Transfers all remaining contract funds to the owner after contract (vow) has expired.
      * Can only be called after the contract has expired and by the contract's owner.
      */
-    function terminateVow() external onlyOwner isExpired {
+    function terminateVow() external onlyOwner onlyAfterFullExpiry {
+        console.log("[FitnessUnbreakableVow] Terminating vow");
+
         uint256 balance = address(this).balance;
 
         require(balance > 0, "No funds to release");
@@ -90,7 +93,7 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener {
         emit VowExpired(balance, msg.sender);
     }
 
-    function onNewPhysicalActivityRecord(uint8 weekIndex, PhysicalActivityRecord calldata record) external {
+    function onNewPhysicalActivityRecord(uint8 weekIndex, PhysicalActivityRecord calldata record) external onlyOracle {
         console.log("Processing new record.");
 
         putWeek(weekIndex, buildWeeklyGoalFrom(record));
@@ -142,9 +145,10 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener {
         return msg.sender == CHAINLINK_UPKEEP_ADDRESS;
     }
 
-    function syncWithOracle(address oracle, uint256 creationDate, uint256 expirationDate) private {
+    function syncWithOracle(address oracle, uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek) private {
         require(IExpirable(oracle).CREATION_DATE() == creationDate, "Oracle and Vow creation dates diverge.");
         require(IExpirable(oracle).EXPIRATION_DATE() == expirationDate, "Oracle and Vow expiration dates diverge.");
+        require(IExpirable(oracle).SECONDS_IN_ONE_WEEK() == secondsInOneWeek, "Oracle and Vow seconds in one week diverge.");
 
         Observable(oracle).registerOnNewPhysicalActivityRecordListener(address(this));
     }

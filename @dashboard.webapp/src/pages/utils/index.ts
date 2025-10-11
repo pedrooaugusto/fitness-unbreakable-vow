@@ -67,6 +67,13 @@ export function shortAddress(address: string) {
     return address.substring(0, 6) + "..." + address.substring(address.length - 4);
 }
 
+export function getWeekStardAndEndDate(contractStartDate: number, currentWeekNumber: number, secondsInAWeek: number) {
+    const weekStartDate = contractStartDate + currentWeekNumber * secondsInAWeek;
+    const weekEndDate = weekStartDate + secondsInAWeek;
+
+    return { weekStartDate, weekEndDate };
+}
+
 export const GIVETH_PAGE_URL = 'https://giveth.io/project/Giveth-Matching-Pool-0?tab=donations'
 
 export const API_HOST = `${location.protocol}//${location.hostname}:3000/api`;
