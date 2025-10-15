@@ -5,18 +5,8 @@
   "scripts": {
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
-    "build": "npm run minify-verifier-script && npx hardhat compile",
-    "start": "npx hardhat node --hostname 0.0.0.0 | grep -Ev \"Mined empty block|eth_getLogs|eth_blockNumber|hardhat_metadata\"",
-    "deploy": "npx hardhat ignition deploy ./ignition/modules/$CONTRACT --network $NETWORK $RESET",
-    "deploy:sepolia": "npx hardhat --network sepolia DeployPhysicalActivityOracle",
-    "verify:sepolia": "npx hardhat verify --network sepolia",
-    "GetSteps:sepolia": "npx hardhat --network sepolia GetSteps",
-    "PushPhysicalActivityRecord:sepolia": "cross-env npx hardhat --network sepolia PushPhysicalActivityRecord",
-    "verify-signed-apk": "apksigner.bat verify --print-certs android-app/app/build/outputs/apk/debug/app-debug.apk",
-    "sign-apk": "apksigner.bat sign --ks android-app/keystore.jks android-app/app/build/outputs/apk/debug/app-debug.apk",
-    "create-web3j-clients": "node scripts/build-web3j-client.js",
-    "build-abi-for-backend": "cp artifacts/contracts/FitnessUnbreakableVow.sol/FitnessUnbreakableVow.json @dashboard.server/src/abi/FitnessUnbreakableVow.json && cp artifacts/contracts/PhysicalActivityOracle.sol/PhysicalActivityOracle.json @dashboard.server/src/abi/PhysicalActivityOracle.json",
-    "minify-verifier-script": "npx ts-node scripts/minify-verifier-script.ts"
+    "build": "npx hardhat compile",
+    "start": "npx hardhat node --hostname 0.0.0.0 | grep -Ev \"Mined empty block|eth_getLogs|eth_blockNumber|hardhat_metadata\""
   },
   "keywords": [],
   "author": "",

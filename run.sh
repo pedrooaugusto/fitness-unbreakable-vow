@@ -4,15 +4,14 @@ set -euo pipefail
 
 compileContracts() {
     echo "Compiling contracts."
-    npx ts-node scripts/minify-verifier-script.ts
     npx hardhat compile
     echo -e "\n\n\n"
 }
 
-copyContractAbiToServer() {
-    echo "Copying contract ABI files to backend."
-    cp artifacts/contracts/FitnessUnbreakableVow.sol/FitnessUnbreakableVow.json @dashboard.server/src/abi/FitnessUnbreakableVow.json
-    cp artifacts/contracts/PhysicalActivityOracle.sol/PhysicalActivityOracle.json @dashboard.server/src/abi/PhysicalActivityOracle.json
+copyContractAbiToFrontend() {
+    echo "Copying contract ABI files to frontend."
+    cp artifacts/contracts/FitnessUnbreakableVow.sol/FitnessUnbreakableVow.json @website/public/abi/FitnessUnbreakableVow.json
+    cp artifacts/contracts/PhysicalActivityOracle.sol/PhysicalActivityOracle.json @website/public/abi/PhysicalActivityOracle.json
     echo -e "\n\n\n"
 }
 
@@ -22,17 +21,16 @@ buildContractJavaClient() {
     echo -e "\n\n\n"
 }
 
-copyEnvVars() {
-    echo "Copying env vars to Android app and Server."
-    cp .env @dashboard.server/.env
+copyWalletDetailsToAndroidApp() {
+    echo "Copying RPC URL and Wallet Private Key to Android app."
 
     network="$1"
 
     if [ "$network" = "localhost" ]; then
-        grep -E "^(${network}\.WALLET_PRIVATE_KEY|${network}\.RPC_URL)=" .env > android-app/app/.env
+        grep -E "^(${network}\.WALLET_PRIVATE_KEY|${network}\.RPC_URL)=" .env > @androidapp/app/.env
     else
-        grep -E "^(${network}\.RPC_URL)=" .env > android-app/app/.env
-        echo "${network}.WALLET_PRIVATE_KEY=" >> android-app/app/.env
+        grep -E "^(${network}\.RPC_URL)=" .env > @androidapp/app/.env
+        echo "${network}.WALLET_PRIVATE_KEY=" >> @androidapp/app/.env
     fi
 
     echo -e "\n\n\n"
@@ -48,8 +46,8 @@ case "$1" in
         echo "Running production build..."
         compileContracts
         buildContractJavaClient
-        copyContractAbiToServer
-        copyEnvVars "$2"
+        copyContractAbiToFrontend
+        copyWalletDetailsToAndroidApp "$2"
         echo "Done."
         ;;
     deploy)
@@ -71,10 +69,10 @@ case "$1" in
             timeout 45s bash -c "$verifyVow" || true
         fi
 
-        echo "Copying new addresses to server and android app"
-        cp contracts/.addresses @dashboard.server/src/abi/.addresses
-        cp contracts/.addresses android-app/app/.addresses
-        copyEnvVars "$2"
+        echo "Copying new addresses to webapp and android app"
+        cp contracts/.addresses @website/public/addresses
+        cp contracts/.addresses @androidapp/app/.addresses
+        copyWalletDetailsToAndroidApp "$2"
         echo "Done."
         ;;
     enforce)
@@ -91,9 +89,35 @@ case "$1" in
         npx hardhat --network $2 TerminateVow
         echo "Done."
         ;;
-    set-upkeep)
-        echo "Set vow upkeep"
-        npx hardhat --network "$2" SetUpkeepAddress "${@:3}"
+    deploy-webapp)
+        echo "Deploying frontend"
+
+        BUCKET="s3://e2e4fa73"
+
+        # (A) Update content & deletions (no headers here)
+        aws s3 sync @website/dist "$BUCKET" --delete
+
+        # (B) Long-cache everything EXCEPT the no-cache files (force metadata)
+        aws s3 cp @website/dist "$BUCKET" --recursive \
+            --exclude "abi/*" \
+            --exclude "addresses" \
+            --exclude "index.html" \
+            --exclude "logo.svg" \
+            --exclude "robots.txt" \
+            --cache-control "public, max-age=31536000, immutable" \
+            --metadata-directive REPLACE
+
+        # (C) No-cache for the special set (force metadata)
+        aws s3 cp @website/dist "$BUCKET" --recursive \
+            --exclude "*" \
+            --include "abi/*" \
+            --include "addresses" \
+            --include "index.html" \
+            --include "logo.svg" \
+            --include "robots.txt" \
+            --cache-control "no-cache, must-revalidate" \
+            --metadata-directive REPLACE
+
         echo "Done."
         ;;
     chainlink)

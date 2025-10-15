@@ -72,6 +72,7 @@ abstract contract SignatureVerifier is FunctionsClient {
         require(bytes(publicKey).length > 0, "Public key cannot be empty");
 
         BASE64_PUBLIC_KEY = publicKey;
+        // TODO: Uncomment this
         // publicKeySet = true;
     }
 

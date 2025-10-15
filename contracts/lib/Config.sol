@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { console as HardhatConsole } from "hardhat/console.sol";
-import { ChainlinkFunctionsMock } from "./ChainlinkFunctionsMock.sol";
+//import { console as HardhatConsole } from "hardhat/console.sol";
+//import { ChainlinkFunctionsMock } from "./ChainlinkFunctionsMock.sol";
 
 library console {
     function log(string memory message) internal pure {
-        HardhatConsole.log(message);
+        //HardhatConsole.log(message);
     }
 
     function log(string memory message1, string memory message2) internal pure {
-        HardhatConsole.log(message1, message2);
+        //HardhatConsole.log(message1, message2);
     }
 }
 
 library ChainlinkFunctionsMockLib {
     function executeCode(address mockAddress, string memory code, string[] memory args) internal returns (bytes32) {
-        //return bytes32(0);
-        return ChainlinkFunctionsMock(payable(mockAddress)).executeCode(code, args);
+        return bytes32(0);
+        //return ChainlinkFunctionsMock(payable(mockAddress)).executeCode(code, args);
     }
 }
 
@@ -34,7 +34,7 @@ library ChainLinkFunctionsParamsProvider {
                 router: 0x97083E831F8F0638855e2A515c90EdCF158DF238,
                 donId: 0x66756e2d617262697472756d2d6d61696e6e65742d3100000000000000000000,
                 subscriptionId: 49,
-                gasLimit: 70000,
+                gasLimit: 300_000,
                 networkName: ARBITRUM_NETWORK_HASH
             });
         }
@@ -44,7 +44,7 @@ library ChainLinkFunctionsParamsProvider {
                 router: 0xb83E47C2bC239B3bf370bc41e1459A34b41238D0,
                 donId: 0x66756e2d657468657265756d2d7365706f6c69612d3100000000000000000000,
                 subscriptionId: 4835,
-                gasLimit: 70000,
+                gasLimit: 300_000,
                 networkName: SEPOLIA_NETWORK_HASH
             });
         }

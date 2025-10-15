@@ -17,10 +17,10 @@ node_modules
 ignition/deployments
 deno.lock
 
-android-app/.gradle
-android-app/.idea
-android-app/.kotlin
-android-app/build
+@androidapp/.gradle
+@androidapp/.idea
+@androidapp/.kotlin
+@androidapp/build
 
 .gradle/
 build/

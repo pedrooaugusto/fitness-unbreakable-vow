@@ -117,20 +117,11 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener {
         uint256 penaltyAmount = calculatePenaltyAmount();
 
         if(isBeingCalledByUpkeep()) {
-            sendPenaltyToCharity(weekIndex, penaltyAmount);
+            payable(msg.sender).transfer(penaltyAmount);
         } else {
-            sendPenaltyToCaller(weekIndex, penaltyAmount);
+            payable(GIVETH_WALLET_ADDRESS).transfer(penaltyAmount / 2);
+            payable(msg.sender).transfer(penaltyAmount / 2);
         }
-    }
-
-    function sendPenaltyToCaller(uint8 weekIndex, uint256 penaltyAmount) private {
-        payable(msg.sender).transfer(penaltyAmount);
-
-        emit PenaltyApplied(weekIndex, msg.sender);
-    }
-
-    function sendPenaltyToCharity(uint8 weekIndex, uint256 penaltyAmount) private {
-        payable(GIVETH_WALLET_ADDRESS).transfer(penaltyAmount);
 
         emit PenaltyApplied(weekIndex, msg.sender);
     }

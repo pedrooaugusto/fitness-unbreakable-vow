@@ -1,24 +1,26 @@
 import '@nomicfoundation/hardhat-toolbox';
+import * as dotenv from 'dotenv';
 import { HardhatUserConfig, task } from "hardhat/config";
 import { connectOrDeploy, signPhysicalActivityRecord } from './scripts/utils';
 import { executeCode } from './scripts/execute-code-oracle';
 import { PUBLIC_KEY } from './scripts/keys';
-import * as dotenv from 'dotenv';
+import minifySignatureVerifierSourceCode from './scripts/minify-verifier-script';
 import { getContractAddress, saveContractAddress } from './scripts/addresses';
-import { ChainlinkFunctionsMock, ChainlinkFunctionsMock__factory } from './typechain-types';
+import { ChainlinkFunctionsMock } from './typechain-types';
+
+const CREATION_DATE = Math.floor(+new Date() / 1000);
+const NUMBER_OF_CYLES = 5.2;
+const SECONDS_IN_WEEK = 3600;
+const EXPIRATION_DATE = CREATION_DATE + SECONDS_IN_WEEK * NUMBER_OF_CYLES;
 
 dotenv.config();
 
-task('GetPhysicalActivityRecord', "Queries dailySteps from oracle `PhysicalActivityOracle`.")
-    .setAction(async (taskArgs, hre) => {
-        const contractAddress = getContractAddress('PhysicalActivityOracle', hre.network.name);
+task("compile")
+    .setAction(async (args, hre, runSuper) => {
+        minifySignatureVerifierSourceCode()
 
-        const contract = await hre.ethers.getContractAt("PhysicalActivityOracle", contractAddress);
-
-        const record = await contract.listAllPhysicalActivityRecords();
-
-        console.log('Physical Activity Record: ', record);
-    })
+        await runSuper(args);
+    });
 
 task('TerminateVow', "Terminates the FitnessUnbreakableVow.")
     .setAction(async (taskArgs, hre) => {
@@ -81,12 +83,6 @@ task('EnforceVow', "Enforces the FitnessUnbreakableVow.")
         }
     })
 
-
-const CREATION_DATE = Math.floor(+new Date() / 1000);
-const NUMBER_OF_CYLES = 2.2;
-const SECONDS_IN_WEEK = 60 * 1;
-const EXPIRATION_DATE = CREATION_DATE + SECONDS_IN_WEEK * NUMBER_OF_CYLES;
-
 task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
     .setAction(async (taskArgs, hre) => {
         const networkName = hre.network.name.toUpperCase();
@@ -97,15 +93,19 @@ task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
 
         await contract.waitForDeployment();
 
+        const { blockNumber = null } = await contract.deploymentTransaction()?.wait() || {};
+
+        if (blockNumber == null) throw new Error('Unable to determine block number.');
+
         const contractAddress = await contract.getAddress();
 
         console.log(`PhysicalActivityOracle contract deployed to: ${contractAddress}`);
 
-        saveContractAddress('PhysicalActivityOracle', contractAddress, hre.network.name);
+        saveContractAddress('PhysicalActivityOracle', contractAddress, hre.network.name, String(blockNumber));
 
         console.log('⚠️ Add the new contract address to ChainLink consumers list.');
         console.log('⚠️ Verify contract source code in Etherscan with: ');
-        console.log(`npm run verify:${hre.network.name} ${contractAddress} "${networkName}" "${CREATION_DATE}" "${EXPIRATION_DATE}"`);
+        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${networkName}" "${CREATION_DATE}" "${EXPIRATION_DATE}" "${SECONDS_IN_WEEK}"`);
     })
 
 task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
@@ -127,14 +127,18 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
 
         await fitnessUnbreakableVow.waitForDeployment();
 
+        const { blockNumber = null } = await fitnessUnbreakableVow.deploymentTransaction()?.wait() || {};
+
+        if (blockNumber == null) throw new Error('Unable to determine block number.');
+
         const contractAddress = await fitnessUnbreakableVow.getAddress();
 
         console.log(`FitnessUnbreakableVow contract deployed to: ${contractAddress}`);
 
-        saveContractAddress('FitnessUnbreakableVow', contractAddress, hre.network.name);
+        saveContractAddress('FitnessUnbreakableVow', contractAddress, hre.network.name, String(blockNumber));
 
         console.log('⚠️ Verify contract source code in Etherscan with: ');
-        console.log(`npm run verify:${hre.network.name} ${contractAddress} "${oracleAddress}" "${chainLinkUpkeepAddress}" "${CREATION_DATE}" "${EXPIRATION_DATE}"`);
+        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${oracleAddress}" "${chainLinkUpkeepAddress}" "${CREATION_DATE}" "${EXPIRATION_DATE}" "${SECONDS_IN_WEEK}"`);
     })
 
 task('MockChainLinkOracle', "Deploys an mock Chainlink oracle.")
@@ -142,7 +146,7 @@ task('MockChainLinkOracle', "Deploys an mock Chainlink oracle.")
         const contract = await connectOrDeploy(getContractAddress('ChainlinkFunctionsMock', hre.network.name), 'ChainlinkFunctionsMock', hre) as ChainlinkFunctionsMock;
 
         const contractAddress = await contract.getAddress();
-        saveContractAddress('ChainlinkFunctionsMock', contractAddress, hre.network.name);
+        saveContractAddress('ChainlinkFunctionsMock', contractAddress, hre.network.name, '');
 
         console.log(`ChainlinkFunctionsMock contract deployed to: ${contractAddress}`);
 

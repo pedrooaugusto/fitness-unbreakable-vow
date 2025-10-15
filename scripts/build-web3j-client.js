@@ -26,12 +26,12 @@ const contracts = [
 const resourcesDir = path.resolve(
   __dirname,
   "..",
-  "android-app/app/src/main/resources/contracts"
+  "@androidapp/app/src/main/resources/contracts"
 );
 const javaOutputDir = path.resolve(
   __dirname,
   "..",
-  "android-app/app/src/main/java"
+  "@androidapp/app/src/main/java"
 );
 const javaPackage = "com.august.fitnessvowsync.contract";
 // Windows only

@@ -9,19 +9,26 @@ import terser from 'terser';
 import path from 'path';
 import fs from 'fs';
 
-const jsscript = fs.readFileSync(path.resolve('contracts', 'lib', 'signature-verifier-script.ts'), 'utf-8');
-const output = terser.minify_sync(jsscript, {
-    module: false,
-    compress: {},
-    mangle: {},
-    output: {},
-    parse: {},
-});
+export default function minifySignatureVerifierSourceCode() {
+    const workingDir = path.resolve(__dirname, '..', 'contracts', 'lib');
 
-const minifiedCode = output.code?.substring(22, output.code.length - 1)!;
+    const sourceCode = fs.readFileSync(path.resolve(workingDir, 'signature-verifier-script.ts'), 'utf-8');
 
-let solScript = fs.readFileSync(path.resolve('contracts', 'lib', 'SignatureVerifierScript.sol'), 'utf-8');
+    const output = terser.minify_sync(sourceCode, {
+        module: false,
+        compress: {},
+        mangle: {},
+        output: {},
+        parse: {},
+    });
 
-solScript = solScript.replace(/(constant SOURCE_CODE2 = ').*?(')/, `$1${minifiedCode}$2`);
+    // Unwraps function. Eg: ` function(){ hello() } ---> hello() `
+    // Thats how Chainlink Functions expects them
+    const minifiedSourceCode = output.code?.substring(22, output.code.length - 1)!;
 
-fs.writeFileSync(path.resolve('contracts', 'lib', 'SignatureVerifierScript.sol'), solScript);
+    const solScript = fs
+        .readFileSync(path.resolve(workingDir, 'SignatureVerifierScript.sol'), 'utf-8')
+        .replace(/(constant SOURCE_CODE2 = ').*?(')/, `$1${minifiedSourceCode}$2`);
+
+    fs.writeFileSync(path.resolve(workingDir, 'SignatureVerifierScript.sol'), solScript);
+}
