@@ -4,10 +4,10 @@ import ChainlinkServer from '../../scripts/chainlink-mock-server';
 import { PUBLIC_KEY } from '../../scripts/keys';
 import { FitnessUnbreakableVow } from '../../typechain-types';
 
-export const STAKED_AMOUNT = hre.ethers.parseEther("8");
+export const STAKED_AMOUNT = hre.ethers.parseEther("36");
 export const SEVEN_DAYS_IN_SECONDS = 60 * 60 * 24 * 7;
-export const NUMBER_OF_CYLES = 4.2;
-export const CONTRACT_VALIDITY_PERIOD = SEVEN_DAYS_IN_SECONDS * NUMBER_OF_CYLES; // 28 days;
+export const NUMBER_OF_CYLES = 12.2;
+export const CONTRACT_VALIDITY_PERIOD = SEVEN_DAYS_IN_SECONDS * NUMBER_OF_CYLES; // 3 months;
 export const CREATION_DATE = Math.floor(+new Date() / 1000);
 export const EXPIRATION_DATE = CREATION_DATE + SEVEN_DAYS_IN_SECONDS * NUMBER_OF_CYLES;
 

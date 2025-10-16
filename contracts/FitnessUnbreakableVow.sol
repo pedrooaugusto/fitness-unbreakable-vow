@@ -4,7 +4,8 @@ pragma solidity ^0.8.28;
 import { WeeklyGoalStatus, WeeklyGoal, PhysicalActivityRecord, Listener, Observable } from './lib/Types.sol';
 import { Ownable } from './lib/Ownable.sol';
 import { IExpirable } from "./lib/Expirable.sol";
-import { console } from "./lib/Config.sol";
+import { Versioned } from "./lib/Versioned.sol";
+import { console } from './lib/mock/console.sol';
 import { WeeklyGoalListable } from './lib/WeeklyGoalListable.sol';
 
 event NoPenaltyApplied();
@@ -16,7 +17,7 @@ event VowExpired(uint256 releasedFunds, address receiver);
  * @title FitnessUnbreakableVow: Penalizes Physical Inactivity with Fund Deduction.
  * @notice This contract enforces physical activity goals by deducting funds if activity cannot be verified.
  */
-contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener {
+contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Versioned {
     /**
      * @dev Oracle responsinble for storing physical activity records.
      */

@@ -6,18 +6,44 @@ import { executeCode } from './scripts/execute-code-oracle';
 import { PUBLIC_KEY } from './scripts/keys';
 import minifySignatureVerifierSourceCode from './scripts/minify-verifier-script';
 import { getContractAddress, saveContractAddress } from './scripts/addresses';
-import { ChainlinkFunctionsMock } from './typechain-types';
+import { ChainlinkFunctionsMock } from './typechain-types/contracts/lib/mock/standard/ChainlinkFunctionsMock.sol';
+import setContractVersion from './scripts/set-contract-version';
+import path from 'path';
+import fs from 'fs';
 
 const CREATION_DATE = Math.floor(+new Date() / 1000);
 const NUMBER_OF_CYLES = 5.2;
-const SECONDS_IN_WEEK = 3600;
+const SECONDS_IN_WEEK = 180;
 const EXPIRATION_DATE = CREATION_DATE + SECONDS_IN_WEEK * NUMBER_OF_CYLES;
 
 dotenv.config();
 
+// Optional environment variables (may be missing in CI)
+const SEPOLIA_RPC_URL = process.env['sepolia.RPC_URL'];
+const SEPOLIA_WALLET_PRIVATE_KEY = process.env['sepolia.WALLET_PRIVATE_KEY'];
+const ARBITRUM_WALLET_PRIVATE_KEY = process.env['arbitrum.WALLET_PRIVATE_KEY'];
+const ETHERSCAN_API_KEY_SEPOLIA = process.env['sepolia.ETHERSCAN.API_KEY'];
+const ETHERSCAN_API_KEY_ARBITRUM = process.env['arbitrum.ETHERSCAN.API_KEY'];
+const COINMARKETCAP_API_KEY = process.env['GAS_REPORTER.COIN_MARKET_API_KEY'];
+
+task('pre:compile')
+    .setAction(async(_, { network: { name: networkName } }) => {
+        const isLocalhost = networkName === 'localhost' || networkName === 'hardhat';
+        const source = path.join(__dirname, 'contracts', 'lib', 'mock', isLocalhost ? 'standard' : 'empty');
+        const destination = path.join(source, '..');
+
+        for (const file of ['console.sol', 'ChainlinkFunctionsMock.sol']) {            
+            fs.copyFileSync(path.join(source, file + '.source'), path.join(destination, file));
+        }
+
+        console.log(`🔁 Using ${isLocalhost ? 'standard' : 'empty'} mocks for network ${networkName}`);
+})
+
 task("compile")
     .setAction(async (args, hre, runSuper) => {
         minifySignatureVerifierSourceCode()
+        setContractVersion()
+        hre.run('pre:compile')
 
         await runSuper(args);
     });
@@ -173,7 +199,9 @@ task('MockChainLinkOracle', "Deploys an mock Chainlink oracle.")
     })
 
 const config: HardhatUserConfig = {
-    solidity: "0.8.28",
+    solidity: {
+        version: "0.8.28",
+    },
     defaultNetwork: "hardhat",
     networks: {
         hardhat: {
@@ -182,25 +210,28 @@ const config: HardhatUserConfig = {
                 interval: 1000, // Mine every 1s in real time just like a real network
             }
         },
-        sepolia: {
-            url: process.env['sepolia.RPC_URL'],
-            accounts: [process.env['sepolia.WALLET_PRIVATE_KEY']!]
-        },
         ganache: {
             url: "http://127.0.0.1:7545",
             chainId: 1337
         },
-        arbitrum: {
-            url: "https://arb1.arbitrum.io/rpc",
-            chainId: 42161,
-            accounts: [process.env['arbitrum.WALLET_PRIVATE_KEY']!]
-        }
+        // Only include sepolia if credentials are available to avoid CI failures
+        ...(SEPOLIA_RPC_URL && SEPOLIA_WALLET_PRIVATE_KEY ? {
+            sepolia: {
+                url: SEPOLIA_RPC_URL,
+                accounts: [SEPOLIA_WALLET_PRIVATE_KEY]
+            }
+        } : {}),
+        // Only include arbitrum if a private key is available
+        ...(ARBITRUM_WALLET_PRIVATE_KEY ? {
+            arbitrum: {
+                url: "https://arb1.arbitrum.io/rpc",
+                chainId: 42161,
+                accounts: [ARBITRUM_WALLET_PRIVATE_KEY]
+            }
+        } : {}),
     },
     etherscan: {
-        apiKey: {
-            sepolia: process.env['sepolia.ETHERSCAN.API_KEY']!,
-            arbitrum: process.env['arbitrum.ETHERSCAN.API_KEY']!
-        },
+        apiKey: ETHERSCAN_API_KEY_SEPOLIA || '',
         customChains: [
             {
                 network: "arbitrum",
@@ -218,8 +249,8 @@ const config: HardhatUserConfig = {
     gasReporter: {
         enabled: false,
         currency: 'USD',
-        coinmarketcap: process.env['GAS_REPORTER.COIN_MARKET_API_KEY']!,
-    }
+        coinmarketcap: COINMARKETCAP_API_KEY,
+    },
 };
 
 export default config;

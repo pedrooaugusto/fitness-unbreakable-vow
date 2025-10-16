@@ -5,7 +5,9 @@ import { FunctionsClient } from "@chainlink/contracts/src/v0.8/functions/v1_0_0/
 import { FunctionsRequest } from "@chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
 import { PhysicalActivityRecord } from "./Types.sol";
 import { Uint32ToString } from "./Strings.sol";
-import { ChainLinkFunctionsParamsProvider, ChainLinkFunctionsParams, ChainlinkFunctionsMockLib, console } from "./Config.sol";
+import { ChainLinkFunctionsParamsProvider, ChainLinkFunctionsParams } from "./Config.sol";
+import { console } from './mock/console.sol';
+import { ChainlinkFunctionsMock } from './mock/ChainlinkFunctionsMock.sol';
 import { SignatureVerifierScript } from "./SignatureVerifierScript.sol";
 
 /**
@@ -128,7 +130,7 @@ abstract contract SignatureVerifier is FunctionsClient {
 
         // DEBUG ONLY
         if (chainlinkParams.networkName == ChainLinkFunctionsParamsProvider.HARDHAT_NETWORK_HASH) {
-            return ChainlinkFunctionsMockLib.executeCode(address(i_router), request.source, request.args);
+            return ChainlinkFunctionsMock(address(i_router)).executeCode(request.source, request.args);
         } else {
             return _sendRequest(request.encodeCBOR(), chainlinkParams.subscriptionId, chainlinkParams.gasLimit, chainlinkParams.donId);
         }

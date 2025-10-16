@@ -126,7 +126,6 @@ abstract contract WeeklyGoalListable is Expirable {
     function buildWeeklyGoalFrom(
         PhysicalActivityRecord calldata record
     ) internal pure returns (WeeklyGoal memory) {
-        // TODO: Rename this, wentToTheGymAtLeastTwice, ranAtLeast2KmInOneGo, sleptWellForAtLeast2Nights;
         bool wentoToTheGymEnoughTimes = record.gymVisits >= GYM_VISITS_GOAL;
         bool ran2km = record.runDistanceMeters >= RUN_DISTANCE_GOAL;
         bool sleptWell = record.healthySleepNights >= HEALTHY_SLEEP_NIGHTS_GOAL;

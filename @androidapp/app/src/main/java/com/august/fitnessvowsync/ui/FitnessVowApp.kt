@@ -46,13 +46,15 @@ import com.august.fitnessvowsync.ui.components.TransactionPanel
 import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
 import com.august.fitnessvowsync.ui.viewmodel.ContractOverview
 import com.august.fitnessvowsync.ui.viewmodel.MainScreenViewModel
+import com.august.fitnessvowsync.ui.viewmodel.MainScreenViewModel2
+import com.august.fitnessvowsync.ui.viewmodel.PreviewMainScreenViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FitnessVowApp(
-    viewModel: MainScreenViewModel,
+    viewModel: MainScreenViewModel2,
     navigateToSettings: () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
@@ -270,12 +272,7 @@ fun SyncNowSection(syncNextRecord: suspend () -> Unit, isSyncing: Boolean, synce
 fun FitnessVowPreview() {
    FitnessVowSyncTheme {
         FitnessVowApp(
-            MainScreenViewModel(
-                syncPhysicalActivityService = SyncPhysicalActivityRecordService.PreviewSyncPhysicalActivityRecordsService(),
-                gymVisitService = GymVisitService.PreviewGymVisitService(),
-                donNotUse = null,
-                oracleService = PhysicalActivityOracleService.PreviewPhysicalActivityOracleService()
-            ),
+            viewModel = PreviewMainScreenViewModel(),
             navigateToSettings = {}
         )
     }

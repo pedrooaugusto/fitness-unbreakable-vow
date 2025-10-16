@@ -16,16 +16,16 @@ import kotlinx.coroutines.flow.update
 import java.time.Duration
 import java.time.Instant
 
-class MainScreenViewModel (
+open class MainScreenViewModel (
     private val oracleService: PhysicalActivityOracleService,
     private val syncPhysicalActivityService: SyncPhysicalActivityRecordService,
     private val gymVisitService: GymVisitService,
     private val donNotUse: FakeDataProducerDoNotUse?,
-): ViewModel() {
+): ViewModel(), MainScreenViewModel2 {
     private val _uiState = MutableStateFlow(MainUiState())
-    val uiState: StateFlow<MainUiState> = _uiState
+    override val uiState: StateFlow<MainUiState> = _uiState
 
-    suspend fun loadDetails() {
+    override suspend fun loadDetails() {
         try {
             _uiState.update { it.copy(isFetchingData = true) }
 
@@ -45,7 +45,7 @@ class MainScreenViewModel (
         }
     }
 
-    suspend fun syncRecord() {
+    override suspend fun syncRecord() {
         try {
             _uiState.update { it.copy(isSyncingRecord = true) }
 
@@ -60,7 +60,7 @@ class MainScreenViewModel (
         }
     }
 
-    suspend fun refreshScreen() {
+    override suspend fun refreshScreen() {
         _uiState.update { it.copy(isRefreshingScreen = true) }
 
         loadDetails()
@@ -68,15 +68,15 @@ class MainScreenViewModel (
         _uiState.update { it.copy(isRefreshingScreen = false) }
     }
 
-    fun eraseSyncedRecord() {
+    override fun eraseSyncedRecord() {
         _uiState.update { it.copy(syncedRecord = null) }
     }
 
-    fun dismissErrorMessage() {
+    override fun dismissErrorMessage() {
         _uiState.update { it.copy(errorMessage = null) }
     }
 
-    fun setupGymGeofence(context: Context) {
+    override fun setupGymGeofence(context: Context) {
         try {
             gymVisitService.setupGymGeofence(context)
         } catch (ex: Exception) {
@@ -85,7 +85,7 @@ class MainScreenViewModel (
     }
 
     //TODO: Remove this
-    suspend fun __debugPleaseRemove__randomValueFor(goal: String): Unit {
+    override suspend fun __debugPleaseRemove__randomValueFor(goal: String): Unit {
         when (goal) {
             "run" -> donNotUse?.addFakeRunningSession(((_uiState.value.nextRecordToSync?.runDistanceMeters ?: 0) + 500).toLong())
             "sleep" -> donNotUse?.addFakeSleepSession((60).toLong())
@@ -113,6 +113,44 @@ class MainScreenViewModel (
 
         return ContractOverview(creationDate, expirationDate, currentWeek, secondsInOneWeek, phase)
     }
+}
+
+interface MainScreenViewModel2 {
+    val uiState: StateFlow<MainUiState>
+
+    suspend fun loadDetails()
+
+    suspend fun syncRecord()
+
+    suspend fun refreshScreen()
+
+    fun eraseSyncedRecord()
+
+    fun dismissErrorMessage()
+
+    fun setupGymGeofence(context: Context)
+
+    //TODO: Remove this
+    suspend fun __debugPleaseRemove__randomValueFor(goal: String): Unit
+}
+
+class PreviewMainScreenViewModel: MainScreenViewModel2 {
+    override val uiState: StateFlow<MainUiState> = MutableStateFlow(MainUiState())
+
+    override suspend fun loadDetails() { TODO("Not yet implemented") }
+
+    override suspend fun syncRecord() { TODO("Not yet implemented") }
+
+    override suspend fun refreshScreen() { TODO("Not yet implemented") }
+
+    override fun eraseSyncedRecord() { TODO("Not yet implemented") }
+
+    override fun dismissErrorMessage() { TODO("Not yet implemented") }
+
+    override fun setupGymGeofence(context: Context) { TODO("Not yet implemented") }
+
+    //TODO: Remove this
+    override suspend fun __debugPleaseRemove__randomValueFor(goal: String): Unit { TODO("todo") }
 }
 
 data class MainUiState (

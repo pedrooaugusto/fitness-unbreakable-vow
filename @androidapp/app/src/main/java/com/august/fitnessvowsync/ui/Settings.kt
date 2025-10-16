@@ -21,7 +21,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,9 +49,11 @@ fun Settings(
 ) {
     val focusManager = LocalFocusManager.current
     var walletPrivateKey by remember { mutableStateOf(settingsService.getClientAccountPrivateKey() ?: BuildConfig.WALLET_PRIVATE_KEY) }
+    var rpcEndpoint by remember { mutableStateOf(settingsService.getRpcEndpoint() ?: BuildConfig.RPC_URL) }
 
     val saveSettings = {
         settingsService.saveClientAccountPrivateKey(walletPrivateKey)
+        settingsService.saveRpcEndpoint(rpcEndpoint)
         navigateToPermission()
     }
 
@@ -135,6 +136,18 @@ fun Settings(
             label = { Text("Network") },
             supportingText = {
                 Text("Ethereum network the contract was deployed to.", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+            },
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextField(
+            value = rpcEndpoint,
+            modifier = Modifier.fillMaxWidth(),
+            onValueChange = { value -> rpcEndpoint = value },
+            label = { Text("RPC Endpoint") },
+            supportingText = {
+                Text("Point of entry to the blockchain.", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
             },
         )
 

@@ -4,15 +4,21 @@ import { SignatureVerifier } from "./lib/SignatureVerifier.sol";
 import { PhysicalActivityRecordListable } from "./lib/PhysicalActivityRecordListable.sol";
 import { Ownable } from './lib/Ownable.sol';
 import { Expirable } from './lib/Expirable.sol';
+import { Versioned } from "./lib/Versioned.sol";
 import { PhysicalActivityRecord, PhysicalActivityRecordFunctions, Listener, Observable } from './lib/Types.sol';
-import { ChainLinkFunctionsParamsProvider, console } from "./lib/Config.sol";
+import { ChainLinkFunctionsParamsProvider } from "./lib/Config.sol";
+import { console } from './lib/mock/console.sol';
 
 event PhysicalActivityRecordAdded();
 
-// TODO: Rename to WeeklyMetrics
-contract PhysicalActivityOracle is SignatureVerifier, PhysicalActivityRecordListable, Observable, Expirable, Ownable {
+contract PhysicalActivityOracle is SignatureVerifier, PhysicalActivityRecordListable, Observable, Expirable, Ownable, Versioned {
     using PhysicalActivityRecordFunctions for PhysicalActivityRecord;
 
+    /**
+     * @notice Registered consumer that receives oracle update callbacks
+     * regarding physical activity records.
+     * @dev Set exactly once via `registerOnNewPhysicalActivityRecordListener`.
+     */
     Listener public ORACLE_UPDATE_LISTENER;
 
     constructor(string memory network, uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek)

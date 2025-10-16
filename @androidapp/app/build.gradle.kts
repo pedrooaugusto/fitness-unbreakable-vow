@@ -1,7 +1,6 @@
 import java.util.Properties
 
 val addresses = Properties().apply { load(file(".addresses").inputStream()) }
-val envVars = Properties().apply { load(file(".env").inputStream()) }
 
 plugins {
     id("com.android.application")
@@ -26,14 +25,12 @@ android {
         val Network: String = addresses["LastUsedNetwork"] as String
         val PhysicalActivityOracleAddress: String = addresses["$Network.PhysicalActivityOracle"] as String
         val FitnessUnbreakableVowAddress: String = addresses["$Network.FitnessUnbreakableVow"] as String
-        val WalletPrivateKey: String = envVars["$Network.WALLET_PRIVATE_KEY"] as String // Idk, Rick...
-        val RpcUrl: String = envVars["$Network.RPC_URL"] as String
 
         buildConfigField("String", "PHYSICAL_ACTIVITY_ORACLE_ADDRESS", "\"${PhysicalActivityOracleAddress}\"")
         buildConfigField("String", "FITNESS_UNBREAKABLE_VOW_ADDRESS", "\"${FitnessUnbreakableVowAddress}\"")
         buildConfigField("String", "NETWORK", "\"${Network}\"")
-        buildConfigField("String", "WALLET_PRIVATE_KEY", "\"${WalletPrivateKey}\"")
-        buildConfigField("String", "RPC_URL", "\"${RpcUrl}\"")
+        buildConfigField("String", "WALLET_PRIVATE_KEY", "\"\"")
+        buildConfigField("String", "RPC_URL", "\"\"")
     }
 
     buildTypes {

@@ -30,7 +30,7 @@ const buildRunDenoScriptCommand = (scriptPath: string, scriptArgs: string[]) => 
         --allow-net \
         --allow-read \
         --allow-write \
-        --node-modules-dir=none \
+        --node-modules-dir=false \
         --allow-env \
         ${scriptPath} ` + scriptArgs.join(" ");
 };

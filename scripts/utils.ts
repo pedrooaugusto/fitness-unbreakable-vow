@@ -1,4 +1,3 @@
-import { ContractFactory } from "ethers";
 import { PhysicalActivityRecordStruct } from "../typechain-types/contracts/PhysicalActivityOracle";
 import { sign, verify } from "./keys";
 import { HardhatRuntimeEnvironment } from "hardhat/types/runtime";

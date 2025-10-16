@@ -25,7 +25,7 @@ export default function createContractInteractions(numberOfWeeks: number) {
     const weeks = new Array(numberOfWeeks) as ContractInteractionsInWeek[];
 
     for (let i = 0; i < weeks.length; i++) {
-        const interactions = new Array(randomBetween(1, 4)) as ContractInteraction[];
+        const interactions = new Array(randomBetween(0, 5)) as ContractInteraction[];
 
         for (let j = 0; j < interactions.length; j++) {
             interactions[j] = createRandomContractInteraction();
@@ -70,7 +70,7 @@ function createRandomPushActivityRecordInteraction(): PushActivityRecordInteract
     return {
         type: 'PUSH_ACTIVITY_RECORD',
         data: {
-            useWrongSignature: randomBoolean(0.15),
+            useWrongSignature: randomBoolean(0.25),
             gymVisits: randomBetween(0, 3),
             healthySleepNights: randomBetween(0, 4),
             runDistanceMeters: randomBetween(0, 3000),

@@ -1,0 +1,16 @@
+/*  [[AUTO GENERATED]]
+    ---
+    Check `pre:compile` task in `hardhat.config` to know more.
+*/
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+/**
+ * @dev Production build variant is empty.
+ */
+contract ChainlinkFunctionsMock {
+    function executeCode(string memory code, string[] memory args) external returns (bytes32) {
+        return bytes32(0);
+    }
+}

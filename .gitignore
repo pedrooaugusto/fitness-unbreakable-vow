@@ -27,6 +27,9 @@ build/
 .idea/
 .kotlin/
 
+# Ignore all Solidity files directly under mock/
+contracts/lib/mock/*.sol
+
 # Logs
 logs
 *.log

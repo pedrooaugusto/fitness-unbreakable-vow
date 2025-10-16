@@ -1,26 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-//import { console as HardhatConsole } from "hardhat/console.sol";
-//import { ChainlinkFunctionsMock } from "./ChainlinkFunctionsMock.sol";
-
-library console {
-    function log(string memory message) internal pure {
-        //HardhatConsole.log(message);
-    }
-
-    function log(string memory message1, string memory message2) internal pure {
-        //HardhatConsole.log(message1, message2);
-    }
-}
-
-library ChainlinkFunctionsMockLib {
-    function executeCode(address mockAddress, string memory code, string[] memory args) internal returns (bytes32) {
-        return bytes32(0);
-        //return ChainlinkFunctionsMock(payable(mockAddress)).executeCode(code, args);
-    }
-}
-
 library ChainLinkFunctionsParamsProvider {
     bytes32 internal constant ARBITRUM_NETWORK_HASH = keccak256(abi.encodePacked("ARBITRUM"));
     bytes32 internal constant SEPOLIA_NETWORK_HASH = keccak256(abi.encodePacked("SEPOLIA"));

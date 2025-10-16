@@ -21,21 +21,6 @@ buildContractJavaClient() {
     echo -e "\n\n\n"
 }
 
-copyWalletDetailsToAndroidApp() {
-    echo "Copying RPC URL and Wallet Private Key to Android app."
-
-    network="$1"
-
-    if [ "$network" = "localhost" ]; then
-        grep -E "^(${network}\.WALLET_PRIVATE_KEY|${network}\.RPC_URL)=" .env > @androidapp/app/.env
-    else
-        grep -E "^(${network}\.RPC_URL)=" .env > @androidapp/app/.env
-        echo "${network}.WALLET_PRIVATE_KEY=" >> @androidapp/app/.env
-    fi
-
-    echo -e "\n\n\n"
-}
-
 case "$1" in
     build)
         echo "Running build..."
@@ -47,11 +32,12 @@ case "$1" in
         compileContracts
         buildContractJavaClient
         copyContractAbiToFrontend
-        copyWalletDetailsToAndroidApp "$2"
         echo "Done."
         ;;
     deploy)
         echo "Deploying DeployPhysicalActivityOracle Contract..."
+
+        npx hardhat compile
         verifyOracle=$(npx hardhat --network $2 DeployPhysicalActivityOracle | tail -n 1)
 
         if [ "$2" != "localhost" ]; then
@@ -72,7 +58,6 @@ case "$1" in
         echo "Copying new addresses to webapp and android app"
         cp contracts/.addresses @website/public/addresses
         cp contracts/.addresses @androidapp/app/.addresses
-        copyWalletDetailsToAndroidApp "$2"
         echo "Done."
         ;;
     enforce)
@@ -119,6 +104,12 @@ case "$1" in
             --metadata-directive REPLACE
 
         echo "Done."
+        ;;
+    build-androidapp)
+        cp contracts/.addresses @androidapp/app/.addresses
+        gradle -p @androidapp :app:assembleRelease
+        unsigned_apk=@androidapp/app/build/outputs/apk/release/app-release-unsigned.apk
+        @androidapp/app/amnesiac-apk-signer.sh sign-and-forget $unsigned_apk -o artifacts/signed-release-app.apk
         ;;
     chainlink)
         echo "Starting chainlink functions mock..."

@@ -98,10 +98,10 @@ function Loading(props: { error?: string }) {
         <div className="page main-page loading">
             <header className="main-header">
                 <div className="logo-container">
-                    <img src={AppLogo} alt="HealthStake Logo" />
-                    <h1>HealthStake</h1>
+                    <img src={AppLogo} alt="FitVow Logo" />
+                    <h1>FitVow</h1>
                 </div>
-                <div className="tagline">Lock funds, unlock better habits.</div>
+                <div className="tagline">Where health meets wealth — <b>and both are on the line.</b></div>
             </header>
             <section className="overview loading">
                 {props.error == null && (

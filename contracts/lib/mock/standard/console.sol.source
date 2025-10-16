@@ -1,0 +1,19 @@
+/*  [[AUTO GENERATED]]
+    ---
+    Check `pre:compile` task in `hardhat.config` to know more.
+*/
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import { console as HardhatConsole } from "hardhat/console.sol";
+
+library console {
+    function log(string memory message) internal pure {
+        HardhatConsole.log(message);
+    }
+
+    function log(string memory message1, string memory message2) internal pure {
+        HardhatConsole.log(message1, message2);
+    }
+}

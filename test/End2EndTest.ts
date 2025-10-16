@@ -10,7 +10,7 @@ import createContractInteractions, { ContractInteraction, PushActivityRecordInte
 import { signPhysicalActivityRecord } from '../scripts/utils';
 import { PhysicalActivityRecordStruct } from '../typechain-types/contracts/PhysicalActivityOracle';
 import { WeeklyGoalStructOutput } from '../typechain-types/contracts/FitnessUnbreakableVow';
-import { deployContractFixture, SEVEN_DAYS_IN_SECONDS, STAKED_AMOUNT } from './helpers/deploy-contract-fixture';
+import { deployContractFixture, NUMBER_OF_CYLES, SEVEN_DAYS_IN_SECONDS, STAKED_AMOUNT } from './helpers/deploy-contract-fixture';
 
 chai.use(chaiSubset);
 chai.use(recordEq);
@@ -27,7 +27,7 @@ describe("EndToEndTest", function () {
     describe("Tests that the contract is able to execute several calls and still be consistent", function () {
         it("Should process multiple random contract interactions", async function () {
             const { fitnessUnbreakableVow, physicalActivityOracle, owner, otherAccount } = await loadFixture(deployContractFixture);
-            const weeklyContractInteractions = createContractInteractions(4);
+            const weeklyContractInteractions = createContractInteractions(Math.floor(NUMBER_OF_CYLES));
             const completedGoalsHistory: WeeklyGoalStructOutput[] = [];
 
             for (const { weekNumber, interactions } of weeklyContractInteractions) {
@@ -37,15 +37,17 @@ describe("EndToEndTest", function () {
                             interaction.data.timestamp = await time.latest();
                             await processPushActivity(interaction, physicalActivityOracle);
                         break;
+
                         case 'TERMINATE_VOW':
                             await expect(fitnessUnbreakableVow.terminateVow()).to.be.revertedWith("Contract has not expired yet.");
                         break;
+
                         case 'ENFORCE_AGREEMENT':
                             await assertNoPenaltyWhenEnforceAgreement(fitnessUnbreakableVow);
                         break;
                     }
 
-                    await time.increase(120);
+                    await time.increase(20);
                 }
 
                 const completedGoals = await assertCorrectPhysicalActivityRecords(weekNumber, otherAccount, interactions, fitnessUnbreakableVow, physicalActivityOracle);
@@ -54,6 +56,7 @@ describe("EndToEndTest", function () {
             }
 
             await assertVowRemaningFunds(owner, otherAccount, completedGoalsHistory, fitnessUnbreakableVow);
+            await assertWeeksStatusMatch(completedGoalsHistory, fitnessUnbreakableVow);
         }).timeout(120_000);
     });
 });
@@ -70,21 +73,21 @@ async function processPushActivity(interaction: PushActivityRecordInteraction, p
     }
 }
 
+const abs = (n: bigint) => (n < 0n) ? -n : n;
 async function assertVowRemaningFunds(
     owner: any,
     enforcerAddress: any,
     completedGoalsHistory: WeeklyGoalStructOutput[],
     fitnessUnbreakableVow: FitnessUnbreakableVow,
 ) {
-    const singlePenaltyAmount = await fitnessUnbreakableVow.PENALTY_AMOUNT();
-    const numberOfPenaltiesApplied = completedGoalsHistory.filter(([status, ]) => status !== 1n).length;
-    const totalPenaltiesAmount = singlePenaltyAmount * BigInt(numberOfPenaltiesApplied);
-
+    const totalFines = await finesImposed(completedGoalsHistory, fitnessUnbreakableVow);
     const vowBalance = await hre.ethers.provider.getBalance(await fitnessUnbreakableVow.getAddress());
-    const enforcerBalance = (await hre.ethers.provider.getBalance(enforcerAddress.address)) - INITIAL_BALANCE;
+    const enforcerBalance = abs(INITIAL_BALANCE - await hre.ethers.provider.getBalance(enforcerAddress.address));
+    const enforcerFines = totalFines / 2n;
+    const diff = enforcerBalance - enforcerFines;
 
-    expect(vowBalance).to.be.equals(STAKED_AMOUNT - totalPenaltiesAmount);
-    expect(parseFloat(hre.ethers.formatEther(enforcerBalance - totalPenaltiesAmount)).toFixed(0)).to.be.equals("-0");
+    expect(vowBalance).to.be.equals(STAKED_AMOUNT - totalFines);
+    expect(parseFloat(hre.ethers.formatEther(diff))).to.be.lessThan(0.0009);
 
     // Advance seven days to make contract expire
     await time.increase(SEVEN_DAYS_IN_SECONDS);
@@ -100,8 +103,17 @@ async function assertVowRemaningFunds(
     await expect(fitnessUnbreakableVow.terminateVow()).to.be.revertedWith("No funds to release");
 }
 
-const EMPTY_RECORD = { timestamp: 0n, healthySleepNights: 0n, runDistanceMeters: 0n, gymVisits: 0n };
+async function assertWeeksStatusMatch(
+    completedGoalsHistory: WeeklyGoalStructOutput[],
+    fitnessUnbreakableVow: FitnessUnbreakableVow,
+) {
+    const allWeeks = await fitnessUnbreakableVow.getAllWeeklyGoalsRecords();
+    for (let weekIndex = 0; weekIndex < allWeeks.length; weekIndex++) {
+        expect(Number(allWeeks[weekIndex][0])).to.be.equals(Number(completedGoalsHistory[weekIndex][0]));
+    }
+}
 
+const EMPTY_RECORD = { timestamp: 0n, healthySleepNights: 0n, runDistanceMeters: 0n, gymVisits: 0n };
 async function assertCorrectPhysicalActivityRecords(
     weekNumber: number,
     enforcerAddress: any,
@@ -148,10 +160,24 @@ async function assertNoPenaltyWhenEnforceAgreement(fitnessUnbreakableVow: Fitnes
 }
 
 async function assertPenaltyWhenEnforceAgreement(penaltyAmount: bigint, weekIndex: number, enforcerAddress: any, fitnessUnbreakableVow: FitnessUnbreakableVow) {
+    const weekStauts = Number((await fitnessUnbreakableVow.getAllWeeklyGoalsRecords())[weekIndex][0]);
+
+    expect(weekStauts).to.be.equals(3);
+
     const transaction = await fitnessUnbreakableVow.connect(enforcerAddress).enforceAgreement();
 
-    await expect(() => transaction).to.changeEtherBalance(enforcerAddress, penaltyAmount);
+    await expect(() => transaction).to.changeEtherBalance(enforcerAddress, penaltyAmount / 2n);
     await expect(transaction).to.emit(fitnessUnbreakableVow, 'PenaltyApplied').withArgs(weekIndex, enforcerAddress.address);
+}
+
+async function finesImposed(
+    completedGoalsHistory: WeeklyGoalStructOutput[],
+    fitnessUnbreakableVow: FitnessUnbreakableVow,
+): Promise<bigint> {
+    const singlePenaltyAmount = await fitnessUnbreakableVow.PENALTY_AMOUNT();
+    const numberOfPenaltiesApplied = completedGoalsHistory.filter(([status, ]) => status !== 1n).length;
+
+    return singlePenaltyAmount * BigInt(numberOfPenaltiesApplied);
 }
 
 function getHighestRecord(contractInteractions: ContractInteraction[]): PhysicalActivityRecordStruct {
