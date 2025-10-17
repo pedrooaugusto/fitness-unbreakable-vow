@@ -13,7 +13,7 @@ import fs from 'fs';
 
 const CREATION_DATE = Math.floor(+new Date() / 1000);
 const NUMBER_OF_CYLES = 5.2;
-const SECONDS_IN_WEEK = 180;
+const SECONDS_IN_WEEK = 3600;
 const EXPIRATION_DATE = CREATION_DATE + SECONDS_IN_WEEK * NUMBER_OF_CYLES;
 
 dotenv.config();
@@ -136,7 +136,7 @@ task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
 
 task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
     .setAction(async (taskArgs, hre) => {
-        const STAKED_AMOUNT = hre.ethers.parseEther("0.001");// 0.001
+        const STAKED_AMOUNT = hre.ethers.parseEther("0.01");// 0.001
         const oracleAddress = getContractAddress('PhysicalActivityOracle', hre.network.name);
         const chainLinkUpkeepAddress = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"; //"0xb83E47C2bC239B3bf370bc41e1459A34b41238D0";
 
