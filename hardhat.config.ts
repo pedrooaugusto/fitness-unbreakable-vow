@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import { HardhatUserConfig, task } from "hardhat/config";
 import { connectOrDeploy, signPhysicalActivityRecord } from './scripts/utils';
 import { executeCode } from './scripts/execute-code-oracle';
-import { PUBLIC_KEY } from './scripts/keys';
+import { getRawPublicKey, PUBLIC_KEY, sign } from './scripts/keys';
 import minifySignatureVerifierSourceCode from './scripts/minify-verifier-script';
 import { getContractAddress, saveContractAddress } from './scripts/addresses';
 import { ChainlinkFunctionsMock } from './typechain-types/contracts/lib/mock/standard/ChainlinkFunctionsMock.sol';
@@ -209,10 +209,6 @@ const config: HardhatUserConfig = {
                 auto: false,
                 interval: 1000, // Mine every 1s in real time just like a real network
             },
-        },
-        ganache: {
-            url: "http://127.0.0.1:7545",
-            chainId: 1337
         },
         // Only include sepolia if credentials are available to avoid CI failures
         ...(SEPOLIA_RPC_URL && SEPOLIA_WALLET_PRIVATE_KEY ? {

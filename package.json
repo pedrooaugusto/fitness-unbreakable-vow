@@ -21,6 +21,7 @@
     "terser": "^5.42.0"
   },
   "dependencies": {
-    "@chainlink/contracts": "^1.4.0"
+    "@chainlink/contracts": "^1.4.0",
+    "@openzeppelin/contracts": "^5.4.0"
   }
 }
