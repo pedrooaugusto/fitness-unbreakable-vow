@@ -208,7 +208,7 @@ const config: HardhatUserConfig = {
             mining: {
                 auto: false,
                 interval: 1000, // Mine every 1s in real time just like a real network
-            }
+            },
         },
         ganache: {
             url: "http://127.0.0.1:7545",

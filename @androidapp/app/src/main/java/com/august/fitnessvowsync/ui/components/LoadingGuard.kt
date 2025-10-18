@@ -13,13 +13,13 @@ import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
 @Composable
 fun LoadingGuard(
     isLoading: Boolean,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.fillMaxSize(),
     content: @Composable () -> Unit
 ) {
     if (!isLoading) return content();
 
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(

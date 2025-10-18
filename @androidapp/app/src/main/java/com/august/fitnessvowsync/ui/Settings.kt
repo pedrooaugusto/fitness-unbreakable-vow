@@ -48,8 +48,8 @@ fun Settings(
     settingsService: ContractSettingsService
 ) {
     val focusManager = LocalFocusManager.current
-    var walletPrivateKey by remember { mutableStateOf(settingsService.getClientAccountPrivateKey() ?: BuildConfig.WALLET_PRIVATE_KEY) }
-    var rpcEndpoint by remember { mutableStateOf(settingsService.getRpcEndpoint() ?: BuildConfig.RPC_URL) }
+    var walletPrivateKey by remember { mutableStateOf(settingsService.getClientAccountPrivateKey() ?: "") }
+    var rpcEndpoint by remember { mutableStateOf(settingsService.getRpcEndpoint() ?: "") }
 
     val saveSettings = {
         settingsService.saveClientAccountPrivateKey(walletPrivateKey)

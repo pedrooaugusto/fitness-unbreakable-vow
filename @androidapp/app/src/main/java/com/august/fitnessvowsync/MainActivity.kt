@@ -12,20 +12,21 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.health.connect.client.HealthConnectClient
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.august.fitnessvowsync.contract.ContractSettingsService
+import com.august.fitnessvowsync.dagger.ViewModelFactoryModule
 import com.august.fitnessvowsync.service.PermissionService
 import com.august.fitnessvowsync.service.PhysicalActivityOracleService
 import com.august.fitnessvowsync.ui.FitnessVowApp
 import com.august.fitnessvowsync.ui.RequiredPermissions
 import com.august.fitnessvowsync.ui.Settings
 import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
-import com.august.fitnessvowsync.ui.viewmodel.MainScreenViewModel
+import com.august.fitnessvowsync.ui.viewmodel.DefaultMainScreenViewModel
+import com.august.fitnessvowsync.ui.viewmodel.DefaultPermissionsScreenViewModel
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -59,7 +60,9 @@ class MainActivity : ComponentActivity() {
             val navigateToPermission = { navigationController.navigate("permissions") }
 
             val permissionService = PermissionService.PermissionServiceImpl(this, navigateToSettings, healthConnectClient, settingsService)
-            val mainScreenViewModel: MainScreenViewModel = viewModel(factory =  mainScreenViewModelFactory)
+            val mainScreenViewModel: DefaultMainScreenViewModel = viewModel(factory = mainScreenViewModelFactory)
+            // Kill me if you don't like it. https://www.youtube.com/watch?v=yjRagoONBcc
+            val permissionScreenViewModel: DefaultPermissionsScreenViewModel = viewModel(factory =  ViewModelFactoryModule.providePermissionViewModelFactory(physicalActivityOracleService, permissionService))
 
             FitnessVowSyncTheme {
                 NavHost(
@@ -78,9 +81,9 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("permissions") {
                         RequiredPermissions(
-                            registerAppAsRecordPublisher = { physicalActivityOracleService.registerAppAsRecordPublisher() },
+                            permissionScreenViewModel,
                             navigateToMain = navigateToMain,
-                            permissionService = permissionService
+                            navigateToSettings = navigateToSettings
                         )
                     }
                     composable("settings") {

@@ -29,8 +29,6 @@ android {
         buildConfigField("String", "PHYSICAL_ACTIVITY_ORACLE_ADDRESS", "\"${PhysicalActivityOracleAddress}\"")
         buildConfigField("String", "FITNESS_UNBREAKABLE_VOW_ADDRESS", "\"${FitnessUnbreakableVowAddress}\"")
         buildConfigField("String", "NETWORK", "\"${Network}\"")
-        buildConfigField("String", "WALLET_PRIVATE_KEY", "\"\"")
-        buildConfigField("String", "RPC_URL", "\"\"")
     }
 
     buildTypes {

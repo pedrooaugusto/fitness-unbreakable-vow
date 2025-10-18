@@ -32,9 +32,6 @@ import com.august.fitnessvowsync.helpers.TimeHelpers
 import com.august.fitnessvowsync.model.ContractPhase
 import com.august.fitnessvowsync.model.PhysicalActivityRecord
 import com.august.fitnessvowsync.model.SyncedPhysicalActivityRecord
-import com.august.fitnessvowsync.service.GymVisitService
-import com.august.fitnessvowsync.service.PhysicalActivityOracleService
-import com.august.fitnessvowsync.service.SyncPhysicalActivityRecordService
 import com.august.fitnessvowsync.ui.components.AppNameSection
 import com.august.fitnessvowsync.ui.components.ErrorDialog
 import com.august.fitnessvowsync.ui.components.LoadingGuard
@@ -46,7 +43,6 @@ import com.august.fitnessvowsync.ui.components.TransactionPanel
 import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
 import com.august.fitnessvowsync.ui.viewmodel.ContractOverview
 import com.august.fitnessvowsync.ui.viewmodel.MainScreenViewModel
-import com.august.fitnessvowsync.ui.viewmodel.MainScreenViewModel2
 import com.august.fitnessvowsync.ui.viewmodel.PreviewMainScreenViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -54,7 +50,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FitnessVowApp(
-    viewModel: MainScreenViewModel2,
+    viewModel: MainScreenViewModel,
     navigateToSettings: () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current

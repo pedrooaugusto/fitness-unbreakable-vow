@@ -1,8 +1,6 @@
 package com.august.fitnessvowsync.contract
 
 import android.util.Log
-import androidx.core.util.Function
-import org.web3j.crypto.Credentials
 import org.web3j.tx.Contract
 import java.util.function.BiFunction
 

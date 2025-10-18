@@ -16,12 +16,12 @@ import kotlinx.coroutines.flow.update
 import java.time.Duration
 import java.time.Instant
 
-open class MainScreenViewModel (
+open class DefaultMainScreenViewModel (
     private val oracleService: PhysicalActivityOracleService,
     private val syncPhysicalActivityService: SyncPhysicalActivityRecordService,
     private val gymVisitService: GymVisitService,
     private val donNotUse: FakeDataProducerDoNotUse?,
-): ViewModel(), MainScreenViewModel2 {
+): ViewModel(), MainScreenViewModel {
     private val _uiState = MutableStateFlow(MainUiState())
     override val uiState: StateFlow<MainUiState> = _uiState
 
@@ -115,7 +115,7 @@ open class MainScreenViewModel (
     }
 }
 
-interface MainScreenViewModel2 {
+interface MainScreenViewModel {
     val uiState: StateFlow<MainUiState>
 
     suspend fun loadDetails()
@@ -134,7 +134,7 @@ interface MainScreenViewModel2 {
     suspend fun __debugPleaseRemove__randomValueFor(goal: String): Unit
 }
 
-class PreviewMainScreenViewModel: MainScreenViewModel2 {
+class PreviewMainScreenViewModel: MainScreenViewModel {
     override val uiState: StateFlow<MainUiState> = MutableStateFlow(MainUiState())
 
     override suspend fun loadDetails() { TODO("Not yet implemented") }

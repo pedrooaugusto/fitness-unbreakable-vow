@@ -46,6 +46,7 @@ class AppPrivateKeyService @Inject constructor(private val keyStore: KeyStore) {
         keyPairGenerator.initialize(parameterSpec)
         keyPairGenerator.generateKeyPair()
 
+        // POLICE!!
         assertKeyIsInsideSecureHardware()
     }
 

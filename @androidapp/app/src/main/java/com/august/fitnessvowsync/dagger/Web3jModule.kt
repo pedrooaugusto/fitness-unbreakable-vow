@@ -45,13 +45,6 @@ class Web3jModule {
 
     @Provides
     @Singleton
-    @Named("NETWORK_RPC_URL")
-    fun provideNetworkRpcUrl(): String {
-        return BuildConfig.RPC_URL;
-    }
-
-    @Provides
-    @Singleton
     @Named("NETWORK")
     fun provideNetwork(): String {
         return BuildConfig.NETWORK;

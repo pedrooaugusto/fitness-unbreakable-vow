@@ -56,14 +56,14 @@ interface ContractSettingsService {
         }
 
         override fun getRpcEndpoint(): String? {
-            return encryptedPreferences.getString(RPC_ENDPOINT_PREF_KEY, BuildConfig.RPC_URL)
+            return encryptedPreferences.getString(RPC_ENDPOINT_PREF_KEY, null)
         }
 
         override fun getRegisteredPublicKey(): String? {
             return try {
                 privateKeyService.getPublicKey()
             } catch (ex: IllegalStateException) {
-                Log.e("FitVow", "Unable to retrieve public ket", ex)
+                Log.e("FitVow", "Unable to retrieve public key", ex)
 
                 null;
             }

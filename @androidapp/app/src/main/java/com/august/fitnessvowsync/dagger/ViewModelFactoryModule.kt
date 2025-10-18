@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.august.fitnessvowsync.donotuse.FakeDataProducerDoNotUse
 import com.august.fitnessvowsync.service.GymVisitService
+import com.august.fitnessvowsync.service.PermissionService
 import com.august.fitnessvowsync.service.PhysicalActivityOracleService
 import com.august.fitnessvowsync.service.SyncPhysicalActivityRecordService
-import com.august.fitnessvowsync.ui.viewmodel.MainScreenViewModel
+import com.august.fitnessvowsync.ui.viewmodel.DefaultMainScreenViewModel
+import com.august.fitnessvowsync.ui.viewmodel.DefaultPermissionsScreenViewModel
 import dagger.Module
 import dagger.Provides
 import javax.inject.Named
@@ -17,20 +19,34 @@ class ViewModelFactoryModule {
     @Provides
     @Singleton
     @Named("MAIN_VIEW_MODEL")
-    fun provideCounterViewModelFactory(
+    fun provideMainViewModelFactory(
         oracleService: PhysicalActivityOracleService,
         syncPhysicalActivityService: SyncPhysicalActivityRecordService,
         gymVisitService: GymVisitService,
         donNotUse: FakeDataProducerDoNotUse?,
     ): ViewModelProvider.Factory {
         return GenericViewModelFactory({
-            MainScreenViewModel(
+            DefaultMainScreenViewModel(
                 oracleService,
                 syncPhysicalActivityService,
                 gymVisitService,
                 donNotUse
             )
         })
+    }
+
+    companion object {
+        fun providePermissionViewModelFactory(
+            physicalActivityOracleService: PhysicalActivityOracleService,
+            permissionService: PermissionService,
+        ): ViewModelProvider.Factory {
+            return GenericViewModelFactory({
+                DefaultPermissionsScreenViewModel(
+                    physicalActivityOracleService,
+                    permissionService
+                )
+            })
+        }
     }
 }
 
