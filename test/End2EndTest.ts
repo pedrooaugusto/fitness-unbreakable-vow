@@ -2,14 +2,12 @@ import { time, loadFixture } from '@nomicfoundation/hardhat-toolbox/network-help
 import chai, { expect } from 'chai';
 import hre, { network } from 'hardhat';
 import chaiSubset from 'chai-subset';
-import ChainlinkServer from '../scripts/chainlink-mock-server';
-import { pushPhysicalActivityRecord } from './helpers/wait-utils';
-import { recordEq } from './helpers/custom-chai-extensions';
-import { FitnessUnbreakableVow, PhysicalActivityOracle } from '../typechain-types';
-import createContractInteractions, { ContractInteraction, PushActivityRecordInteraction } from './helpers/generate-contract-interactions';
 import { signPhysicalActivityRecord } from '../scripts/utils';
 import { PhysicalActivityRecordStruct } from '../typechain-types/contracts/PhysicalActivityOracle';
 import { WeeklyGoalStructOutput } from '../typechain-types/contracts/FitnessUnbreakableVow';
+import { FitnessUnbreakableVow, PhysicalActivityOracle } from '../typechain-types';
+import { recordEq } from './helpers/custom-chai-extensions';
+import createContractInteractions, { ContractInteraction, PushActivityRecordInteraction } from './helpers/generate-contract-interactions';
 import { deployContractFixture, NUMBER_OF_CYLES, SEVEN_DAYS_IN_SECONDS, STAKED_AMOUNT } from './helpers/deploy-contract-fixture';
 
 chai.use(chaiSubset);
@@ -17,21 +15,21 @@ chai.use(recordEq);
 
 describe("EndToEndTest", function () {
     this.beforeAll(async () => {
-        ChainlinkServer.start();
         // Enable auto mine so tests run faster
         await network.provider.send("evm_setAutomine", [true]);
         await network.provider.send("evm_setIntervalMining", [0]);
     });
-    this.afterAll(() => ChainlinkServer.stop());
 
     describe("Tests that the contract is able to execute several calls and still be consistent", function () {
         it("Should process multiple random contract interactions", async function () {
             const { fitnessUnbreakableVow, physicalActivityOracle, owner, otherAccount } = await loadFixture(deployContractFixture);
+
             const weeklyContractInteractions = createContractInteractions(Math.floor(NUMBER_OF_CYLES));
             const completedGoalsHistory: WeeklyGoalStructOutput[] = [];
 
             for (const { weekNumber, interactions } of weeklyContractInteractions) {
                 for (const interaction of interactions) {
+                    console.log(interaction);
                     switch (interaction.type) {
                         case 'PUSH_ACTIVITY_RECORD':
                             interaction.data.timestamp = await time.latest();
@@ -71,6 +69,14 @@ async function processPushActivity(interaction: PushActivityRecordInteraction, p
     } else {
         await pushPhysicalActivityRecord(physicalActivityOracle, interaction.data);
     }
+}
+
+async function pushPhysicalActivityRecord(contract: PhysicalActivityOracle, recordToAdd: PhysicalActivityRecordStruct, signature?: { r:  Uint8Array<ArrayBufferLike>, s:  Uint8Array<ArrayBufferLike> }) {
+    signature = signature || (await signPhysicalActivityRecord(recordToAdd)).signature;
+
+    const response = await contract.pushPhysicalActivityRecord(signature, recordToAdd);
+
+    const transaction = await response.wait();
 }
 
 const abs = (n: bigint) => (n < 0n) ? -n : n;
@@ -161,6 +167,8 @@ async function assertNoPenaltyWhenEnforceAgreement(fitnessUnbreakableVow: Fitnes
 
 async function assertPenaltyWhenEnforceAgreement(penaltyAmount: bigint, weekIndex: number, enforcerAddress: any, fitnessUnbreakableVow: FitnessUnbreakableVow) {
     const weekStauts = Number((await fitnessUnbreakableVow.getAllWeeklyGoalsRecords())[weekIndex][0]);
+
+    console.log(weekIndex);
 
     expect(weekStauts).to.be.equals(3);
 

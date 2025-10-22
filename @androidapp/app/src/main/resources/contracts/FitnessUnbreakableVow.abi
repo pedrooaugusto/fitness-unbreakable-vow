@@ -289,6 +289,19 @@
   },
   {
     "inputs": [],
+    "name": "VERSION",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "enforceAgreement",
     "outputs": [],
     "stateMutability": "nonpayable",

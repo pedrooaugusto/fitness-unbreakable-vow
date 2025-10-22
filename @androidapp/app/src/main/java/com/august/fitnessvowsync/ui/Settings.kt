@@ -50,10 +50,12 @@ fun Settings(
     val focusManager = LocalFocusManager.current
     var walletPrivateKey by remember { mutableStateOf(settingsService.getClientAccountPrivateKey() ?: "") }
     var rpcEndpoint by remember { mutableStateOf(settingsService.getRpcEndpoint() ?: "") }
+    var pinataApiToken by remember { mutableStateOf(settingsService.getPinataApiToken() ?: "") }
 
     val saveSettings = {
         settingsService.saveClientAccountPrivateKey(walletPrivateKey)
         settingsService.saveRpcEndpoint(rpcEndpoint)
+        settingsService.savePinataApiToken(pinataApiToken)
         navigateToPermission()
     }
 
@@ -144,10 +146,24 @@ fun Settings(
         TextField(
             value = rpcEndpoint,
             modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
             onValueChange = { value -> rpcEndpoint = value },
             label = { Text("RPC Endpoint") },
             supportingText = {
                 Text("Point of entry to the blockchain.", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+            },
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextField(
+            value = pinataApiToken,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            onValueChange = { value -> pinataApiToken = value },
+            label = { Text("Pinata API Token") },
+            supportingText = {
+                Text("Key attestation files are stored in the IPFS.", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
             },
         )
 

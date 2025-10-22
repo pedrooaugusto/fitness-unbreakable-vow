@@ -2,11 +2,6 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "network",
-        "type": "string"
-      },
-      {
         "internalType": "uint256",
         "name": "creationDate",
         "type": "uint256"
@@ -26,69 +21,10 @@
     "type": "constructor"
   },
   {
-    "inputs": [],
-    "name": "EmptyArgs",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "EmptySource",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "NoInlineSecrets",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "OnlyRouterCanFulfill",
-    "type": "error"
-  },
-  {
     "anonymous": false,
     "inputs": [],
     "name": "PhysicalActivityRecordAdded",
     "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "id",
-        "type": "bytes32"
-      }
-    ],
-    "name": "RequestFulfilled",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes32",
-        "name": "id",
-        "type": "bytes32"
-      }
-    ],
-    "name": "RequestSent",
-    "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "BASE64_PUBLIC_KEY",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
   },
   {
     "inputs": [],
@@ -157,12 +93,66 @@
   },
   {
     "inputs": [],
+    "name": "PUBLIC_KEY",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "x",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "y",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PUBLIC_KEY_ATTESTATION",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "attestationSha256",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "attestationChallenge",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "attestationIpfsCID",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "SECONDS_IN_ONE_WEEK",
     "outputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "VERSION",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -232,29 +222,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "requestId",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes",
-        "name": "response",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes",
-        "name": "err",
-        "type": "bytes"
-      }
-    ],
-    "name": "handleOracleFulfillment",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -355,9 +322,21 @@
   {
     "inputs": [
       {
-        "internalType": "string",
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "r",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "s",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct P256Signature",
         "name": "signature",
-        "type": "string"
+        "type": "tuple"
       },
       {
         "components": [
@@ -408,9 +387,43 @@
   {
     "inputs": [
       {
-        "internalType": "string",
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "x",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "y",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct P256PublicKey",
         "name": "publicKey",
-        "type": "string"
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "attestationSha256",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "attestationChallenge",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "attestationIpfsCID",
+            "type": "string"
+          }
+        ],
+        "internalType": "struct AndroidKeyAttestation",
+        "name": "keyAttestation",
+        "type": "tuple"
       }
     ],
     "name": "setPublicKey",

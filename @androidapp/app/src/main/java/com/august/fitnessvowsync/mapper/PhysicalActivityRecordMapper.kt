@@ -23,9 +23,7 @@ class PhysicalActivityRecordMapper @Inject constructor(private val blockExplorer
     fun toUint32ByteArray(record: PhysicalActivityRecord): ByteArray {
         val buffer = ByteBuffer.allocate(4 * 4) // 4 uint32 = 16 bytes
 
-        buffer.order(ByteOrder.LITTLE_ENDIAN)
-
-        buffer.putInt(record.timestamp.epochSecond.toInt()) // 2038 problem?? This value is overridden in the contract anyway (I think...)
+        buffer.putInt(record.timestamp.epochSecond.toInt())
         buffer.putInt(record.runDistanceMeters.toInt())
         buffer.putInt(record.healthySleepNights.toInt())
         buffer.putInt(record.gymVisits.toInt())

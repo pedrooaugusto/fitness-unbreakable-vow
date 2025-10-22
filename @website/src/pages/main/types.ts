@@ -16,7 +16,7 @@ export const ContractPhase = {
 
 export type ContractPhaseType = typeof ContractPhase[keyof typeof ContractPhase];
 
-export type Network = 'sepolia' | 'arbitrum' | 'localhost';
+export type Network = 'sepolia' | 'arbitrum' | 'localhost' | 'arbiSep';
 
 export interface WeeklyGoal {
     status: WeeklyGoalStatusType;
@@ -76,6 +76,16 @@ export interface GetContractOverviewResponse {
     healthySleepNightsGoal: number;
     runDistanceGoal: number;
     requiredNumberOfCompletedGoals: number;
+
+    publicKeyInfo: {
+        x: string,
+        y: string,
+        attestation: {
+            cidFile: string;
+            sha256: string;
+            challenge: string;
+        }
+    }
 }
 
 

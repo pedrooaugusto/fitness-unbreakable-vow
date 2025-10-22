@@ -2,12 +2,6 @@
 
 set -euo pipefail
 
-compileContracts() {
-    echo "Compiling contracts."
-    npx hardhat compile
-    echo -e "\n\n\n"
-}
-
 copyContractAbiToFrontend() {
     echo "Copying contract ABI files to frontend."
     cp artifacts/contracts/FitnessUnbreakableVow.sol/FitnessUnbreakableVow.json @website/public/abi/FitnessUnbreakableVow.json
@@ -23,13 +17,13 @@ buildContractJavaClient() {
 
 case "$1" in
     build)
-        echo "Running build..."
-        compileContracts
+        echo "Building contracts..."
+        npx hardhat compile --network $2
         echo "Done."
         ;;
     build-prod)
-        echo "Running production build..."
-        compileContracts
+        echo "Building all artifacts..."
+        npx hardhat compile --network $2
         buildContractJavaClient
         copyContractAbiToFrontend
         echo "Done."
@@ -37,7 +31,7 @@ case "$1" in
     deploy)
         echo "Deploying DeployPhysicalActivityOracle Contract..."
 
-        npx hardhat compile
+        npx hardhat compile --network $2
         verifyOracle=$(npx hardhat --network $2 DeployPhysicalActivityOracle | tail -n 1)
 
         if [ "$2" != "localhost" ]; then
@@ -111,12 +105,8 @@ case "$1" in
         unsigned_apk=@androidapp/app/build/outputs/apk/release/app-release-unsigned.apk
         @androidapp/app/amnesiac-apk-signer.sh sign-and-forget $unsigned_apk -o artifacts/signed-release-app.apk
         ;;
-    chainlink)
-        echo "Starting chainlink functions mock..."
-        npx hardhat --network localhost MockChainLinkOracle
-        ;;
     *)
-        echo "Usage: $0 {build|build-prod|deploy|chainlink|enforce|terminate|push-record}"
+        echo "Usage: $0 {build|build-prod|deploy|enforce|terminate|push-record|deploy-webapp}"
         exit 1
         ;;
 esac

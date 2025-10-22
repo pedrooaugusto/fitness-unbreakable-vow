@@ -6,10 +6,11 @@ import CalendarIcon from "../../../assets/calendar-icon";
 import ArticleIcon from "../../../assets/article-icon";
 import LinkIcon from "../../../assets/link-icon";
 import { formatCurrency, formatDate, getAddressBlockExplorerUrl, GIVETH_PAGE_URL, timeRemaining } from "../../utils";
-import { ContractPhase, WeeklyGoalStatus, type Currency, type GetContractOverviewResponse } from "../types";
+import { ContractPhase, WeeklyGoalStatus, type Currency, type GetContractOverviewResponse, type Network } from "../types";
 import { SectionTitle } from "../../components/SectionTitle";
 import type { WithModalProps } from "../../components/modal";
 import LiveTimeCountdown from "./LiveTimeCountdown";
+import FileCertificateIcon from "../../../assets/file-certificate-icon";
 
 interface ContractOverviewSectionProps extends WithModalProps {
     overview: GetContractOverviewResponse;
@@ -28,6 +29,22 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
     return (
         <section className="overview">
             <div className="content">
+                <div
+                    className="certified"
+                    onClick={() => 
+                        openModal(
+                            <KeyAttestationModal
+                                closeModal={closeModal}
+                                publicKey={overview.publicKeyInfo}
+                                network={overview.network}
+                                oracleAddress={overview.oracleAddress}
+                            />,
+                            'Android Key Attestation'
+                        )
+                    }
+                >
+                    <FileCertificateIcon />
+                </div>
                 <SectionTitle
                     icon={<InfoIcon />}
                     text="Contract Details"
@@ -363,6 +380,91 @@ function EndDateInfoModal(props: { closeModal: () => void; gracePeriod: string})
                 </p>
             </div>
             <div className="actions">
+                <button className="close-button" onClick={props.closeModal}>
+                    Close
+                </button>
+            </div>
+        </div>
+    );
+}
+
+type KeyAttestationModalProps = {
+    publicKey: GetContractOverviewResponse['publicKeyInfo'];
+    closeModal: () => void;
+    oracleAddress: string;
+    network: Network;
+}
+
+function KeyAttestationModal(props: KeyAttestationModalProps) {
+    const ipfsLink = `https://${props.publicKey.attestation.cidFile}.ipfs.w3s.link`;
+    const attestationInspector = `https://pedrooaugusto.github.io/android-key-attestation-inspector?attestationFileUrl=${ipfsLink}`;
+    const blockExplorer = getAddressBlockExplorerUrl(props.oracleAddress, props.network);
+    const CK = ({ f, l, c }: {f: string, l: string, c: string }) => <a href={blockExplorer + `#code#F${f}#L${l}`} target="_blank">{c}</a>;
+
+    return (
+        <div className="main">
+            <div className="weekly-goal-modal">
+                <p>
+                    Each Physical Activity Record submitted to the FitVow
+                    Contract must be <b>cryptographically signed</b> using the private key
+                    corresponding to the public key registered on-chain (the{" "}
+                    <b>Registered Key</b>) <CK f="1" l="38" c="[1]" />. The Contract verifies every
+                    submission using <b>P-256 (secp256r1)</b> digital signature
+                    validation <CK f="5" l="61" c="[2]" />. Any record that fails verification is
+                    automatically rejected and produces no on-chain effect <CK f="1" l="38" c="[3]" />.
+                    <br />
+                    <br />
+                    Possession of the private key alone demonstrates control,
+                    but not <i>authentic origin</i>. To establish device authenticity
+                    and ensure the key is securely stored, FitVow employs{" "}
+                    <b>Android Key Attestation</b>. When "Fit Vow - Sync", the Android app
+                    that publishes data to the FitVow contract, is first installed on a device
+                    a key pair is generated and the operating system
+                    produces a <b>hardware-signed certificate chain</b> issued by
+                    Google, confirming that the private key was created and
+                    remains protected within a verified {' '}
+                    <b>Trusted Execution Environment (TEE)</b> or{" "}
+                    <b>StrongBox</b> chip. This attestation cannot be forged and stabilishes
+                    that the private key cannot be exported, meaning that any data signed with that key 
+                    originated from genuine unrooted android device.
+                    <br />
+                    <br />
+                    For full transparency, the Contract records both the
+                    Registered Key and a reference to its attestation
+                    certificate <CK f="5" l="82" c="[6]" />. Anyone may independently verify that the
+                    attested public key corresponds to the on-chain Registered
+                    Key and that the certificate chain is signed by Google's
+                    trusted root authority.
+                    <br />
+                    <br />
+                    To review this attestation, open the{" "}
+                    <b>Key Attestation Inspector</b> below and confirm that the
+                    X and Y coordinates of the public key match those shown
+                    here or do it manually on your own.
+                </p>
+                <div style={{ marginTop: 12 }}>
+                    <p>
+                        <b>Public Key (X):</b>{" "}<code>{props.publicKey.x || "—"}</code>
+                        <br />
+                        <b>Public Key (Y):</b>{" "}<code>{props.publicKey.y || "—"}</code>
+                        <br />
+                        <b>Attestation Challenge:</b>{" "}<code>{props.publicKey.attestation.challenge || "—"}</code>
+                        <br/>
+                        <b>Attestation Certificate:</b>{" "}
+                        <a
+                            href={ipfsLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            View on IPFS
+                        </a>
+                    </p>
+                </div>
+            </div>
+            <div className="actions">
+                <a href={attestationInspector} target="_blank">
+                    <button className="connect-to-wallet">🔍 Key Attestation Inspector</button>
+                </a>
                 <button className="close-button" onClick={props.closeModal}>
                     Close
                 </button>

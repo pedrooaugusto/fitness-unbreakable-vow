@@ -6,7 +6,7 @@
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
     "build": "npx hardhat compile",
-    "start": "npx hardhat node --hostname 0.0.0.0 | grep -Ev \"Mined empty block|eth_getLogs|eth_blockNumber|hardhat_metadata\""
+    "start": "npx hardhat node --hostname 0.0.0.0 | grep -Ev \"Mined empty block\""
   },
   "keywords": [],
   "author": "Pedor Silva",
@@ -21,7 +21,6 @@
     "terser": "^5.42.0"
   },
   "dependencies": {
-    "@chainlink/contracts": "^1.4.0",
     "@openzeppelin/contracts": "^5.4.0"
   }
 }

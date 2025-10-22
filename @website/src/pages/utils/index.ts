@@ -52,7 +52,8 @@ export function formatDate(
 const blockExplorers = {
     sepolia: 'https://sepolia.etherscan.io/',
     arbitrum: 'https://arbiscan.io/',
-    localhost: 'http://localhost:3000/'
+    localhost: 'http://localhost:3000/',
+    arbiSep: 'https://sepolia.arbiscan.io/',
 }
 
 export function getTransactionBlockExplorerUrl(tx: string, network: Network) {

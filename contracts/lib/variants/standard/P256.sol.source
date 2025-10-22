@@ -1,22 +1,25 @@
-// SPDX-License-Identifier: MIT 
+/*  [[AUTO GENERATED]]
+    ---
+    Check `pre:compile` task in `hardhat.config` to know more.
+*/
+
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-abstract contract Ownable {
+/**
+ * @dev Requires a chain that has implemented `RIP 7212`, such as Arbitrum.
+ * Won't work in Ethereum Mainnet.
+ */
+library P256 {
+    function verifyNative(bytes32 h, bytes32 r, bytes32 s, bytes32 qx, bytes32 qy) internal view returns (bool) {
+        return _rip7212(h, r, s, qx, qy);
+    }
+
     /**
-     * @notice The address of the contract owner, set once at deployment and cannot be changed.
-     * @dev This variable is marked as `immutable`, meaning it is assigned during contract construction and remains constant thereafter.
+     * @dev Taken as it is from: `@openzeppelin/contracts/utils/cryptography/P256.sol`
+     * 
+     * Removed a few signature and public key unnecessary checks.
      */
-    address public immutable owner;
-
-    constructor() {
-        owner = msg.sender;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Ownable: caller is not the owner");
-        _;
-    }
-
     function _rip7212(bytes32 h, bytes32 r, bytes32 s, bytes32 qx, bytes32 qy) private view returns (bool isValid) {
         assembly ("memory-safe") {
             // Use the free memory pointer without updating it at the end of the function

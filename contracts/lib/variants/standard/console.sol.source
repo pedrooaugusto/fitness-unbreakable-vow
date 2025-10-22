@@ -7,7 +7,7 @@
 pragma solidity ^0.8.28;
 
 /**
- * @dev Production build variant is empty.
+ * @dev No logs outside of hardhat network.
  */
 library console {
     function log(string memory message) internal pure {}

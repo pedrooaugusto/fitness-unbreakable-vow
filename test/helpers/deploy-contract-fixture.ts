@@ -1,7 +1,5 @@
 import hre from 'hardhat';
-import { loadChainlinkMockContract } from './load-chainlink-mock-contract';
-import ChainlinkServer from '../../scripts/chainlink-mock-server';
-import { PUBLIC_KEY } from '../../scripts/keys';
+import { getRawPublicKey } from '../../scripts/keys';
 import { FitnessUnbreakableVow } from '../../typechain-types';
 
 export const STAKED_AMOUNT = hre.ethers.parseEther("36");
@@ -17,9 +15,7 @@ export async function deployContractFixture() {
     const PhysicalActivityOracle = await hre.ethers.getContractFactory("PhysicalActivityOracle");
     const FitnessUnbreakableVow = await hre.ethers.getContractFactory("FitnessUnbreakableVow");
 
-    const chainlinkMock = await loadChainlinkMockContract();
-
-    const physicalActivityOracle = await PhysicalActivityOracle.deploy("localhost", CREATION_DATE, EXPIRATION_DATE, SEVEN_DAYS_IN_SECONDS);
+    const physicalActivityOracle = await PhysicalActivityOracle.deploy(CREATION_DATE, EXPIRATION_DATE, SEVEN_DAYS_IN_SECONDS);
     
     await physicalActivityOracle.waitForDeployment();
 
@@ -36,12 +32,12 @@ export async function deployContractFixture() {
         { value: STAKED_AMOUNT }
     );
 
-    const transaction = await physicalActivityOracle.setPublicKey(PUBLIC_KEY);
+    await fitnessUnbreakableVow.waitForDeployment();
+
+    const transaction = await physicalActivityOracle.setPublicKey(await getRawPublicKey(), { attestationChallenge: 'test',attestationIpfsCID: '123', attestationSha256: '0x909' });
     await transaction.wait();
 
-    ChainlinkServer.setContract(chainlinkMock);
-
-    return { fitnessUnbreakableVow, physicalActivityOracle, chainlinkMock, owner, otherAccount, otherAccount2 };
+    return { fitnessUnbreakableVow, physicalActivityOracle, owner, otherAccount, otherAccount2 };
 }
 
 

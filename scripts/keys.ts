@@ -1,4 +1,10 @@
 import { webcrypto } from 'node:crypto';
+import { bigintTo32Bytes, bytesToBigInt } from './utils';
+
+// Look at p-256 implementation to understand where it comes from.
+const N_HEX = "0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551";
+const P256_N = BigInt(N_HEX);
+const P256_HALF_N = P256_N >> 1n;
 
 const ECDSA = { name: "ECDSA", namedCurve: "P-256" };
 const SignEcdsaAlgorithm = { name: "ECDSA", hash: "SHA-256" };
@@ -16,7 +22,7 @@ const PRIVATE_KEY = {
     d: 'GWwTF3f3mAYjrHQQi3tP04D5FR32-R-g0wugyXECbYk'
 }
 
-export const PUBLIC_KEY = "BDkVzRT59TGuG9bZ9awy6bwXJJrA6fpWIXTJTl2cPWg6dDDDWWu/lOW0ZpOLYCy7HQEyw4Otdh6PCjSAhJFyeZ0=";
+const PUBLIC_KEY = "BDkVzRT59TGuG9bZ9awy6bwXJJrA6fpWIXTJTl2cPWg6dDDDWWu/lOW0ZpOLYCy7HQEyw4Otdh6PCjSAhJFyeZ0=";
 
 export async function generateKeys() {
     const keypair = await webcrypto.subtle.generateKey(ECDSA, true, [
@@ -43,10 +49,31 @@ async function getPublickey() {
     return publicKey;
 }
 
-export async function sign(data: Uint32Array) {
+export async function getRawPublicKey() {
+    const rawPublicKey = new Uint8Array(await webcrypto.subtle.exportKey("raw", await getPublickey()));
+
+    return { x: rawPublicKey.slice(1, 33), y: rawPublicKey.slice(33, 65) };
+}
+
+export async function sign(data: Buffer<ArrayBuffer>, options: { normalizeLowS: boolean } = { normalizeLowS: true }) {
     const privateKey = await getPrivatekey();
 
-    return await webcrypto.subtle.sign(SignEcdsaAlgorithm, privateKey, data);
+    const signature = await webcrypto.subtle.sign(SignEcdsaAlgorithm, privateKey, data);
+
+    const signatureBytes = new Uint8Array(signature);
+
+    const r = signatureBytes.slice(0, 32) as Uint8Array;
+    const s = signatureBytes.slice(32, 64) as Uint8Array;
+
+    if (options.normalizeLowS) {
+        const sBigInt = bytesToBigInt(s);
+
+        const normalizedS = sBigInt > P256_HALF_N ? (P256_N - sBigInt) : sBigInt;
+
+        return { r, s: bigintTo32Bytes(normalizedS) }
+    }
+
+    return { r, s }
 }
 
 export async function verify(signature: ArrayBuffer, data: Uint32Array) {

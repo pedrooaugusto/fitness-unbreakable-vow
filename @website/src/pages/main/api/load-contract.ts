@@ -27,6 +27,13 @@ const RPC_URL_MAP: Record<Network, Networkish & { rpc: string[] }> = {
             "https://arbitrum.publicnode.com"
         ]
     },
+    arbiSep: {
+        name: 'arbitrum-sepolia',
+        chainId: 421614,
+        rpc: [
+            "https://arbitrum-sepolia-rpc.publicnode.com",
+        ]
+    },
 };
 
 // Same address on Ethereum mainnet / Arbitrum / Sepolia

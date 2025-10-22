@@ -1,138 +1,94 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { FunctionsClient } from "@chainlink/contracts/src/v0.8/functions/v1_0_0/FunctionsClient.sol";
-import { FunctionsRequest } from "@chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
-import { PhysicalActivityRecord } from "./Types.sol";
-import { Uint32ToString } from "./Strings.sol";
-import { ChainLinkFunctionsParamsProvider, ChainLinkFunctionsParams } from "./Config.sol";
-import { console } from './mock/console.sol';
-import { ChainlinkFunctionsMock } from './mock/ChainlinkFunctionsMock.sol';
-import { SignatureVerifierScript } from "./SignatureVerifierScript.sol";
+import { PhysicalActivityRecord, P256PublicKey, P256Signature, AndroidKeyAttestation } from "./Types.sol";
+import { console } from './variants/console.sol';
+import { P256 } from './variants/P256.sol';
 
 /**
  * @title Physical Record Signature Verifier
  * @author pedroaus
- * @notice Provides a framework for verifying the authenticity of physical activity records
- * using Chainlink Functions.
+ * @notice Provides a framework for verifying the authenticity of physical activity records using P-256 signatures.
+ * @dev Uses RIP-7212 precompile to verify secp256r1 signatures.
  */
-abstract contract SignatureVerifier is FunctionsClient {
-    using FunctionsRequest for FunctionsRequest.Request;
-
-    ChainLinkFunctionsParams private chainlinkParams;
-    bytes32 private s_lastRequestId;
-
+abstract contract SignatureVerifier {
     /**
-     * @notice Indicates whether the public key has been set. Prevents overwriting
-     * the key after initial assignment.
+     * @notice Indicates whether the public key has been set. Prevents overwriting the key after initial assignment.
      */
     bool public publicKeySet = false;
 
     /**
-     * @notice Stores the base64-encoded public key used for signature verification.
-     * Can only be set once. The oracle will only accept physical activity records
-     * signed with the corresponding private key.
+     * @notice Stores the raw x and y values of the public key used for signature verification.
+     * @dev Can only be set once. The oracle will only accept physical activity records signed with the corresponding private key.
      */
-    string public BASE64_PUBLIC_KEY = "";
-
-    constructor(ChainLinkFunctionsParams memory chainlinkFnParams) FunctionsClient(chainlinkFnParams.router) {
-        chainlinkParams = chainlinkFnParams;
-    }
+    P256PublicKey public PUBLIC_KEY;
 
     /**
-     * @notice Initiates the signature verification process by creating and sending a Chainlink Functions request.
+     * @notice Captures metadata proving the origin of `PUBLIC_KEY` via Android Key Attestation.
+     * @dev Stores the attestation SHA-256, the attestation challenge, and an IPFS CID pointing
+     * to the attestation certificate chain. Meant for off-chain verification to confirm the key
+     * was generated and held in a device-backed Keystore and that Google issued the attestation.
+     */
+    AndroidKeyAttestation public PUBLIC_KEY_ATTESTATION;
+
+    /**
+     * @notice Checks whether the the provided `PhysicalActivityRecord` was signed with
+     * the private key associated with public key stored on this contract.
+     *
      * @param signature The cryptographic signature to be verified.
      * @param record The physical activity record associated with the signature.
      */
-    function verifySignature(string calldata signature, PhysicalActivityRecord calldata record) internal {
-        FunctionsRequest.Request memory request = createRequest(signature, record);
+    function verifySignature(P256Signature calldata signature, PhysicalActivityRecord calldata record) internal view onlyIfPublicKeyIsSet returns(bool) {
 
-        s_lastRequestId = sendRequest(request);
+        // Encode the record in a canonical form that matches the off-chain signer.
+        // Here we pack as four uint32 values (16 bytes total):
+        // - timestamp (uint32)
+        // - runDistanceMeters (cast to uint32)
+        // - healthySleepNights (cast to uint32)
+        // - gymVisits (cast to uint32)
+        // IMPORTANT: The Android app must build the exact same byte sequence before signing.
+        bytes memory encodedRecord = abi.encodePacked(
+            uint32(record.timestamp),
+            uint32(record.runDistanceMeters),
+            uint32(record.healthySleepNights),
+            uint32(record.gymVisits)
+        );
+
+        // Android hashes the message and then signs it; on-chain we hash the same message and feed the digest to P256.verify.
+        bytes32 hashedRecord = sha256(encodedRecord);
+
+        return P256.verifyNative(
+            hashedRecord,
+            signature.r,
+            signature.s,
+            PUBLIC_KEY.x,
+            PUBLIC_KEY.y
+        );
     }
 
     /**
-     * @notice Called when the signature verification process is complete.
-     * @param error Indicates if there was an error during verification.
-     * @param verified Indicates if the signature was successfully verified.
-     * @param record The physical activity record associated with the verification.
+     * @notice Sets the public key used for P-256 signature verification and records its Android Key Attestation.
+     * @dev After setting, the oracle is intended to accept only records signed by the corresponding private key.
+     * @param publicKey The raw `x` and `y` coordinates of the P-256 public key.
+     * @param keyAttestation Android Key Attestation metadata (digest, challenge, and IPFS CID of the cert chain).
      */
-    function signatureVerificationComplete(
-        bool error,
-        bool verified,
-        PhysicalActivityRecord memory record
-    ) internal virtual;
-
-    /**
-     * @notice Sets the public key to be used in the signature verification.
-     * Can only be called once. Once this is set, the contract is forever
-     * tied with the private key and will only accept requests from
-     * such key.
-     * @param publicKey The base64-encoded public key to set.
-     */
-    function setPublicKey(string calldata publicKey) external {
+    function setPublicKey(P256PublicKey calldata publicKey, AndroidKeyAttestation calldata keyAttestation) external {
         require(!publicKeySet, "Public key already set");
-        require(bytes(publicKey).length > 0, "Public key cannot be empty");
+        require(publicKey.x != bytes32(0), "Public key cannot be empty");
+        require(publicKey.y != bytes32(0), "Public key cannot be empty");
 
-        BASE64_PUBLIC_KEY = publicKey;
+        PUBLIC_KEY = publicKey;
+        // Rather than use Chainlink to validate this, I will leave it up to you.
+        // Use the IPFS CID to download the attestation certificate and check if
+        // it was issued by Google.
+        PUBLIC_KEY_ATTESTATION = keyAttestation;
         // TODO: Uncomment this
         // publicKeySet = true;
     }
 
-    function fulfillRequest(bytes32 requestId, bytes memory response, bytes memory err) internal override {
-        console.log("[PhysicalActivityOracle] Received signature verification response form chainlink.");
-
-        if (s_lastRequestId != requestId) {
-            revert("UnexpectedRequestID");
-        }
-
-        if (err.length != 0) {
-            signatureVerificationComplete(true, false, PhysicalActivityRecord(0, 0, 0, 0));
-        } else {
-            console.log("[PhysicalActivityOracle] Decoding signature verification response");
-
-            (
-                bool sourceIsVerified,
-                uint32 timestamp,
-                uint16 runDistanceMeters,
-                uint8 healthySleepNights,
-                uint8 gymVisits
-            ) = abi.decode(response, (bool, uint32, uint16, uint8, uint8));
-
-            PhysicalActivityRecord memory record = PhysicalActivityRecord(timestamp, runDistanceMeters, healthySleepNights, gymVisits);
-
-            signatureVerificationComplete(false, sourceIsVerified, record);
-        }
-    }
-
-    function createRequest(string calldata signature, PhysicalActivityRecord calldata record) private view returns (FunctionsRequest.Request memory) {        
-
-        FunctionsRequest.Request memory request;
-
-        // Check source code to understand how the signature is verified
-        request.initializeRequestForInlineJavaScript(SignatureVerifierScript.SOURCE_CODE2);
-
-        string[] memory args = new string[](6);
-
-        args[0] = BASE64_PUBLIC_KEY;
-        args[1] = signature;
-        args[2] = Uint32ToString.toString(record.timestamp);
-        args[3] = Uint32ToString.toString(record.runDistanceMeters);
-        args[4] = Uint32ToString.toString(record.healthySleepNights);
-        args[5] = Uint32ToString.toString(record.gymVisits);
-
-        request.setArgs(args);
-
-        return request;
-    }
-
-    function sendRequest(FunctionsRequest.Request memory request) private returns (bytes32) {
-        console.log("[PhysicalActivityOracle] Calling chainlink oracle to verify signature.");
-
-        // DEBUG ONLY
-        if (chainlinkParams.networkName == ChainLinkFunctionsParamsProvider.HARDHAT_NETWORK_HASH) {
-            return ChainlinkFunctionsMock(address(i_router)).executeCode(request.source, request.args);
-        } else {
-            return _sendRequest(request.encodeCBOR(), chainlinkParams.subscriptionId, chainlinkParams.gasLimit, chainlinkParams.donId);
-        }
+    modifier onlyIfPublicKeyIsSet {
+        require(PUBLIC_KEY.x != bytes32(0), 'Public key not set.');
+        require(PUBLIC_KEY.y != bytes32(0), 'Public key not set.');
+        _;
     }
 }

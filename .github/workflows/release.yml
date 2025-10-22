@@ -107,18 +107,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Create .env for Sepolia deploy
+      - name: Create .env for Arbitrum Sepolia deploy
         run: |
           {
-            echo "sepolia.WALLET_PRIVATE_KEY=${{ secrets.SEPOLIA_WALLET_PRIVATE_KEY }}";
-            echo "sepolia.RPC_URL=${{ secrets.SEPOLIA_RPC_URL }}";
-            echo "sepolia.ETHERSCAN.API_KEY=${{ secrets.SEPOLIA_ETHERSCAN_API_KEY }}";
+            echo "arbiSep.WALLET_PRIVATE_KEY=${{ secrets.ARBITRUM_SEPOLIA_WALLET_PRIVATE_KEY }}";
+            echo "arbiSep.RPC_URL=${{ secrets.ARBITRUM_SEPOLIA_RPC_URL }}";
+            echo "ETHERSCAN_API_KEY=${{ secrets.ETHERSCAN_API_KEY }}";
           } > .env
 
-      - name: Deploy to Sepolia
+      - name: Deploy to Arbitrum Sepolia
         run: |
           chmod +x run.sh
-          ./run.sh deploy sepolia
+          ./run.sh deploy arbiSep
 
       - name: Upload contract addresses artifact
         uses: actions/upload-artifact@v4

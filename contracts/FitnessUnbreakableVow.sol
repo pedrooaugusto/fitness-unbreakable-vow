@@ -5,7 +5,7 @@ import { WeeklyGoalStatus, WeeklyGoal, PhysicalActivityRecord, Listener, Observa
 import { Ownable } from './lib/Ownable.sol';
 import { IExpirable } from "./lib/Expirable.sol";
 import { Versioned } from "./lib/Versioned.sol";
-import { console } from './lib/mock/console.sol';
+import { console } from './lib/variants/console.sol';
 import { WeeklyGoalListable } from './lib/WeeklyGoalListable.sol';
 
 event NoPenaltyApplied();
@@ -95,8 +95,6 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Version
     }
 
     function onNewPhysicalActivityRecord(uint8 weekIndex, PhysicalActivityRecord calldata record) external onlyOracle {
-        console.log("Processing new record.");
-
         putWeek(weekIndex, buildWeeklyGoalFrom(record));
 
         emit PhysicalActivityRecordProcessed(weekIndex, record.runDistanceMeters, record.gymVisits, record.healthySleepNights);

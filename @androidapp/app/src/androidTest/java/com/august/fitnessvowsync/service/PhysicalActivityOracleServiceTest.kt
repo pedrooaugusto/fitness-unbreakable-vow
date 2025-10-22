@@ -1,36 +1,33 @@
 package com.august.fitnessvowsync.service
 
-import com.august.fitnessvowsync.dagger.KeyStoreModule
-import com.august.fitnessvowsync.dagger.Web3jModule
-import com.august.fitnessvowsync.mapper.PhysicalActivityRecordMapper
-import org.junit.Test
-import java.math.BigInteger
+import androidx.test.ext.junit.runners.AndroidJUnit4
 
-import org.junit.Assert.*
+import org.junit.runner.RunWith
 
+@RunWith(AndroidJUnit4::class)
 class PhysicalActivityOracleServiceTest {
-    /*private val web3jModule = Web3jModule()
-    private val networkName = web3jModule.provideNetwork()
-    private val web3j = web3jModule.provideWeb3j(web3jModule.provideNetworkRpcUrl(networkName))
-    private val credentials = web3jModule.provideWalletCredentials(networkName)
-    private val physicalActivityOracle = web3jModule.providePhysicalActivityOracle(credentials, web3j)
+    /*private val web3j = Web3j.build(HttpService(("http://192.168.0.105:8545/")))
+    private val credentials = Credentials.create("")
+    private val contract = CheckP256Precompile.load("", web3j, credentials, DefaultGasProvider())
     private val privateKeyService = AppPrivateKeyService(KeyStoreModule().provideKeyStore())
-    private val physicalActivityRecordMapper = PhysicalActivityRecordMapper("HARDHAT")
-
-    private val physicalActivityOracleService = PhysicalActivityOracleService(privateKeyService, physicalActivityOracle, physicalActivityRecordMapper)
 
     @Test
     fun shouldSendActivityRecord() {
-        physicalActivityOracleService.registerAppAsRecordPublisher()
+        privateKeyService.createIfNotExists()
 
-        val record = AddPhysicalActivityRecordRequest(BigInteger.valueOf(1000), BigInteger.valueOf(9000), BigInteger.valueOf(100), false)
+        val publicKey = privateKeyService.getRawPublicKey()
 
-        physicalActivityOracleService.addPhysicalActivityRecord(record)
+        val transaction = contract.setPublicKey2(CheckP256Precompile.P256PublicKey(publicKey.first, publicKey.second)).send()
 
-        Thread.sleep(1000 * 60)
+        val text = "pedro"
+        val bytes = text.toByteArray(Charsets.UTF_8)
+        val data = ByteArray(32)
+        System.arraycopy(bytes, 0, data, 32 - bytes.size, bytes.size)
 
-        val savedRecord = physicalActivityOracleService.getLatestPhysicalActivityRecord()
+        val signature = privateKeyService.signP1363(data)
 
-        assertTrue(savedRecord.runDistanceMeters == record.runDistanceMeters)
+        val result = contract.verifySignature2(CheckP256Precompile.P256Signature(signature.first, signature.second), data).send()
+
+        assertTrue(result)
     }*/
 }

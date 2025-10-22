@@ -44,15 +44,19 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         "GYM_VISITS_GOAL",
         "HEALTHY_SLEEP_NIGHTS_GOAL",
         "RUN_DISTANCE_GOAL",
-        "REQUIRED_NUMBER_OF_COMPLETED_GOALS"
+        "REQUIRED_NUMBER_OF_COMPLETED_GOALS",
     ]);
 
     const [
         [, currentWeekPhysicalActivityRecordRaw],
-        secondsInAWeek
+        secondsInAWeek,
+        publicKeyAttestation,
+        publicKey,
     ] = await executeMulticall(PhysicalActivityOracle, [
         'getCurrentWeekPhysicalActivityRecord',
-        'SECONDS_IN_ONE_WEEK'
+        'SECONDS_IN_ONE_WEEK',
+        "PUBLIC_KEY_ATTESTATION",
+        "PUBLIC_KEY",
     ]);
 
     const currentWeekPhysicalActivityRecord = {
@@ -87,7 +91,16 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         gymVisitsGoal: Number(gymVisitsGoal),
         runDistanceGoal: Number(runDistanceGoal),
         healthySleepNightsGoal: Number(healthySleepNightsGoal),
-        requiredNumberOfCompletedGoals: Number(requiredNumberOfCompletedGoals)
+        requiredNumberOfCompletedGoals: Number(requiredNumberOfCompletedGoals),
+        publicKeyInfo: {
+            x: publicKey.x,
+            y: publicKey.y,
+            attestation: {
+                challenge: publicKeyAttestation.attestationChallenge || '',
+                sha256: publicKeyAttestation.attestationSha256 || '',
+                cidFile: publicKeyAttestation.attestationIpfsCID || ''
+            }
+        }
     };
 }
 

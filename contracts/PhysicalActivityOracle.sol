@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.28;
 import { SignatureVerifier } from "./lib/SignatureVerifier.sol";
-import { PhysicalActivityRecordListable } from "./lib/PhysicalActivityRecordListable.sol";
 import { Ownable } from './lib/Ownable.sol';
 import { Expirable } from './lib/Expirable.sol';
 import { Versioned } from "./lib/Versioned.sol";
-import { PhysicalActivityRecord, PhysicalActivityRecordFunctions, Listener, Observable } from './lib/Types.sol';
-import { ChainLinkFunctionsParamsProvider } from "./lib/Config.sol";
-import { console } from './lib/mock/console.sol';
+import { PhysicalActivityRecordListable } from "./lib/PhysicalActivityRecordListable.sol";
+import { PhysicalActivityRecord, PhysicalActivityRecordFunctions, P256Signature, Listener, Observable } from './lib/Types.sol';
+import { console } from './lib/variants/console.sol';
 
 event PhysicalActivityRecordAdded();
 
@@ -15,37 +14,31 @@ contract PhysicalActivityOracle is SignatureVerifier, PhysicalActivityRecordList
     using PhysicalActivityRecordFunctions for PhysicalActivityRecord;
 
     /**
-     * @notice Registered consumer that receives oracle update callbacks
-     * regarding physical activity records.
+     * @notice Registered consumer that receives oracle update callbacks regarding physical activity records.
      * @dev Set exactly once via `registerOnNewPhysicalActivityRecordListener`.
      */
     Listener public ORACLE_UPDATE_LISTENER;
 
-    constructor(string memory network, uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek)
+    constructor(uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek)
         Expirable(creationDate, expirationDate, secondsInOneWeek)
-        SignatureVerifier(ChainLinkFunctionsParamsProvider.get(network)) {}
+        SignatureVerifier() {}
 
     /**
-     * @notice Initiates the submission of a new **physical activity record** for the **current week's** data.
-     * This function first triggers an **asynchronous signature verification** via an external oracle to ensure the
-     * record's **authenticity** and **integrity** before it can be stored.
-     * @param signature The cryptographic signature of the `newRecord`. This signature is used by an external oracle
-     * to authenticate the sender and verify that the data originates from a trusted, uncompromised source.
-     * @param newRecord The `PhysicalActivityRecord` struct containing the activity data to be verified and
-     * subsequently included as the current week's record.
-     * @dev This function invokes `verifySignature`, which initiates an **asynchronous verification** process
-     * involving an **external oracle**. Crucially, this function **does not directly store** the record. Instead,
-     * the ultimate storage of the record (or rejection) is managed by the
-     * **`signatureVerificationComplete` callback function**, which is triggered once the oracle returns
-     * its verification result.
+     * @notice Submits a new physical activity record for the current week.
+     * @dev Verifies the record's signature on-chain using ECDSA P-256 (secp256r1)
+     * with the stored public key. If verification succeeds, the record is stored for the
+     * current week; otherwise the call reverts.
+     * @param signature The P-256 signature of `newRecord` (low-S, r and s as bytes32).
+     * @param newRecord The `PhysicalActivityRecord` to verify and store for the current week.
      */
-    function pushPhysicalActivityRecord(string calldata signature, PhysicalActivityRecord calldata newRecord) external onlyOwner onlyWhileActive {
+    function pushPhysicalActivityRecord(P256Signature calldata signature, PhysicalActivityRecord calldata newRecord) external onlyOwner onlyWhileActive {
         uint8 recordWeekIndex = getWeekIndexOf(uint256(newRecord.timestamp));
         uint8 currentWeekIndex = getCurrentWeekIndex();
 
         require(recordWeekIndex == currentWeekIndex, "!! Wibbly Wobbly Timey Wimey !!");
+        require(verifySignature(signature, newRecord), "youtu.be/LYb_nqU_43w&t=178s");
 
-        verifySignature(signature, newRecord);
+        safePushPhysicalActivityRecord(newRecord);
     }
 
     /**
@@ -84,20 +77,6 @@ contract PhysicalActivityOracle is SignatureVerifier, PhysicalActivityRecordList
 
         emit PhysicalActivityRecordAdded();
 
-        console.log("[PhysicalActivityOracle] Record added.");
-    }
-
-    function signatureVerificationComplete(
-        bool hasError,
-        bool verified,
-        PhysicalActivityRecord memory record
-    ) internal virtual override {
-        if (hasError) {
-            revert ("UNKOWN_ERROR");
-        } else if (verified == false) {
-            revert("CALLER_UNAUTORIZED");
-        } else {
-            safePushPhysicalActivityRecord(record);
-        }
+        console.log("[PhysicalActivityOracle] New Record Processed.");
     }
 }

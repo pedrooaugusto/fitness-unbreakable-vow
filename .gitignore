@@ -27,8 +27,8 @@ build/
 .idea/
 .kotlin/
 
-# Ignore all Solidity files directly under mock/
-contracts/lib/mock/*.sol
+# Ignore all Solidity files directly under variants/
+contracts/lib/variants/*.sol
 
 # Logs
 logs

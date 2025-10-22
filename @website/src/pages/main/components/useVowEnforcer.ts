@@ -121,7 +121,16 @@ export const discoverWallets = (): Promise<Wallet[]> => {
 };
 
 
-const NetworkChainIdMap: Record<number | Network, Network | number> = { 42161: 'arbitrum', 'arbitrum': 42161, 11155111: 'sepolia', 'sepolia': 11155111, 31337: 'localhost', 'localhost': 31337 };
+const NetworkChainIdMap: Record<number | Network, Network | number> = { 
+    42161: 'arbitrum',
+    'arbitrum': 42161,
+    11155111: 'sepolia',
+    'sepolia': 11155111,
+    31337: 'localhost',
+    'localhost': 31337,
+    'arbiSep': 421614,
+    421614: 'arbiSep'
+};
 
 const parseLogs = (contract: Contract, logs: Log[] = []) => {
     const parsedLogs = [];

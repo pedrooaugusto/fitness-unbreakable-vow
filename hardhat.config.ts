@@ -1,16 +1,14 @@
 import '@nomicfoundation/hardhat-toolbox';
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, task } from "hardhat/config";
-import { connectOrDeploy, signPhysicalActivityRecord } from './scripts/utils';
-import { executeCode } from './scripts/execute-code-oracle';
-import { getRawPublicKey, PUBLIC_KEY, sign } from './scripts/keys';
-import minifySignatureVerifierSourceCode from './scripts/minify-verifier-script';
+import { signPhysicalActivityRecord } from './scripts/utils';
+import { getRawPublicKey } from './scripts/keys';
 import { getContractAddress, saveContractAddress } from './scripts/addresses';
-import { ChainlinkFunctionsMock } from './typechain-types/contracts/lib/mock/standard/ChainlinkFunctionsMock.sol';
 import setContractVersion from './scripts/set-contract-version';
 import path from 'path';
 import fs from 'fs';
 
+const STAKED_AMOUNT = "0.01";
 const CREATION_DATE = Math.floor(+new Date() / 1000);
 const NUMBER_OF_CYLES = 5.2;
 const SECONDS_IN_WEEK = 3600;
@@ -20,28 +18,28 @@ dotenv.config();
 
 // Optional environment variables (may be missing in CI)
 const SEPOLIA_RPC_URL = process.env['sepolia.RPC_URL'];
+const ABI_SEP_RPC_URL = process.env['arbiSep.RPC_URL'];
 const SEPOLIA_WALLET_PRIVATE_KEY = process.env['sepolia.WALLET_PRIVATE_KEY'];
 const ARBITRUM_WALLET_PRIVATE_KEY = process.env['arbitrum.WALLET_PRIVATE_KEY'];
-const ETHERSCAN_API_KEY_SEPOLIA = process.env['sepolia.ETHERSCAN.API_KEY'];
-const ETHERSCAN_API_KEY_ARBITRUM = process.env['arbitrum.ETHERSCAN.API_KEY'];
+const ARBITRUM_SEPOLIA_WALLET_PRIVATE_KEY = process.env['arbiSep.WALLET_PRIVATE_KEY'];
+const ETHERSCAN_API_KEY = process.env['ETHERSCAN_API_KEY'];
 const COINMARKETCAP_API_KEY = process.env['GAS_REPORTER.COIN_MARKET_API_KEY'];
 
 task('pre:compile')
     .setAction(async(_, { network: { name: networkName } }) => {
         const isLocalhost = networkName === 'localhost' || networkName === 'hardhat';
-        const source = path.join(__dirname, 'contracts', 'lib', 'mock', isLocalhost ? 'standard' : 'empty');
+        const source = path.join(__dirname, 'contracts', 'lib', 'variants', isLocalhost ? 'hardhat' : 'standard');
         const destination = path.join(source, '..');
 
-        for (const file of ['console.sol', 'ChainlinkFunctionsMock.sol']) {            
+        for (const file of ['console.sol', 'P256.sol']) {            
             fs.copyFileSync(path.join(source, file + '.source'), path.join(destination, file));
         }
 
-        console.log(`🔁 Using ${isLocalhost ? 'standard' : 'empty'} mocks for network ${networkName}`);
+        console.log(`🔁 Using ${isLocalhost ? 'hardhat' : 'standard'} source code variants for network ${networkName}`);
 })
 
 task("compile")
     .setAction(async (args, hre, runSuper) => {
-        minifySignatureVerifierSourceCode()
         setContractVersion()
         hre.run('pre:compile')
 
@@ -51,13 +49,16 @@ task("compile")
 task('TerminateVow', "Terminates the FitnessUnbreakableVow.")
     .setAction(async (taskArgs, hre) => {
         try {
-            const contractAddress = getContractAddress('FitnessUnbreakableVow', hre.network.name);
+            const contractAddress = getContractAddress('PhysicalActivityOracle', hre.network.name);
 
-            const contract = await hre.ethers.getContractAt("FitnessUnbreakableVow", contractAddress);
+            const contract = await hre.ethers.getContractAt("PhysicalActivityOracle", contractAddress);
 
-            const result = await contract.terminateVow();
+            console.log(await contract.PUBLIC_KEY_ATTESTATION());
+            console.log(await contract.PUBLIC_KEY());
 
-            await result.wait();
+            //const result = await contract.terminateVow();
+
+            //await result.wait();
         } catch (err) {
             console.error(err);
         }
@@ -73,10 +74,18 @@ task('PushPhysicalActivityRecord', "Calls contract pushPhysicalActivityRecord fu
 
             const contract = await hre.ethers.getContractAt("PhysicalActivityOracle", contractAddress);
 
-            if (await contract.BASE64_PUBLIC_KEY() !== PUBLIC_KEY) {
-                const result1 = await contract.setPublicKey(PUBLIC_KEY);
-                result1.wait();
-            }
+            const registeredPublicKey = await contract.PUBLIC_KEY();
+            const testPublicKey = await getRawPublicKey();
+
+            // convert to ethers hex and then compare
+            //if (registeredPublicKey.x !== testPublicKey.x) {
+                //const result1 = await contract.setPublicKey(testPublicKey);
+                //result1.wait();
+            //}
+
+            console.log(testPublicKey);
+
+            console.log(await contract.PUBLIC_KEY());
 
             const runDistanceMeters = parseInt(taskArgs.d, 10);
             const healthySleepNights = parseInt(taskArgs.s, 10);
@@ -86,7 +95,7 @@ task('PushPhysicalActivityRecord', "Calls contract pushPhysicalActivityRecord fu
 
             const { signature } = await signPhysicalActivityRecord(record);
 
-            const result = await contract.pushPhysicalActivityRecord(signature, record);
+            const result = await contract.pushPhysicalActivityRecord(signature, {...record, gymVisits: 10});
 
             await result.wait();
         } catch (err) {
@@ -111,11 +120,9 @@ task('EnforceVow', "Enforces the FitnessUnbreakableVow.")
 
 task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
     .setAction(async (taskArgs, hre) => {
-        const networkName = hre.network.name.toUpperCase();
-
         const PhysicalActivityOracle = await hre.ethers.getContractFactory("PhysicalActivityOracle");
 
-        const contract = await PhysicalActivityOracle.deploy(networkName, CREATION_DATE, EXPIRATION_DATE, SECONDS_IN_WEEK);
+        const contract = await PhysicalActivityOracle.deploy(CREATION_DATE, EXPIRATION_DATE, SECONDS_IN_WEEK);
 
         await contract.waitForDeployment();
 
@@ -131,12 +138,11 @@ task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
 
         console.log('⚠️ Add the new contract address to ChainLink consumers list.');
         console.log('⚠️ Verify contract source code in Etherscan with: ');
-        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${networkName}" "${CREATION_DATE}" "${EXPIRATION_DATE}" "${SECONDS_IN_WEEK}"`);
+        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${CREATION_DATE}" "${EXPIRATION_DATE}" "${SECONDS_IN_WEEK}"`);
     })
 
 task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
     .setAction(async (taskArgs, hre) => {
-        const STAKED_AMOUNT = hre.ethers.parseEther("0.01");// 0.001
         const oracleAddress = getContractAddress('PhysicalActivityOracle', hre.network.name);
         const chainLinkUpkeepAddress = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"; //"0xb83E47C2bC239B3bf370bc41e1459A34b41238D0";
 
@@ -148,7 +154,7 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
             await oracle.CREATION_DATE(),
             await oracle.EXPIRATION_DATE(),
             SECONDS_IN_WEEK,
-            { value: STAKED_AMOUNT }
+            { value: hre.ethers.parseEther(STAKED_AMOUNT) }
         );
 
         await fitnessUnbreakableVow.waitForDeployment();
@@ -167,40 +173,12 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
         console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${oracleAddress}" "${chainLinkUpkeepAddress}" "${CREATION_DATE}" "${EXPIRATION_DATE}" "${SECONDS_IN_WEEK}"`);
     })
 
-task('MockChainLinkOracle', "Deploys an mock Chainlink oracle.")
-    .setAction(async (taskArgs, hre) => {
-        const contract = await connectOrDeploy(getContractAddress('ChainlinkFunctionsMock', hre.network.name), 'ChainlinkFunctionsMock', hre) as ChainlinkFunctionsMock;
-
-        const contractAddress = await contract.getAddress();
-        saveContractAddress('ChainlinkFunctionsMock', contractAddress, hre.network.name, '');
-
-        console.log(`ChainlinkFunctionsMock contract deployed to: ${contractAddress}`);
-
-        console.log('\n\n⚠️ Starting server to listen for requests to execute code.');
-
-        contract.on(contract.filters.ExcuteCodeRequest(), async(arg: any) => {
-            console.log('Received request to execute code: ', arg.args);
-            const code = await contract.getCodeToExecute();
-            const args = await contract.getCodeToExecuteArgs();
-
-            const output = await executeCode(code, args);
-
-            const response = await contract.setCodeToExecuteResponse(output);
-
-            await response.wait();
-        });
-
-        contract.on(contract.filters.ExcuteCodeResponse(), async(arg: any) => {
-            console.log('Received execute code response: ', arg.args);
-            console.log('==================================================================================');
-        });
-
-        await new Promise(() => {});
-    })
-
 const config: HardhatUserConfig = {
     solidity: {
         version: "0.8.28",
+        settings: {
+            viaIR: true,
+        }
     },
     defaultNetwork: "hardhat",
     networks: {
@@ -225,18 +203,33 @@ const config: HardhatUserConfig = {
                 accounts: [ARBITRUM_WALLET_PRIVATE_KEY]
             }
         } : {}),
+        ...(ARBITRUM_SEPOLIA_WALLET_PRIVATE_KEY ? {
+            arbiSep: {
+                url: ABI_SEP_RPC_URL,
+                chainId: 421614,
+                accounts: [ARBITRUM_SEPOLIA_WALLET_PRIVATE_KEY]
+            }
+        } : {})
     },
     etherscan: {
-        apiKey: ETHERSCAN_API_KEY_SEPOLIA || '',
+        apiKey: ETHERSCAN_API_KEY || '',
         customChains: [
             {
                 network: "arbitrum",
                 chainId: 42161,
                 urls: {
-                    apiURL: "https://api.arbiscan.io/api",
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=42161",
                     browserURL: "https://arbiscan.io/",
                 },
             },
+            {
+                network: "arbiSep",
+                chainId: 421614,
+                urls: {
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=421614",
+                    browserURL: "https://sepolia.arbiscan.io/",
+                },
+            }
         ],
     },
     sourcify: {
