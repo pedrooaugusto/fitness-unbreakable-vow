@@ -32,7 +32,23 @@ case "$1" in
         echo "Deploying DeployPhysicalActivityOracle Contract..."
 
         npx hardhat compile --network $2
-        verifyOracle=$(npx hardhat --network $2 DeployPhysicalActivityOracle | tail -n 1)
+
+        ARGS=()
+        ARGS+=("--network" "$2")
+        if [ -n "$3" ]; then
+            ARGS+=("--s")
+            ARGS+=("$3")
+        fi
+        if [ -n "$4" ]; then
+            ARGS+=("--w")
+            ARGS+=("$4")
+        fi
+        if [ -n "$5" ]; then
+            ARGS+=("--d")
+            ARGS+=("$5")
+        fi
+
+        verifyOracle=$(npx hardhat DeployPhysicalActivityOracle "${ARGS[@]}" | tail -n 1)
 
         if [ "$2" != "localhost" ]; then
             echo "Veryfing DeployPhysicalActivityOracle..."
@@ -41,7 +57,10 @@ case "$1" in
         fi
 
         echo "Deploying DeployFitnessUnbreakableVow Contract..."
-        verifyVow=$(npx hardhat --network $2 DeployFitnessUnbreakableVow | tail -n 1)
+
+        stakedAmount="${6+--a $6}"
+        echo $stakedAmount
+        verifyVow=$(npx hardhat --network $2 DeployFitnessUnbreakableVow $stakedAmount | tail -n 1)
 
         if [ "$2" != "localhost" ]; then
             echo "Veryfing DeployFitnessUnbreakableVow..."

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { PhysicalActivityRecord, P256PublicKey, P256Signature, AndroidKeyAttestation } from "./Types.sol";
+import { PhysicalActivityRecord, P256PublicKey, P256Signature, AndroidKeyAttestation, ISignatureVerifier } from "./Types.sol";
 import { console } from './variants/console.sol';
 import { P256 } from './variants/P256.sol';
 
@@ -11,7 +11,7 @@ import { P256 } from './variants/P256.sol';
  * @notice Provides a framework for verifying the authenticity of physical activity records using P-256 signatures.
  * @dev Uses RIP-7212 precompile to verify secp256r1 signatures.
  */
-abstract contract SignatureVerifier {
+abstract contract SignatureVerifier is ISignatureVerifier {
     /**
      * @notice Stores the raw x and y values of the public key used for signature verification.
      * @dev Can only be set once. The oracle will only accept physical activity records signed with the corresponding private key.
@@ -81,9 +81,13 @@ abstract contract SignatureVerifier {
         PUBLIC_KEY_ATTESTATION = keyAttestation;
     }
 
+    
+    function isPublicKeySet() public view returns (bool) {
+        return PUBLIC_KEY.x != bytes32(0) && PUBLIC_KEY.y != bytes32(0);
+    }
+
     modifier onlyIfPublicKeyIsSet {
-        require(PUBLIC_KEY.x != bytes32(0), 'Public key not set.');
-        require(PUBLIC_KEY.y != bytes32(0), 'Public key not set.');
+        require(isPublicKeySet(), 'Public key not set.');
         _;
     }
 }

@@ -103,6 +103,10 @@ interface Listener {
     function onNewPhysicalActivityRecord(uint8 weekIndex, PhysicalActivityRecord calldata record) external;
 }
 
+interface ISignatureVerifier {
+    function isPublicKeySet() external view returns (bool);
+}
+
 struct P256Signature {
     bytes32 r;
     bytes32 s;

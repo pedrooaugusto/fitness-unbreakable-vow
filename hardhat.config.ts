@@ -8,11 +8,11 @@ import setContractVersion from './scripts/set-contract-version';
 import path from 'path';
 import fs from 'fs';
 
-const STAKED_AMOUNT = "0.01";
-const CREATION_DATE = Math.floor(+new Date() / 1000);
-const NUMBER_OF_CYLES = 5.2;
-const SECONDS_IN_WEEK = 120;
-const EXPIRATION_DATE = CREATION_DATE + SECONDS_IN_WEEK * NUMBER_OF_CYLES;
+// Defaults
+const STAKED_AMOUNT = "0.001";
+const CREATION_DATE = new Date().toISOString();
+const NUMBER_OF_CYLES = "5.2";
+const SECONDS_IN_WEEK = "120";
 
 dotenv.config();
 
@@ -115,10 +115,18 @@ task('EnforceVow', "Enforces the FitnessUnbreakableVow.")
     })
 
 task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
+    .addParam('s', 'Agreement start date', CREATION_DATE)
+    .addParam('w', 'Agreement duration in weeks', NUMBER_OF_CYLES)
+    .addParam('d', 'Seconds in one week', SECONDS_IN_WEEK)
     .setAction(async (taskArgs, hre) => {
+        const creationDate = Math.floor(+new Date(taskArgs.s) / 1000);
+        const numberOfCycles = parseFloat(taskArgs.w);
+        const secondsInOneWeek = parseInt(taskArgs.d);
+        const expirationDate = creationDate + secondsInOneWeek * numberOfCycles;
+
         const PhysicalActivityOracle = await hre.ethers.getContractFactory("PhysicalActivityOracle");
 
-        const contract = await PhysicalActivityOracle.deploy(CREATION_DATE, EXPIRATION_DATE, SECONDS_IN_WEEK);
+        const contract = await PhysicalActivityOracle.deploy(creationDate, expirationDate, secondsInOneWeek);
 
         await contract.waitForDeployment();
 
@@ -134,23 +142,33 @@ task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
 
         console.log('⚠️ Add the new contract address to ChainLink consumers list.');
         console.log('⚠️ Verify contract source code in Etherscan with: ');
-        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${CREATION_DATE}" "${EXPIRATION_DATE}" "${SECONDS_IN_WEEK}"`);
+        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${creationDate}" "${expirationDate}" "${secondsInOneWeek}"`);
     })
 
 task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
+    .addParam('a', 'Staked amount', STAKED_AMOUNT)
     .setAction(async (taskArgs, hre) => {
         const oracleAddress = getContractAddress('PhysicalActivityOracle', hre.network.name);
         const chainLinkUpkeepAddress = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"; //"0xb83E47C2bC239B3bf370bc41e1459A34b41238D0";
 
-        const FitnessUnbreakableVowFactory = await hre.ethers.getContractFactory('FitnessUnbreakableVow');
+        const stakedAmount = taskArgs.a;
+
+        console.log(stakedAmount);
+
         const oracle = await hre.ethers.getContractAt("PhysicalActivityOracle", oracleAddress);
+
+        const creationDate = await oracle.CREATION_DATE();
+        const expirationDate = await oracle.EXPIRATION_DATE();
+        const secondsInOneWeek = await oracle.SECONDS_IN_ONE_WEEK();
+
+        const FitnessUnbreakableVowFactory = await hre.ethers.getContractFactory('FitnessUnbreakableVow');
         const fitnessUnbreakableVow = await FitnessUnbreakableVowFactory.deploy(
             oracleAddress,
             chainLinkUpkeepAddress,
-            await oracle.CREATION_DATE(),
-            await oracle.EXPIRATION_DATE(),
-            SECONDS_IN_WEEK,
-            { value: hre.ethers.parseEther(STAKED_AMOUNT) }
+            creationDate,
+            expirationDate,
+            secondsInOneWeek,
+            { value: hre.ethers.parseEther(stakedAmount) }
         );
 
         await fitnessUnbreakableVow.waitForDeployment();
@@ -166,7 +184,7 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
         saveContractAddress('FitnessUnbreakableVow', contractAddress, hre.network.name, String(blockNumber));
 
         console.log('⚠️ Verify contract source code in Etherscan with: ');
-        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${oracleAddress}" "${chainLinkUpkeepAddress}" "${CREATION_DATE}" "${EXPIRATION_DATE}" "${SECONDS_IN_WEEK}"`);
+        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${oracleAddress}" "${chainLinkUpkeepAddress}" "${creationDate}" "${expirationDate}" "${secondsInOneWeek}"`);
     })
 
 const config: HardhatUserConfig = {

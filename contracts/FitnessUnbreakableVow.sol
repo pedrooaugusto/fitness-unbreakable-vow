@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { WeeklyGoalStatus, WeeklyGoal, PhysicalActivityRecord, Listener, Observable } from './lib/Types.sol';
+import { WeeklyGoalStatus, WeeklyGoal, PhysicalActivityRecord, Listener, Observable, ISignatureVerifier } from './lib/Types.sol';
 import { Ownable } from './lib/Ownable.sol';
 import { IExpirable } from "./lib/Expirable.sol";
 import { Versioned } from "./lib/Versioned.sol";
@@ -82,7 +82,10 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Version
      * @notice Transfers all remaining contract funds to the owner after contract (vow) has expired.
      * Can only be called after the contract has expired and by the contract's owner.
      */
-    function terminateVow() external onlyOwner onlyAfterFullExpiry {
+    function terminateVow() external onlyOwner {
+        // Allow vow termination if public keys weren't registered.
+        require(isPublicKeyNotSet() || isContractFullyExpired(), "Contract has not expired yet.");
+
         // Allow if pub key was not set yet.
         console.log("[FitnessUnbreakableVow] Terminating vow");
 
@@ -135,6 +138,10 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Version
 
     function isBeingCalledByUpkeep() private view returns (bool) {
         return msg.sender == CHAINLINK_UPKEEP_ADDRESS;
+    }
+
+    function isPublicKeyNotSet() private view returns (bool) {
+        return !ISignatureVerifier(PHYSICAL_ACTIVITY_ORACLE).isPublicKeySet();
     }
 
     function syncWithOracle(address oracle, uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek) private {

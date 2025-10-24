@@ -143,7 +143,10 @@ async function assertCorrectPhysicalActivityRecords(
 
 async function assertWeeklyGoalsCompletion(fitnessUnbreakableVow: FitnessUnbreakableVow, weekNumber: number, completedGoals: WeeklyGoalStructOutput) {
     const weeklyRecors = await fitnessUnbreakableVow.getAllWeeklyGoalsRecords();
-    expect(weeklyRecors[weekNumber]).to.be.deep.equals(completedGoals);
+    expect(weeklyRecors[weekNumber][0]).to.be.equals(completedGoals[0]);
+    expect(weeklyRecors[weekNumber][1]).to.be.equals(completedGoals[1]);
+    expect(weeklyRecors[weekNumber][2]).to.be.equals(completedGoals[2]);
+    expect(weeklyRecors[weekNumber][3]).to.be.equals(completedGoals[3]);
 }
 
 async function assertWhetherPenaltyShouldBeApplied(completedGoals: WeeklyGoalStructOutput, weekIndex: number, enforcerAddress: any, fitnessUnbreakableVow: FitnessUnbreakableVow) {
@@ -167,8 +170,6 @@ async function assertNoPenaltyWhenEnforceAgreement(fitnessUnbreakableVow: Fitnes
 
 async function assertPenaltyWhenEnforceAgreement(penaltyAmount: bigint, weekIndex: number, enforcerAddress: any, fitnessUnbreakableVow: FitnessUnbreakableVow) {
     const weekStauts = Number((await fitnessUnbreakableVow.getAllWeeklyGoalsRecords())[weekIndex][0]);
-
-    console.log(weekIndex);
 
     expect(weekStauts).to.be.equals(3);
 
@@ -209,7 +210,7 @@ function getCompletedGoals(physicalActivityRecordStruct: PhysicalActivityRecordS
     const sleptWell = BigInt(physicalActivityRecordStruct.healthySleepNights) >= 2n;
     const isCompleted = (wentoToTheGymEnoughTimes && ran2km) || (wentoToTheGymEnoughTimes && sleptWell) || (ran2km && sleptWell);
 
-    const output = [isCompleted ? 1n : 4n, wentoToTheGymEnoughTimes, ran2km, sleptWell] as WeeklyGoalStructOutput;
+    const output = [isCompleted ? 1n : 4n, wentoToTheGymEnoughTimes, ran2km, sleptWell, isCompleted ? 0n : 1n] as WeeklyGoalStructOutput;
 
     return output;
 }
