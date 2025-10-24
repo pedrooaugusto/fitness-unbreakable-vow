@@ -45,6 +45,7 @@ struct WeeklyGoal {
     bool wentoToTheGymEnoughTimes;
     bool ran2km;
     bool sleptWell;
+    uint256 penaltyBlock;
 }
 
 

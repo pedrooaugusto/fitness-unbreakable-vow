@@ -83,6 +83,7 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Version
      * Can only be called after the contract has expired and by the contract's owner.
      */
     function terminateVow() external onlyOwner onlyAfterFullExpiry {
+        // Allow if pub key was not set yet.
         console.log("[FitnessUnbreakableVow] Terminating vow");
 
         uint256 balance = address(this).balance;
@@ -112,6 +113,7 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Version
 
     function applyPenaltyForWeek(uint8 weekIndex) private {
         weeklyGoalsRecords[weekIndex].status = WeeklyGoalStatus.FAILED_PENALTY_APPLIED;
+        weeklyGoalsRecords[weekIndex].penaltyBlock = block.number;
 
         uint256 penaltyAmount = calculatePenaltyAmount();
 

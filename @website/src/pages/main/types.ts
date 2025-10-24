@@ -25,11 +25,12 @@ export interface WeeklyGoal {
         run2KmGoalMet: boolean;
         sleptWellGoalMet: boolean;
     },
-    penaltyDetails?: PenaltyApplied;
+    penaltyBlok?: string;
 }
 
 export interface ContractEvent {
     transactionHash: string;
+    blockNumber: number;
 }
 
 export interface PhysicalActivityRecordProcessed extends ContractEvent {
@@ -42,13 +43,12 @@ export interface PhysicalActivityRecordProcessed extends ContractEvent {
 export interface PenaltyApplied extends ContractEvent {
     weekIndex: number,
     enforcer: string,
-    enforcedByUpkeeper: boolean,
-    amount: number,
 }
 
 export interface GetContractOverviewResponse {
     contractAddress: string;
     oracleAddress: string;
+    upkeeperAddress: string;
 
     startDate: number;
     expirationDate: number;
@@ -100,10 +100,8 @@ export interface GetWeekDetailsResponse {
         highestDistanceRanInMeters: number;
         healthySleepNights: number;
     };
-    history: ({
-        transactionHash: string;
-        blockNumber: number;
-    } & PhysicalActivityRecordProcessed)[]
+    history: ({ transactionHash: string; blockNumber: number; } & PhysicalActivityRecordProcessed)[];
+    penalty: PenaltyApplied | null;
 }
 
 export type Currency = "usd" | "brl" | "eth";

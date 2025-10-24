@@ -332,6 +332,11 @@
             "internalType": "bool",
             "name": "sleptWell",
             "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "penaltyBlock",
+            "type": "uint256"
           }
         ],
         "internalType": "struct WeeklyGoal[]",
@@ -457,6 +462,11 @@
         "internalType": "bool",
         "name": "sleptWell",
         "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "penaltyBlock",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",

@@ -1,16 +1,13 @@
 import { ethers } from 'ethers';
-import type { ContractPhaseType, GetContractOverviewResponse, PenaltyApplied, WeeklyGoal } from '../types';
+import type { ContractPhaseType, GetContractOverviewResponse, WeeklyGoal } from '../types';
 import loadContract from './load-contract';
 
 export async function getContractOverview(): Promise<GetContractOverviewResponse> {
     const {
         getBalance,
         executeMulticall,
-        getEvents,
-        network,
         PhysicalActivityOracle,
         FitnessUnbreakableVow,
-        FitnessUnbreakableVowAddress,
     } = await loadContract();
  
     const contractBalance = await getBalance(FitnessUnbreakableVow);
@@ -65,14 +62,10 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         healthySleepNights: Number(currentWeekPhysicalActivityRecordRaw.healthySleepNights),
     };
 
-    const penaltyAppliedEvents = await getEvents<PenaltyApplied>(FitnessUnbreakableVow, 'PenaltyApplied', [], ['weekIndex', 'enforcer']);
-
-    const penaltiesApplied = penaltyAppliedEvents.map(item => enrichPenaltyDetails(item, penaltyAmount, upkeeperAddress));
-
-    const allWeeks = allWeeksRaw.map((weeklyGoal: any, index: number) => enrichWeeklyGoal(weeklyGoal, index, penaltiesApplied)) as WeeklyGoal[];
+    const allWeeks = allWeeksRaw.map((weeklyGoal: Record<string, unknown>) => enrichWeeklyGoal(weeklyGoal)) as WeeklyGoal[];
 
     return {
-        contractAddress: FitnessUnbreakableVowAddress,
+        contractAddress: FitnessUnbreakableVow.contractAddress,
         oracleAddress,
         startDate: Number(startDate),
         expirationDate: Number(expirationDate),
@@ -83,11 +76,12 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         currentWeekNumber: Number(currentWeekNumber),
         currentWeekPhysicalActivityRecord,
         allWeeks,
+        upkeeperAddress,
         isContractExpired: Number(contractPhase) != 0,
         contractPhase: Number(contractPhase) as ContractPhaseType,
         gracePeriod: Number(gracePeriod),
         secondsInAWeek: Number(secondsInAWeek),
-        network: network,
+        network: FitnessUnbreakableVow.network,
         gymVisitsGoal: Number(gymVisitsGoal),
         runDistanceGoal: Number(runDistanceGoal),
         healthySleepNightsGoal: Number(healthySleepNightsGoal),
@@ -104,7 +98,7 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
     };
 }
 
-function enrichWeeklyGoal(weeklyGoal: Record<string, unknown>, index: number, penaltiesAppliedList: PenaltyApplied[]) {
+function enrichWeeklyGoal(weeklyGoal: Record<string, unknown>) {
     return {
         status: Number(weeklyGoal.status),
         goals: {
@@ -112,14 +106,7 @@ function enrichWeeklyGoal(weeklyGoal: Record<string, unknown>, index: number, pe
             run2KmGoalMet: weeklyGoal.ran2km,
             sleptWellGoalMet: weeklyGoal.sleptWell,
         },
-        penaltyDetails: penaltiesAppliedList.find(item => item.weekIndex === index)
+        penaltyBlock: weeklyGoal.penaltyBlock ? String(weeklyGoal.penaltyBlock) : null,
     }
 }
 
-function enrichPenaltyDetails(penaltyDetails: PenaltyApplied, penaltyAmount: bigint, upkeeperAddress: string): PenaltyApplied {
-    return {
-        ...penaltyDetails,
-        amount: Number(ethers.formatEther(penaltyAmount)),
-        enforcedByUpkeeper: penaltyDetails.enforcer === upkeeperAddress
-    }
-}

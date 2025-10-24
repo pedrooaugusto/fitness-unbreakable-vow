@@ -11,7 +11,7 @@ import fs from 'fs';
 const STAKED_AMOUNT = "0.01";
 const CREATION_DATE = Math.floor(+new Date() / 1000);
 const NUMBER_OF_CYLES = 5.2;
-const SECONDS_IN_WEEK = 3600;
+const SECONDS_IN_WEEK = 120;
 const EXPIRATION_DATE = CREATION_DATE + SECONDS_IN_WEEK * NUMBER_OF_CYLES;
 
 dotenv.config();
@@ -78,14 +78,10 @@ task('PushPhysicalActivityRecord', "Calls contract pushPhysicalActivityRecord fu
             const testPublicKey = await getRawPublicKey();
 
             // convert to ethers hex and then compare
-            //if (registeredPublicKey.x !== testPublicKey.x) {
-                //const result1 = await contract.setPublicKey(testPublicKey);
-                //result1.wait();
-            //}
-
-            console.log(testPublicKey);
-
-            console.log(await contract.PUBLIC_KEY());
+            if (registeredPublicKey.x !== hre.ethers.hexlify(testPublicKey.x)) {
+                const result1 = await contract.setPublicKey(testPublicKey, { attestationSha256: '', attestationChallenge: '', attestationIpfsCID: '' });
+                result1.wait();
+            }
 
             const runDistanceMeters = parseInt(taskArgs.d, 10);
             const healthySleepNights = parseInt(taskArgs.s, 10);
@@ -95,7 +91,7 @@ task('PushPhysicalActivityRecord', "Calls contract pushPhysicalActivityRecord fu
 
             const { signature } = await signPhysicalActivityRecord(record);
 
-            const result = await contract.pushPhysicalActivityRecord(signature, {...record, gymVisits: 10});
+            const result = await contract.pushPhysicalActivityRecord(signature, record);
 
             await result.wait();
         } catch (err) {

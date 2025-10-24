@@ -54,3 +54,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+@contract-event-store/deploy.sh
+@contract-event-store/function.zip
+@contract-event-store/.lambda
+@contract-event-store/update-scheduler.sh
+
+TODO.md

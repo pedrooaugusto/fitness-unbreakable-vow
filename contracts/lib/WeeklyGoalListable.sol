@@ -134,7 +134,8 @@ abstract contract WeeklyGoalListable is Expirable {
             WeeklyGoalStatus.PENDING_END_OF_WEEK,
             wentoToTheGymEnoughTimes,
             ran2km,
-            sleptWell
+            sleptWell,
+            0
         );
     }
 

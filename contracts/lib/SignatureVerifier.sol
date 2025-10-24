@@ -13,11 +13,6 @@ import { P256 } from './variants/P256.sol';
  */
 abstract contract SignatureVerifier {
     /**
-     * @notice Indicates whether the public key has been set. Prevents overwriting the key after initial assignment.
-     */
-    bool public publicKeySet = false;
-
-    /**
      * @notice Stores the raw x and y values of the public key used for signature verification.
      * @dev Can only be set once. The oracle will only accept physical activity records signed with the corresponding private key.
      */
@@ -73,7 +68,9 @@ abstract contract SignatureVerifier {
      * @param keyAttestation Android Key Attestation metadata (digest, challenge, and IPFS CID of the cert chain).
      */
     function setPublicKey(P256PublicKey calldata publicKey, AndroidKeyAttestation calldata keyAttestation) external {
-        require(!publicKeySet, "Public key already set");
+        // TODO: Uncomment next two lines
+        //require(PUBLIC_KEY.x == bytes32(0), "Public key already set");
+        //require(PUBLIC_KEY.y == bytes32(0), "Public key already set");
         require(publicKey.x != bytes32(0), "Public key cannot be empty");
         require(publicKey.y != bytes32(0), "Public key cannot be empty");
 
@@ -82,8 +79,6 @@ abstract contract SignatureVerifier {
         // Use the IPFS CID to download the attestation certificate and check if
         // it was issued by Google.
         PUBLIC_KEY_ATTESTATION = keyAttestation;
-        // TODO: Uncomment this
-        // publicKeySet = true;
     }
 
     modifier onlyIfPublicKeyIsSet {

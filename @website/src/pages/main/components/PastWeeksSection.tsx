@@ -6,7 +6,6 @@ import {
     type GetContractOverviewResponse,
     type GetWeekDetailsResponse,
     type Network,
-    type PenaltyApplied,
     type WeeklyGoal,
     type WeeklyGoalStatusType,
 } from "../types";
@@ -72,7 +71,7 @@ export const PastWeeksSection: React.FC<PastWeeksSectionProps> = ({
                                         key={index}
                                         week={week}
                                         weekIndex={index}
-                                        penaltyDetails={week.penaltyDetails}
+                                        upkeeperAddress={overview.upkeeperAddress}
                                         openModal={openModal}
                                         closeModal={closeModal}
                                         network={overview.network}
@@ -102,6 +101,7 @@ function PastWeekCard({
     healthySleepNightsGoal,
     openModal,
     network,
+    upkeeperAddress,
     currency,
     penaltyAmount,
     vowAddress,
@@ -112,12 +112,12 @@ function PastWeekCard({
     network: Network;
     penaltyAmount: number;
     currency: Currency;
-    penaltyDetails?: PenaltyApplied;
     vowAddress: string;
     requiredNumberOfCompletedGoals: number;
     gymVisitsGoal: number,
     runDistanceGoal: number,
     healthySleepNightsGoal: number,
+    upkeeperAddress: string
 } & WithModalProps) {
     const { goals, status } = week;
 
@@ -146,8 +146,8 @@ function PastWeekCard({
             weekIndex={weekIndex}
             vowAddress={vowAddress}
             penaltyAmount={penaltyAmount}
+            upkeeperAddress={upkeeperAddress}
             status={status}
-            penaltyDetails={week.penaltyDetails!}
             goals={week.goals}
             network={network}
             currency={currency}
@@ -195,7 +195,6 @@ function PastWeekStatusIcon({ status }: { status: number }) {
 
 interface PastWeekDetailsModalProps {
     weekIndex: number;
-    penaltyDetails: PenaltyApplied;
     weekDetails: GetWeekDetailsResponse;
     network: Network;
     goals: WeeklyGoal["goals"];
@@ -206,7 +205,8 @@ interface PastWeekDetailsModalProps {
     gymVisitsGoal: number,
     runDistanceGoal: number,
     healthySleepNightsGoal: number,
-    penaltyAmount?: number;
+    penaltyAmount: number;
+    upkeeperAddress: string;
     closeModal: () => void;
 }
 
@@ -261,7 +261,7 @@ function RecordsHistory({ weekDetails, network }: { weekDetails: GetWeekDetailsR
             <details>
                 <summary style={{cursor: 'pointer'}}><u>Physical activity records reported this week.</u></summary>
                 <ul>
-                    {weekDetails.history.length === 0 && <li>No records reported this week.</li>}
+                    {weekDetails.history.length === 0 && <li>Unable to find records for this week. Go check on Etherscan.</li>}
                     {weekDetails.history.map((record, index) => (
                         <li key={index}>
                             <a
@@ -281,19 +281,21 @@ function RecordsHistory({ weekDetails, network }: { weekDetails: GetWeekDetailsR
 
 
 function PastWeekFailedDetailsModal({
-    penaltyDetails,
     network,
     currency,
+    weekDetails,
     ...props
 }: PastWeekDetailsModalProps) {
-    const enforcerAddress = shortAddress(penaltyDetails.enforcer);
-    const transactionUrl = getTransactionBlockExplorerUrl(penaltyDetails.transactionHash, network);
-    const addressUrl = getAddressBlockExplorerUrl(penaltyDetails.enforcer, network);
+    const penaltyDetails = weekDetails.penalty;
+
+    const enforcerAddress = penaltyDetails != null ? shortAddress(penaltyDetails.enforcer) : 'unknown';
+    const transactionUrl = penaltyDetails != null ? getTransactionBlockExplorerUrl(penaltyDetails.transactionHash, network) : '#';
+    const addressUrl = penaltyDetails != null ? getAddressBlockExplorerUrl(penaltyDetails.enforcer, network) : '#';
     const vowAddressUrl = getAddressBlockExplorerUrl(props.vowAddress, network);
-    const totalPenaltyAmount = formatCurrency(penaltyDetails.amount, currency);
-    const enforcedByUpkeeper = penaltyDetails.enforcedByUpkeeper;
-    const enforcerReward = formatCurrency(enforcedByUpkeeper ? 0 : penaltyDetails.amount / 2, currency);
-    const charityDonation = formatCurrency(enforcedByUpkeeper ? penaltyDetails.amount : penaltyDetails.amount / 2, currency);
+    const totalPenaltyAmount = formatCurrency(props.penaltyAmount, currency);
+    const enforcedByUpkeeper = penaltyDetails?.enforcer === props.upkeeperAddress;
+    const enforcerReward = formatCurrency(enforcedByUpkeeper ? 0 : props.penaltyAmount / 2, currency);
+    const charityDonation = formatCurrency(enforcedByUpkeeper ? props.penaltyAmount : props.penaltyAmount / 2, currency);
 
     return (
         <div className="main">
@@ -303,7 +305,7 @@ function PastWeekFailedDetailsModal({
                     This week was marked as failed because not enough goals were
                     met:
                 </p>
-                <TargetGoalsList {...props} weekDetails={props.weekDetails} />
+                <TargetGoalsList {...props} weekDetails={weekDetails} />
                 <h4>💸 Fine Applied</h4>
                 <p>
                     A fine of {totalPenaltyAmount} was deducted from the
@@ -337,7 +339,7 @@ function PastWeekFailedDetailsModal({
                         </a>
                     </li>
                 </ul>
-                <RecordsHistory weekDetails={props.weekDetails} network={network} />
+                <RecordsHistory weekDetails={weekDetails} network={network} />
             </div>
             <div className="actions">
                 <button className="close-button" onClick={props.closeModal}>
@@ -408,8 +410,8 @@ function PastWeekFailedClaimRewardDetailsModal({
     network,
     closeModal,
     ...props
-}: PastWeekDetailsModalProps & { penaltyAmount?: number }) {
-    const enforcerReward = formatCurrency(penaltyAmount! / 2, currency);
+}: PastWeekDetailsModalProps) {
+    const enforcerReward = formatCurrency(penaltyAmount / 2, currency);
     const enforceFuncUrl = getAddressBlockExplorerUrl(vowAddress, network) + "#writeContract#F1";
     const [isLoading, setLoading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
