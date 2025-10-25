@@ -49,16 +49,13 @@ task("compile")
 task('TerminateVow', "Terminates the FitnessUnbreakableVow.")
     .setAction(async (taskArgs, hre) => {
         try {
-            const contractAddress = getContractAddress('PhysicalActivityOracle', hre.network.name);
+            const contractAddress = getContractAddress("FitnessUnbreakableVow", hre.network.name);
 
-            const contract = await hre.ethers.getContractAt("PhysicalActivityOracle", contractAddress);
+            const contract = await hre.ethers.getContractAt("FitnessUnbreakableVow", contractAddress);
 
-            console.log(await contract.PUBLIC_KEY_ATTESTATION());
-            console.log(await contract.PUBLIC_KEY());
+            const result = await contract.terminateVow();
 
-            //const result = await contract.terminateVow();
-
-            //await result.wait();
+            await result.wait();
         } catch (err) {
             console.error(err);
         }

@@ -109,7 +109,7 @@ jobs:
             const secondsInOneWeek = Number("${{ inputs.seconds_in_one_week }}")
             const numberOfWeeks = Number("${{ inputs.number_of_weeks }}")
             const network = "${{ inputs.network }}"
-            const endDate = startDate + secondsInOneWeek * numberOfWeeks
+            const endDate = 60 + startDate + secondsInOneWeek * numberOfWeeks
             const addressesFile = path.join(__dirname, "contracts", ".addresses")
 
             const contractAddress = fs.readFileSync(addressesFile, "utf8")
@@ -118,8 +118,8 @@ jobs:
               .split("=")[1]
 
             console.log("RATE=\"rate("+ parseInt(secondsInOneWeek / 60) +" minutes)\"")
-            console.log("START_DATE=\"" + new Date(1000*(startDate + secondsInOneWeek + 3)).toISOString() + "\"")
-            console.log("END_DATE=\"" + new Date(1000*(endDate + 10)).toISOString() + "\"")
+            console.log("START_DATE=\"" + new Date(1000*(startDate + secondsInOneWeek + 2)).toISOString() + "\"")
+            console.log("END_DATE=\"" + new Date(1000 * endDate).toISOString() + "\"")
             console.log("CONTRACT_ADDRESS=\"" + contractAddress + "\"")
           ' >> scheduler-args.txt
 
@@ -172,7 +172,7 @@ jobs:
             --target '{
               "Arn": "'"$LAMBDA_ARN"'",
               "RoleArn": "'"$SCHEDULER_ROLE"'",
-              "Input": "{\"contractAddress\":\"$CONTRACT_ADDRESS\"}"
+              "Input": "{\"contractAddress\":\"'"$CONTRACT_ADDRESS"'\"}"
             }'
 
   deploy-webapp:
