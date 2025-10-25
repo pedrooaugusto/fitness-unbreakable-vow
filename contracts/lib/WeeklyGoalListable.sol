@@ -86,6 +86,7 @@ abstract contract WeeklyGoalListable is Expirable {
             }
 
             // This should never happen really...
+            // Whenever FAILED_PENDING_PENALTY is set it is imedially overriden
             if (status == WeeklyGoalStatus.FAILED_PENDING_PENALTY) {
                 lastSettledWeek = weekIndex;
 
@@ -157,7 +158,7 @@ abstract contract WeeklyGoalListable is Expirable {
     }
 
     function statusForPastWeek(WeeklyGoal memory weeklyGoal, ContractPhase phase) private pure returns (WeeklyGoalStatus) {
-        // Already settled? If yes, just the return the status.
+        // Already settled? If yes, just return the status.
         if (weeklyGoal.hasTerminalStatus()) return weeklyGoal.status;
 
         // If the contract is fully expired:

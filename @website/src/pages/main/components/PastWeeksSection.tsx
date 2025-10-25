@@ -128,14 +128,17 @@ function PastWeekCard({
     ].filter(Boolean).length;
 
     const isStatusPending = status === WeeklyGoalStatus.FAILED_PENDING_PENALTY;
-    const isStatusFinal = status === WeeklyGoalStatus.COMPLETED || status === WeeklyGoalStatus.FAILED_PENALTY_APPLIED;
+    const isStatusFinal = status === WeeklyGoalStatus.COMPLETED ||
+        status === WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UNKOWN ||
+        status === WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UPKEEPER;
     const isStatusNull = status === WeeklyGoalStatus.NULL && 'Unclaimed!';
 
     const cardClass = () => {
         switch (status) {
         case WeeklyGoalStatus.COMPLETED: return "met";
         case WeeklyGoalStatus.FAILED_PENDING_PENALTY: return "not-met-pending-penalty";
-        case WeeklyGoalStatus.FAILED_PENALTY_APPLIED: return "not-met";
+        case WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UNKOWN: return "not-met";
+        case WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UPKEEPER: return "not-met";
         default: return "not-met-unclaimed-penalty";
         }
     };
@@ -185,7 +188,8 @@ function PastWeekStatusIcon({ status }: { status: number }) {
     switch (status) {
     case WeeklyGoalStatus.COMPLETED:
         return <CheckCircleIcon width="18" height="18" />;
-    case WeeklyGoalStatus.FAILED_PENALTY_APPLIED:
+    case WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UNKOWN:
+    case WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UPKEEPER:
     case WeeklyGoalStatus.NULL:
         return <XIcon width="18" height="18" />;
     default:
@@ -222,7 +226,7 @@ function PastWeekDetailsModal(props: Omit<PastWeekDetailsModalProps, 'weekDetail
         return <div className="main"><div className="past-week-details-modal"><b>⏳ Loading Week Details...</b></div></div>;
     }
 
-    if (status === WeeklyGoalStatus.FAILED_PENALTY_APPLIED) {
+    if (status === WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UNKOWN || status === WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UPKEEPER) {
         return <PastWeekFailedDetailsModal {...props} weekDetails={weekDetails} />;
     } else if (status === WeeklyGoalStatus.NULL) {
         return <PastWeekFailedExpiredDetailsModal {...props} weekDetails={weekDetails} />;

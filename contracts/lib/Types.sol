@@ -37,7 +37,8 @@ enum WeeklyGoalStatus {
     COMPLETED,
     PENDING_END_OF_WEEK,
     FAILED_PENDING_PENALTY,
-    FAILED_PENALTY_APPLIED
+    FAILED_PENALTY_APPLIED_BY_UPKEEPER,
+    FAILED_PENALTY_APPLIED_BY_UNKOWN
 }
 
 struct WeeklyGoal {
@@ -62,7 +63,9 @@ library WeeklyGoalFunctions {
     }
 
     function hasTerminalStatus(WeeklyGoal memory self) internal pure returns (bool) {
-        return self.status == WeeklyGoalStatus.COMPLETED || self.status == WeeklyGoalStatus.FAILED_PENALTY_APPLIED;
+        return self.status == WeeklyGoalStatus.COMPLETED ||
+            self.status == WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UNKOWN ||
+            self.status == WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UPKEEPER;
     }
 
     function isPendingEndOfWeek(WeeklyGoal memory self) internal pure returns (bool) {

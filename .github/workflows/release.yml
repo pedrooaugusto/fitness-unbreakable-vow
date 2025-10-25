@@ -177,7 +177,7 @@ jobs:
 
   deploy-webapp:
     name: Deploy Frontend
-    needs: deploy-contract-sepolia
+    needs: update-scheduler
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

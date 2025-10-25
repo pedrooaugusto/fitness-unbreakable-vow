@@ -3,7 +3,8 @@ export const WeeklyGoalStatus = {
     COMPLETED: 1,
     PENDING_END_OF_WEEK: 2,
     FAILED_PENDING_PENALTY: 3,
-    FAILED_PENALTY_APPLIED: 4,
+    FAILED_PENALTY_APPLIED_BY_UPKEEPER: 4,
+    FAILED_PENALTY_APPLIED_BY_UNKOWN: 5,
 } as const;
 
 export type WeeklyGoalStatusType = typeof WeeklyGoalStatus[keyof typeof WeeklyGoalStatus];

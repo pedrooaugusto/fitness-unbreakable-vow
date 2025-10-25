@@ -6,7 +6,7 @@ import CalendarIcon from "../../../assets/calendar-icon";
 import ArticleIcon from "../../../assets/article-icon";
 import LinkIcon from "../../../assets/link-icon";
 import { formatCurrency, formatDate, getAddressBlockExplorerUrl, GIVETH_PAGE_URL, timeRemaining } from "../../utils";
-import { ContractPhase, WeeklyGoalStatus, type Currency, type GetContractOverviewResponse, type Network } from "../types";
+import { ContractPhase, WeeklyGoalStatus, type Currency, type GetContractOverviewResponse, type Network, type WeeklyGoal } from "../types";
 import { SectionTitle } from "../../components/SectionTitle";
 import type { WithModalProps } from "../../components/modal";
 import LiveTimeCountdown from "./LiveTimeCountdown";
@@ -18,9 +18,13 @@ interface ContractOverviewSectionProps extends WithModalProps {
     changeCurrency: (currency: Currency) => void;
 };
 
+const penaltyWasApplied = (week: WeeklyGoal) =>
+    week.status === WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UNKOWN ||
+    week.status === WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UPKEEPER;
+
 const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overview, currency, changeCurrency, openModal, closeModal }) => {
-    const numberOfPenalties = overview.allWeeks.filter(week => week.status === WeeklyGoalStatus.FAILED_PENALTY_APPLIED).length;
-    const [givenToCharity, givenToStrangers] = calculatePenalties(overview.allWeeks);
+    const numberOfPenalties = overview.allWeeks.filter(penaltyWasApplied).length;
+    const [givenToCharity, givenToStrangers] = calculatePenalties(overview.allWeeks, overview.penaltyAmount);
     const currentBalancePercent = (overview.currentBalance / overview.initialStakedAmount - 1) * 100;
     const currentBalancePercentText = `${currentBalancePercent > 0 ? '+' : ''}${currentBalancePercent.toFixed(1)}%`;
     const totalWeeks = Math.floor((overview.expirationDate - overview.startDate) / overview.secondsInAWeek) - 1;
@@ -473,12 +477,18 @@ function KeyAttestationModal(props: KeyAttestationModalProps) {
     );
 }
 
-function calculatePenalties(allWeeks: GetContractOverviewResponse["allWeeks"]) {
-    return allWeeks.reduce(([givenToCharity, givenToStrangers], { penaltyDetails }) => {
-        if (penaltyDetails) {
-            givenToCharity += penaltyDetails.amount * (penaltyDetails.enforcedByUpkeeper ? 1 : 0.5);
-            givenToStrangers += penaltyDetails.amount * (penaltyDetails.enforcedByUpkeeper ? 0 : 0.5);
+function calculatePenalties(allWeeks: GetContractOverviewResponse["allWeeks"], penaltyAmount: number) {
+    return allWeeks.reduce(([givenToCharity, givenToStrangers], weekDetails) => {
+        if (weekDetails.status === WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UNKOWN) {
+            givenToCharity += penaltyAmount * 0.5;
+            givenToStrangers += penaltyAmount * 0.5;
         }
+
+        if (weekDetails.status === WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UPKEEPER) {
+            givenToCharity += penaltyAmount * 1;
+            givenToStrangers += penaltyAmount * 0;
+        }
+
         return [givenToCharity, givenToStrangers];
     }, [0, 0]);
 }

@@ -210,7 +210,7 @@ function getCompletedGoals(physicalActivityRecordStruct: PhysicalActivityRecordS
     const sleptWell = BigInt(physicalActivityRecordStruct.healthySleepNights) >= 2n;
     const isCompleted = (wentoToTheGymEnoughTimes && ran2km) || (wentoToTheGymEnoughTimes && sleptWell) || (ran2km && sleptWell);
 
-    const output = [isCompleted ? 1n : 4n, wentoToTheGymEnoughTimes, ran2km, sleptWell, isCompleted ? 0n : 1n] as WeeklyGoalStructOutput;
+    const output = [isCompleted ? 1n : 5n, wentoToTheGymEnoughTimes, ran2km, sleptWell, isCompleted ? 0n : 1n] as WeeklyGoalStructOutput;
 
     return output;
 }

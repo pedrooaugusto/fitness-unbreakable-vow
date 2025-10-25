@@ -29,7 +29,7 @@ export async function getWeekDetails(weekIndex: string): Promise<GetWeekDetailsR
 
 async function getRecordsHistoryForWeek(weekIndex: string, vowContract: EnhancedContract) {
     // We don't have a limit on how many blocks we can query in localhost.
-    if (vowContract.network === 'localhoste') {
+    if (vowContract.network === 'localhost') {
         return await vowContract.getEvents<PhysicalActivityRecordProcessed>(
             'PhysicalActivityRecordProcessed',
             [weekIndex],

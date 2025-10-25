@@ -26,18 +26,5 @@ export async function convert(overview: GetContractOverviewResponse, currency: C
         currentBalance: overview.currentBalance * exchangeRate,
         initialStakedAmount: overview.initialStakedAmount * exchangeRate,
         penaltyAmount: overview.penaltyAmount * exchangeRate,
-        allWeeks: overview.allWeeks.map(item => {
-            if (item.penaltyDetails == undefined) return item;
-
-            const { penaltyDetails } = item;
-
-            return {
-                ...item,
-                penaltyDetails: {
-                    ...penaltyDetails,
-                    amount: penaltyDetails.amount * exchangeRate
-                }
-            }
-        })
     };
 }
