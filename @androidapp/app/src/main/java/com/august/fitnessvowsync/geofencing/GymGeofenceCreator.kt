@@ -1,6 +1,7 @@
 package com.august.fitnessvowsync.geofencing
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent

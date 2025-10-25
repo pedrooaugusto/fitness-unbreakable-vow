@@ -258,15 +258,18 @@ function TargetGoalsList(props: { weekDetails: GetWeekDetailsResponse; gymVisits
     );
 }
 
-function RecordsHistory({ weekDetails, network }: { weekDetails: GetWeekDetailsResponse; network: Network }) {
+function RecordsHistory({ weekDetails, network, oracleAddress }: { weekDetails: GetWeekDetailsResponse; network: Network; oracleAddress: string }) {
+    const blockExplorerLink = getAddressBlockExplorerUrl(oracleAddress, network) + '#events';
+
     return (
         <>
             <br />
             <details>
                 <summary style={{cursor: 'pointer'}}><u>Physical activity records reported this week.</u></summary>
                 <ul>
-                    {weekDetails.history.length === 0 && <li>Unable to find records for this week. Go check on Etherscan.</li>}
-                    {weekDetails.history.map((record, index) => (
+                    {weekDetails.history == null && (<li>Records for this week not available yet. <a href={blockExplorerLink} target="_blank">Go check them on Etherscan.</a></li>)}
+                    {weekDetails.history?.length == 0 && (<li>No physical activity records reported this week. <a href={blockExplorerLink} target="_blank">More details on Etherscan.</a></li>)}
+                    {(weekDetails.history || []).map((record, index) => (
                         <li key={index}>
                             <a
                                 href={getTransactionBlockExplorerUrl(record.transactionHash, network)}
@@ -343,7 +346,7 @@ function PastWeekFailedDetailsModal({
                         </a>
                     </li>
                 </ul>
-                <RecordsHistory weekDetails={weekDetails} network={network} />
+                <RecordsHistory weekDetails={weekDetails} network={network} oracleAddress={props.vowAddress} />
             </div>
             <div className="actions">
                 <button className="close-button" onClick={props.closeModal}>
@@ -374,7 +377,7 @@ function PastWeekSucceedDetailsModal({
                     Since the weekly goals were completed no fine was applied
                     this week.
                 </p>
-                <RecordsHistory weekDetails={weekDetails} network={network} />
+                <RecordsHistory weekDetails={weekDetails} network={network} oracleAddress={props.vowAddress} />
             </div>
             <div className="actions">
                 <button className="close-button" onClick={closeModal}>

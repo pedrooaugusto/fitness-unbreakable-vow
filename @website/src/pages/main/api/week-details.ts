@@ -37,17 +37,16 @@ async function getRecordsHistoryForWeek(weekIndex: string, vowContract: Enhanced
         ) || [];
     }
 
-    // We do have one in prod. So we just fetch from a file that will probably be there...
-    const response = await fetch(`/events/${vowContract.contractAddress}/week-${weekIndex}/PhysicalActivityRecordProcessed.json`)
-
-    if (!response.ok) return [];
-
     try {
+        // We do have one in prod. So we just fetch from a file that will probably be there...
+        const response = await fetch(`/events/${vowContract.contractAddress}/week-${weekIndex}/PhysicalActivityRecordProcessed.json`)
+
+        if (!response.ok) return null;
         return await response.json() as PhysicalActivityRecordProcessed[];
     } catch(ex) {
         console.error('Unable to fetch events for week: ' + weekIndex, ex);
 
-        return [];
+        return null;
     }
 }
 

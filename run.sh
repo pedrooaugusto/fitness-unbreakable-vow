@@ -29,23 +29,21 @@ case "$1" in
         echo "Done."
         ;;
     deploy)
-        echo "Deploying DeployPhysicalActivityOracle Contract..."
+        echo "Building artifacts."
 
         npx hardhat compile --network $2
 
+        echo "Deploying DeployPhysicalActivityOracle Contract..."
         ARGS=()
         ARGS+=("--network" "$2")
-        if [ -n "$3" ]; then
-            ARGS+=("--s")
-            ARGS+=("$3")
+        if [ "$#" -ge 3 ] && [ -n "${3}" ]; then
+            ARGS+=("--s" "${3}")
         fi
-        if [ -n "$4" ]; then
-            ARGS+=("--w")
-            ARGS+=("$4")
+        if [ "$#" -ge 4 ] && [ -n "${4}" ]; then
+            ARGS+=("--w" "${4}")
         fi
-        if [ -n "$5" ]; then
-            ARGS+=("--d")
-            ARGS+=("$5")
+        if [ "$#" -ge 5 ] && [ -n "${5}" ]; then
+            ARGS+=("--d" "${5}")
         fi
 
         verifyOracle=$(npx hardhat DeployPhysicalActivityOracle "${ARGS[@]}" | tail -n 1)
@@ -59,7 +57,6 @@ case "$1" in
         echo "Deploying DeployFitnessUnbreakableVow Contract..."
 
         stakedAmount="${6+--a $6}"
-        echo $stakedAmount
         verifyVow=$(npx hardhat --network $2 DeployFitnessUnbreakableVow $stakedAmount | tail -n 1)
 
         if [ "$2" != "localhost" ]; then

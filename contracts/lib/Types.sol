@@ -1,6 +1,33 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+/**
+The future:
+*/
+struct Running {
+    uint16 distanceInMeters;
+    uint16 paceInMeters;
+    uint8 avgHeartRateInSeconds;
+}
+
+struct Sleep {
+    uint16 durationInMinutes;
+    uint8 avgHeartRateInSeconds;
+}
+
+struct GymVisit {
+    bytes32 location; // keccak256("$latitude#$longitude") eg: ("-22.596957745611775#-43.27065899080379")
+    uint8 durationInMinutes;
+}
+
+
+struct UpdateWeeklyMetricsRequest {
+    uint32 timestamp;
+    Running running;
+    Sleep sleep;
+    GymVisit gym;
+}
+
 struct PhysicalActivityRecord {
     uint32 timestamp;
     uint16 runDistanceMeters;

@@ -45,6 +45,7 @@ class GymVisitGeofenceEventReceiver : BroadcastReceiver() {
             // geofencingEvent.triggeringGeofences.get(0).requestId
 
             val time = Instant.ofEpochMilli(geofencingEvent.triggeringLocation!!.time)
+            geofencingEvent.triggeringGeofences.get(0).requestId
 
             gymVisitService.addGymVisit(GymVisitRecord(time, 20.minutes))
         }

@@ -101,7 +101,7 @@ export interface GetWeekDetailsResponse {
         highestDistanceRanInMeters: number;
         healthySleepNights: number;
     };
-    history: ({ transactionHash: string; blockNumber: number; } & PhysicalActivityRecordProcessed)[];
+    history: (({ transactionHash: string; blockNumber: number; } & PhysicalActivityRecordProcessed)[]) | null;
     penalty: PenaltyApplied | null;
 }
 
