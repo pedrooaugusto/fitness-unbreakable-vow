@@ -59,37 +59,6 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "uint8",
-        "name": "weekIndex",
-        "type": "uint8"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint16",
-        "name": "runDistanceMeters",
-        "type": "uint16"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "gymVisits",
-        "type": "uint8"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "healthySleepNights",
-        "type": "uint8"
-      }
-    ],
-    "name": "PhysicalActivityRecordProcessed",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
         "indexed": false,
         "internalType": "uint256",
         "name": "releasedFunds",
@@ -102,7 +71,7 @@
         "type": "address"
       }
     ],
-    "name": "VowExpired",
+    "name": "VowTeminated",
     "type": "event"
   },
   {
@@ -250,7 +219,7 @@
   },
   {
     "inputs": [],
-    "name": "RUN_DISTANCE_GOAL",
+    "name": "RUNNING_SESSIONS_GOAL",
     "outputs": [
       {
         "internalType": "uint16",
@@ -388,27 +357,88 @@
             "type": "uint32"
           },
           {
-            "internalType": "uint16",
-            "name": "runDistanceMeters",
-            "type": "uint16"
+            "components": [
+              {
+                "internalType": "uint8",
+                "name": "count",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint16",
+                "name": "longestDistanceInMeters",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "totalDistanceInMeters",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "bestPaceInSecondsPerKm",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint8",
+                "name": "maxAvgBpm",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct RunningStats",
+            "name": "running",
+            "type": "tuple"
           },
           {
-            "internalType": "uint8",
-            "name": "healthySleepNights",
-            "type": "uint8"
+            "components": [
+              {
+                "internalType": "uint8",
+                "name": "count",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint16",
+                "name": "totalMinutes",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint8",
+                "name": "avgBpm",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct GymVisitStats",
+            "name": "gym",
+            "type": "tuple"
           },
           {
-            "internalType": "uint8",
-            "name": "gymVisits",
-            "type": "uint8"
+            "components": [
+              {
+                "internalType": "uint8",
+                "name": "count",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint16",
+                "name": "longestSleepInMinutes",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "totalSleepInMinutes",
+                "type": "uint16"
+              }
+            ],
+            "internalType": "struct SleepStats",
+            "name": "sleep",
+            "type": "tuple"
           }
         ],
-        "internalType": "struct PhysicalActivityRecord",
-        "name": "record",
+        "internalType": "struct PhysicalActivityStats",
+        "name": "stats",
         "type": "tuple"
       }
     ],
-    "name": "onNewPhysicalActivityRecord",
+    "name": "onPhysicalActivityStatsUpdate",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

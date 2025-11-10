@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.28;
 
-import { Math } from "./Types.sol";
-
 interface IExpirable {
     function EXPIRATION_DATE() external view returns(uint256);
     function CREATION_DATE() external view returns(uint256);
@@ -10,6 +8,8 @@ interface IExpirable {
 }
 
 enum ContractPhase { Active, Grace, FullyExpired }
+
+function min256(uint256 a, uint256 b) pure returns (uint256) { return a > b ? b : a; }
 
 abstract contract Expirable is IExpirable {
     uint256 public immutable SECONDS_IN_ONE_WEEK;
@@ -20,7 +20,7 @@ abstract contract Expirable is IExpirable {
 
     constructor(uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek) {
         SECONDS_IN_ONE_WEEK = secondsInOneWeek;
-        GRACE_PERIOD = Math.min256(uint256(secondsInOneWeek / 5), 3600);
+        GRACE_PERIOD = min256(uint256(secondsInOneWeek / 5), 3600);
         NUMBER_OF_WEEKS = uint8((expirationDate - creationDate) / SECONDS_IN_ONE_WEEK);
         CREATION_DATE = creationDate;
         EXPIRATION_DATE = creationDate + NUMBER_OF_WEEKS * SECONDS_IN_ONE_WEEK; // Force multiple of

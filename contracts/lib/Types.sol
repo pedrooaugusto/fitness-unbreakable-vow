@@ -1,62 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-/**
-The future:
-*/
-struct Running {
-    uint16 distanceInMeters;
-    uint16 paceInMeters;
-    uint8 avgHeartRateInSeconds;
+import { SleepEvent, SleepStats } from './Sleep.sol';
+import { RunningEvent, RunningStats } from './Running.sol';
+import { GymVisitEvent, GymVisitStats } from './GymVisit.sol';
+
+struct PublishPhysicalActivityEventRequest {
+    RunningEvent[] running;
+    SleepEvent[] sleep;
+    GymVisitEvent[] gymVisit;
 }
 
-struct Sleep {
-    uint16 durationInMinutes;
-    uint8 avgHeartRateInSeconds;
-}
-
-struct GymVisit {
-    bytes32 location; // keccak256("$latitude#$longitude") eg: ("-22.596957745611775#-43.27065899080379")
-    uint8 durationInMinutes;
-}
-
-
-struct UpdateWeeklyMetricsRequest {
+struct PhysicalActivityStats {
     uint32 timestamp;
-    Running running;
-    Sleep sleep;
-    GymVisit gym;
-}
-
-struct PhysicalActivityRecord {
-    uint32 timestamp;
-    uint16 runDistanceMeters;
-    uint8 healthySleepNights;
-    uint8 gymVisits;
-}
-
-library PhysicalActivityRecordFunctions {
-    function mergeWith(
-        PhysicalActivityRecord storage self,
-        PhysicalActivityRecord memory newRecord
-    ) internal {
-        self.gymVisits = Math.max8(self.gymVisits, newRecord.gymVisits);
-        self.runDistanceMeters = Math.max16(self.runDistanceMeters, newRecord.runDistanceMeters);
-        self.healthySleepNights = Math.max8(self.healthySleepNights, newRecord.healthySleepNights);
-        self.timestamp = newRecord.timestamp;
-    }
-
-    function isNull(
-        PhysicalActivityRecord calldata self
-    ) internal pure returns (bool) {
-        return self.timestamp == 0;
-    }
-
-    function isNull(
-        PhysicalActivityRecord storage self
-    ) internal view returns (bool) {
-        return self.timestamp == 0;
-    }
+    RunningStats running;
+    GymVisitStats gym;
+    SleepStats sleep;
 }
 
 enum WeeklyGoalStatus {
@@ -75,7 +34,6 @@ struct WeeklyGoal {
     bool sleptWell;
     uint256 penaltyBlock;
 }
-
 
 library WeeklyGoalFunctions {
     function isCompleted(
@@ -111,44 +69,10 @@ library WeeklyGoalFunctions {
     }
 }
 
-library Math {
-    function min256(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b ? b : a;
-    }
-
-    function max16(uint16 a, uint16 b) internal pure returns (uint16) {
-        return a > b ? a : b;
-    }
-
-    function max8(uint8 a, uint8 b) internal pure returns (uint8) {
-        return a > b ? a : b;
-    }
-}
-
 interface Observable {
-    function registerOnNewPhysicalActivityRecordListener(address listener) external;
+    function registerPhysicalActivityStatsUpdateListener(address listener) external;
 }
 
 interface Listener {
-    function onNewPhysicalActivityRecord(uint8 weekIndex, PhysicalActivityRecord calldata record) external;
-}
-
-interface ISignatureVerifier {
-    function isPublicKeySet() external view returns (bool);
-}
-
-struct P256Signature {
-    bytes32 r;
-    bytes32 s;
-}
-
-struct P256PublicKey {
-    bytes32 x;
-    bytes32 y;
-}
-
-struct AndroidKeyAttestation {
-    string attestationSha256;
-    string attestationChallenge;
-    string attestationIpfsCID;
+    function onPhysicalActivityStatsUpdate(uint8 weekIndex, PhysicalActivityStats calldata record) external;
 }

@@ -9,7 +9,10 @@ const RPC_URL_MAP: Record<Network, Networkish & { rpc: string[] }> = {
     localhost: {
         name: 'localhost',
         chainId: 31337,        
-        rpc: ["http://192.168.0.105:8545"], // hardhat
+        rpc: [
+            "http://192.168.0.105:8545",
+            //"http://localhost:8545"
+        ], // hardhat
     },
     sepolia: {
         name: 'sepolia',
@@ -68,6 +71,12 @@ export default async function loadContract() {
     FitnessUnbreakableVow.contractAddress = addresses[`${network}.FitnessUnbreakableVow`];
     FitnessUnbreakableVow.getEvents = (<T extends ParsedEventBase>(eventName: string, indexes: string[], data: string[], fromBlock1 = fromBlock!, toBlock1?: number) => {
         return getEvents<T>(FitnessUnbreakableVow as Contract, eventName, indexes, data, fromBlock1, toBlock1);
+    }) as any;
+
+    PhysicalActivityOracle.network = network;
+    PhysicalActivityOracle.contractAddress = addresses[`${network}.PhysicalActivityOracle`];
+    PhysicalActivityOracle.getEvents = (<T extends ParsedEventBase>(eventName: string, indexes: string[], data: string[], fromBlock1 = fromBlock!, toBlock1?: number) => {
+        return getEvents<T>(PhysicalActivityOracle as Contract, eventName, indexes, data, fromBlock1, toBlock1);
     }) as any;
 
     return {
@@ -145,6 +154,8 @@ function makeProviderWithFallback(networkName: Network): Provider {
 }
 
 async function getEvents<T>(contract: Contract, eventName: string, indexes: string[], data: string[], fromBlock: number, toBlock?: number) {
+    console.log(eventName);
+    console.log(contract.filters);
     const filter = contract.filters[eventName](...indexes)!;
 
     const events = (await contract.queryFilter(filter, fromBlock, toBlock) as EmittedEvent[]) || [];

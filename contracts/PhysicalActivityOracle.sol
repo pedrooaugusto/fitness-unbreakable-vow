@@ -1,82 +1,130 @@
 // SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.28;
-import { SignatureVerifier } from "./lib/SignatureVerifier.sol";
+
+import { PhysicalActivityStats, PublishPhysicalActivityEventRequest, Listener, Observable } from './lib/Types.sol';
+import { RunningEventFunctions, RunningEvent, RunningEventValidator } from './lib/Running.sol';
+import { SleepEventFunctions, SleepEvent, SleepEventValidator } from './lib/Sleep.sol';
+import { GymVisitEventFunctions, GymVisitEvent, GymVisitEventValidator, Location } from './lib/GymVisit.sol';
 import { Ownable } from './lib/Ownable.sol';
 import { Expirable } from './lib/Expirable.sol';
-import { Versioned } from "./lib/Versioned.sol";
-import { PhysicalActivityRecordListable } from "./lib/PhysicalActivityRecordListable.sol";
-import { PhysicalActivityRecord, PhysicalActivityRecordFunctions, P256Signature, Listener, Observable } from './lib/Types.sol';
+import { Versioned } from './lib/Versioned.sol';
+import { DefaultSignatureVerifier } from './lib/signature/DefaultSignatureVerifier.sol';
+import { PhysicalActivityListable } from './lib/PhysicalActivityListable.sol';
 import { console } from './lib/variants/console.sol';
 
-event PhysicalActivityRecordAdded();
+event PhysicalActivityStatsUpdate(uint8 indexed weekIndex, PhysicalActivityStats stats);
 
-contract PhysicalActivityOracle is SignatureVerifier, PhysicalActivityRecordListable, Observable, Expirable, Ownable, Versioned {
-    using PhysicalActivityRecordFunctions for PhysicalActivityRecord;
+contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityListable, Observable, Expirable, Ownable, Versioned {
 
-    /**
-     * @notice Registered consumer that receives oracle update callbacks regarding physical activity records.
-     * @dev Set exactly once via `registerOnNewPhysicalActivityRecordListener`.
-     */
+    function sleepValidator() public pure returns (SleepEventValidator memory) {
+        return SleepEventValidator({
+            minimumDurationInMinutes: uint16((6 hours + 10 minutes) / 60), //7h30
+            avgBpmLowerBand: 50,
+            avgBpmUpperBand: 80
+        });
+    }
+
+    function runningValidator() public pure returns (RunningEventValidator memory) {
+        return RunningEventValidator({
+            minimumDistanceInMeters: 1000,
+            maximumPaceInSecondsPerKm: uint16(8 minutes), // 7 minutes
+            minimumAvgBpm: 110
+        });
+    }
+
+    function gymVisitValidator() public pure returns (GymVisitEventValidator memory) {
+        return GymVisitEventValidator({
+            gym1Location: Location({
+                latitudeNanoDegree: -228969577, // int(-22.896957745611775 * 1e7)
+                longitudeNanoDegree: -432726589 // int(-43.27265899080379 * 1e7)
+            }),
+            gym2Location: Location({
+                latitudeNanoDegree: -228934446, // -22.893444688409225, 
+                longitudeNanoDegree: -432925724 // -43.29257247192793
+            }),
+            minimumVisitTimeInMinutes: uint8((10 minutes) / 60), // 40 minutes
+            minimumAvgBpm: 95
+        });
+    }
+
     Listener public ORACLE_UPDATE_LISTENER;
 
-    constructor(uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek)
-        Expirable(creationDate, expirationDate, secondsInOneWeek)
-        SignatureVerifier() {}
+    constructor(uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek) Expirable(creationDate, expirationDate, secondsInOneWeek) {}
 
-    /**
-     * @notice Submits a new physical activity record for the current week.
-     * @dev Verifies the record's signature on-chain using ECDSA P-256 (secp256r1)
-     * with the stored public key. If verification succeeds, the record is stored for the
-     * current week; otherwise the call reverts.
-     * @param signature The P-256 signature of `newRecord` (low-S, r and s as bytes32).
-     * @param newRecord The `PhysicalActivityRecord` to verify and store for the current week.
-     */
-    function pushPhysicalActivityRecord(P256Signature calldata signature, PhysicalActivityRecord calldata newRecord) external onlyOwner onlyWhileActive {
-        uint8 recordWeekIndex = getWeekIndexOf(uint256(newRecord.timestamp));
+    function publishPhysicalActivityEvent(PublishPhysicalActivityEventRequest calldata request) external onlyOwner onlyWhileActive {
         uint8 currentWeekIndex = getCurrentWeekIndex();
 
-        require(recordWeekIndex == currentWeekIndex, "!! Wibbly Wobbly Timey Wimey !!");
-        require(verifySignature(signature, newRecord), "youtu.be/LYb_nqU_43w&t=178s");
+        processRunningEvents(currentWeekIndex, request.running);
+        processSleepEvents(currentWeekIndex, request.sleep);
+        processGymVisitEvents(currentWeekIndex, request.gymVisit);
 
-        safePushPhysicalActivityRecord(newRecord);
+        ORACLE_UPDATE_LISTENER.onPhysicalActivityStatsUpdate(currentWeekIndex, physicalActivityStats[currentWeekIndex]);
+
+        emit PhysicalActivityStatsUpdate(currentWeekIndex, physicalActivityStats[currentWeekIndex]);
     }
 
-    /**
-     * @notice Retrieves the **physical activity record** for the **current week**.
-     * This provides direct access to the latest aggregated activity data on record.
-     * @return currentWeekIndex The `uint8` representing the **current week's index** as determined by the contract.
-     * @return record The `PhysicalActivityRecord` struct containing all the activity data recorded for the **current week**.
-     */
-    function getCurrentWeekPhysicalActivityRecord() external view returns (uint8, PhysicalActivityRecord memory) {
-        uint8 currentWeekIndex = getCurrentWeekIndex();
-
-        return (currentWeekIndex, get(currentWeekIndex));
-    }
-
-    /**
-     * @notice Retrieves all physical activity records stored in the contract.
-     * @dev Returns an array containing all `PhysicalActivityRecord` structs.
-     * @return An array of `PhysicalActivityRecord` representing all recorded physical activities.
-     */
-    function listAllPhysicalActivityRecords() external view returns (PhysicalActivityRecord[] memory) {
-        return list(getCurrentWeekIndex());
-    }
-
-    function registerOnNewPhysicalActivityRecordListener(address listener) external {
+    function registerPhysicalActivityStatsUpdateListener(address listener) external {
         require(address(ORACLE_UPDATE_LISTENER) == address(0), "Listener already set.");
 
         ORACLE_UPDATE_LISTENER = Listener(listener);
     }
 
-    function safePushPhysicalActivityRecord(PhysicalActivityRecord memory newRecord) private {
-        uint8 weekIndex = getWeekIndexOf(uint256(newRecord.timestamp));
+    function getCurrentWeekPhysicalActivityStats() external view returns (uint8 currentWeekIndex, PhysicalActivityStats memory stats) {
+        currentWeekIndex = getCurrentWeekIndex();
+        stats = get(currentWeekIndex);
 
-        PhysicalActivityRecord memory mergedRecord = merge(newRecord, weekIndex);
+        return (currentWeekIndex, stats);
+    }
 
-        ORACLE_UPDATE_LISTENER.onNewPhysicalActivityRecord(weekIndex, mergedRecord);
+    function listAllPhysicalActivityStats() external view returns (PhysicalActivityStats[] memory) {
+        return list(getCurrentWeekIndex());
+    }
 
-        emit PhysicalActivityRecordAdded();
+    function processRunningEvents(uint8 currentWeekIndex, RunningEvent[] calldata eventos) private {
+        for (uint8 i = 0; i < eventos.length; i++) {
+            uint8 eventWeekIndex = getWeekIndexOf(uint256(eventos[i].timestamp));
+            bytes32 eventHash = RunningEventFunctions.hash(eventos[i]);
 
-        console.log("[PhysicalActivityOracle] New Record Processed.");
+            require(verifySignature(eventos[i].signature, eventHash), "youtu.be/LYb_nqU_43w&t=178s");
+
+            if (currentWeekIndex != eventWeekIndex) continue;
+            if (RunningEventFunctions.isInvalid(eventos[i], runningValidator())) continue;
+
+            if(insertRunningEvent(eventos[i], eventHash, eventWeekIndex)) {
+                RunningEventFunctions.emitProcessedEvent(eventos[i], eventWeekIndex);
+            }
+        }
+    }
+
+    function processSleepEvents(uint8 currentWeekIndex, SleepEvent[] calldata eventos) private {
+        for (uint8 i = 0; i < eventos.length; i++) {
+            uint8 eventWeekIndex = getWeekIndexOf(uint256(eventos[i].timestamp));
+            bytes32 eventHash = SleepEventFunctions.hash(eventos[i]);
+
+            require(verifySignature(eventos[i].signature, eventHash), "youtu.be/LYb_nqU_43w&t=178s");
+
+            if (currentWeekIndex != eventWeekIndex) continue;
+            if (SleepEventFunctions.isInvalid(eventos[i], sleepValidator())) continue;
+
+            if(insertSleepEvent(eventos[i], eventHash, eventWeekIndex)) {
+                SleepEventFunctions.emitProcessedEvent(eventos[i], eventWeekIndex);
+            }
+        }
+    }
+
+    function processGymVisitEvents(uint8 currentWeekIndex, GymVisitEvent[] calldata eventos) private {
+        for (uint8 i = 0; i < eventos.length; i++) {
+            uint8 eventWeekIndex = getWeekIndexOf(uint256(eventos[i].timestamp));
+            bytes32 eventHash = GymVisitEventFunctions.hash(eventos[i]);
+
+            require(verifySignature(eventos[i].signature, eventHash), "youtu.be/LYb_nqU_43w&t=178s");
+
+            if (currentWeekIndex != eventWeekIndex) continue;
+            if (GymVisitEventFunctions.isInvalid(eventos[i], gymVisitValidator())) continue;
+
+            if(insertGymVisitEvent(eventos[i], eventHash, eventWeekIndex)) {
+                GymVisitEventFunctions.emitProcessedEvent(eventos[i], eventWeekIndex);
+            }
+        }
     }
 }

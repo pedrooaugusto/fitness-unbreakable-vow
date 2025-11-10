@@ -1,42 +1,59 @@
 package com.august.fitnessvowsync.geofencing
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
+import com.august.fitnessvowsync.helpers.NotificationService
+import com.august.fitnessvowsync.helpers.SettingsService
+import com.august.fitnessvowsync.physicalactivity.collection.GymVisitGeofenceEventReceiver
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingClient
 import com.google.android.gms.location.GeofencingRequest
 import javax.inject.Inject
 
-class GymGeofenceCreator @Inject constructor (private val geofencingClient: GeofencingClient, private val encryptedPreferences: SharedPreferences) {
-    private val GYM_VISIT_MINIMUM_DURATION = 1 * 35 * 1000
-
+class GymGeofenceCreator @Inject constructor (
+    private val geofencingClient: GeofencingClient,
+    private val notificationService: NotificationService,
+    private val settingsService: SettingsService,
+) {
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION])
-    fun createGymGeofence(context: Context) {
-        Log.i("FitVow", "Trying to create gym geofence.")
+    fun create(context: Context) {
+        Log.i("FitVow", "Trying to create gym geofences.")
 
-        val gymLat = -22.895458330852602
-        val gymLng = -43.27282316079158
-        val radiusInMeters = 150f
+        settingsService.setGymGeofenceCreated(false)
 
-        val geofence = Geofence.Builder()
-            .setRequestId("GYM_GEOFENCE_ID")
-            .setCircularRegion(gymLat, gymLng, radiusInMeters)
-            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_DWELL)
-            .setLoiteringDelay(GYM_VISIT_MINIMUM_DURATION)
-            .setExpirationDuration(Geofence.NEVER_EXPIRE)
-            .build()
+        if (!hasRequiredPermissions(context)) {
+            notificationService.showGeofenceNotification("Not enough permissions to start gym geofences monitoring.", context)
+
+            return
+        }
+
+        val geofences = mutableListOf<Geofence>()
+
+        for (gym in GymConfig.entries) {
+            geofences.add(
+                Geofence.Builder()
+                    .setRequestId(gym.id)
+                    .setCircularRegion(gym.latitude, gym.longitude, 400f)
+                    .setLoiteringDelay(gym.minimumPermanence.toMillis().toInt())
+                    .setTransitionTypes(
+                        Geofence.GEOFENCE_TRANSITION_ENTER or
+                        Geofence.GEOFENCE_TRANSITION_EXIT or
+                        Geofence.GEOFENCE_TRANSITION_DWELL
+                    )
+                    .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                    .build()
+            )
+        }
 
         val geofencingRequest = GeofencingRequest.Builder()
-            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_DWELL)
-            .addGeofence(geofence)
+            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_DWELL or Geofence.GEOFENCE_TRANSITION_ENTER)
+            .addGeofences(geofences)
             .build()
 
         val intent = Intent(context, GymVisitGeofenceEventReceiver::class.java)
@@ -52,19 +69,18 @@ class GymGeofenceCreator @Inject constructor (private val geofencingClient: Geof
             .addOnSuccessListener {
                 Log.i("FitVow", "Gym Geofence added!")
 
-                with(encryptedPreferences.edit()) {
-                    putBoolean("GYM_GEOFENCE_ENABLED", true)
-                    apply()
-                }
+                settingsService.setGymGeofenceCreated(true)
+                notificationService.showGeofenceNotification("Gym geofences monitoring has started.", context)
             }
-            .addOnFailureListener { Log.i("FitVow", "Failed to add gym geofence: ${it.message}") }
+            .addOnFailureListener {
+                Log.i("FitVow", "Failed to add gym geofence: ${it.message}")
+
+                settingsService.setGymGeofenceCreated(false)
+                notificationService.showGeofenceNotification("Unable to start gym geofences.", context)
+            }
     }
 
-    fun isGymGeofenceEnabled(): Boolean {
-        return encryptedPreferences.getBoolean("GYM_GEOFENCE_ENABLED", false)
-    }
-
-    fun hasRequiredPermissions(context: Context): Boolean {
+    private fun hasRequiredPermissions(context: Context): Boolean {
         val fineLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
         val backgroundLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
 

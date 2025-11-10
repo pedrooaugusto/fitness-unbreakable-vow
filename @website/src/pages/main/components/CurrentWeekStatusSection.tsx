@@ -2,6 +2,7 @@ import { type JSX, type ReactElement } from "react";
 import {
     formatCurrency,
     formatDate,
+    formatTime,
     getAddressBlockExplorerUrl,
     GIVETH_PAGE_URL,
 } from "../../utils";
@@ -9,7 +10,7 @@ import CalendarIcon from "../../../assets/calendar-icon";
 import CheckCircleIcon from "../../../assets/check-circle-icon";
 import XIcon from "../../../assets/x-circle-icon";
 import { SectionTitle } from "../../components/SectionTitle";
-import { ContractPhase, type GetContractOverviewResponse } from "../types";
+import { ContractPhase, type GetContractOverviewResponse, type GymVisitEventValidator, type RunningEventValidator, type SleepEventValidator } from "../types";
 import type { WithModalProps } from "../../components/modal";
 import LiveTimeCountdown from "./LiveTimeCountdown";
 
@@ -24,9 +25,17 @@ export default function CurrentWeekStatusSection({
     openModal,
     closeModal,
 }: CurrentWeekStatusSectionProps) {
-    const { highestDistanceRanInMeters, healthySleepNights, gymVisits } = overview.currentWeekPhysicalActivityRecord;
-    const highestDistanceRanInKms = metersToKms(highestDistanceRanInMeters);
-    const runDistanceGoal = metersToKms(overview.runDistanceGoal);
+    const healthySleepNights = Number(overview.currentWeekPhysicalActivityStats.sleep.count);
+    const gymVisits = Number(overview.currentWeekPhysicalActivityStats.gym.count);
+    const runningSessions = Number(overview.currentWeekPhysicalActivityStats.running.count);
+
+    const totalDistanceRan = metersToKms(Number(overview.currentWeekPhysicalActivityStats.running.totalDistanceInMeters));
+    const runningSessionMinimumDistance = metersToKms(Number(overview.runningValidator.minimumDistanceInMeters));
+
+    const sleepSessionMinimumDuration = formatTime(Number(overview.sleepValidator.minimumDurationInMinutes * 60n), '');
+    const totalSleptTime = formatTime(Number(overview.currentWeekPhysicalActivityStats.sleep.totalSleepInMinutes * 60n), '');
+
+    const totalGymVisitsTime = formatTime(Number(overview.currentWeekPhysicalActivityStats.gym.totalMinutes * 60n), '');
 
     const currentWeekIndex = overview.allWeeks.length - 1;
     const currentWeekGoals = overview.allWeeks[currentWeekIndex].goals;
@@ -68,20 +77,22 @@ export default function CurrentWeekStatusSection({
                 <div className="weekly-goals-list">
                     <WeeklyGoal
                         met={currentWeekGoals.run2KmGoalMet}
-                        description={
+                        mainTitle={
                             <>
-                                Run for {runDistanceGoal}km{" "}
-                                <small>({highestDistanceRanInKms}/{runDistanceGoal}km)</small>
+                                Jog for {runningSessionMinimumDistance}km{" "}
+                                <small>({runningSessions}/{overview.runningSessionsGoal})</small>
                             </>
                         }
+                        legend={<>total distance: {totalDistanceRan}km</>}
                         onClick={() =>
                             openModal(
                                 <RunningSessionsGoalModal
                                     closeModal={closeModal}
                                     totalPenaltyAmount={totalPenaltyAmount}
                                     enforceVowFunctionUrl={enforceFunUrl}
-                                    currentValue={highestDistanceRanInKms}
-                                    requiredValue={overview.runDistanceGoal}
+                                    currentValue={runningSessions}
+                                    validator={overview.runningValidator}
+                                    requiredValue={overview.runningSessionsGoal}
                                     goalMet={currentWeekGoals.run2KmGoalMet}
                                 />,
                                 "🏃 Running Session Goal"
@@ -90,12 +101,13 @@ export default function CurrentWeekStatusSection({
                     />
                     <WeeklyGoal
                         met={currentWeekGoals.sleptWellGoalMet}
-                        description={
+                        mainTitle={
                             <>
-                                Slept for 8h{" "}
+                                Sleep for {sleepSessionMinimumDuration}{" "}
                                 <small>({healthySleepNights}/{overview.healthySleepNightsGoal})</small>
                             </>
                         }
+                        legend={<>total slept time: {totalSleptTime}</>}
                         onClick={() =>
                             openModal(
                                 <SleepGoalModal
@@ -104,25 +116,28 @@ export default function CurrentWeekStatusSection({
                                     enforceVowFunctionUrl={enforceFunUrl}
                                     currentValue={healthySleepNights}
                                     requiredValue={overview.healthySleepNightsGoal}
+                                    validator={overview.sleepValidator}
                                     goalMet={currentWeekGoals.sleptWellGoalMet}
                                 />,
-                                "🛏️ 8 Hours Sleep Goal"
+                                `🛏️ ${sleepSessionMinimumDuration} Sleep Goal`
                             )
                         }
                     />
                     <WeeklyGoal
                         met={currentWeekGoals.gymVisitsGoalMet}
-                        description={
+                        mainTitle={
                             <>
                                 Gym visits <small>({gymVisits}/{overview.gymVisitsGoal})</small>
                             </>
                         }
+                        legend={<>total time: {totalGymVisitsTime}</>}
                         onClick={() =>
                             openModal(
                                 <GymVisitsGoalModal
                                     closeModal={closeModal}
                                     totalPenaltyAmount={totalPenaltyAmount}
                                     enforceVowFunctionUrl={enforceFunUrl}
+                                    validator={overview.gymVisitValidator}
                                     currentValue={gymVisits}
                                     requiredValue={overview.gymVisitsGoal}
                                     goalMet={currentWeekGoals.gymVisitsGoalMet}
@@ -142,7 +157,8 @@ export default function CurrentWeekStatusSection({
 
 function WeeklyGoal(props: {
     met: boolean;
-    description: ReactElement;
+    mainTitle: ReactElement;
+    legend: ReactElement;
     onClick?: () => void;
 }) {
     return (
@@ -151,8 +167,8 @@ function WeeklyGoal(props: {
             onClick={props.onClick}
         >
             {props.met ? <CheckCircleIcon /> : <XIcon />}
-            <div className="description">{props.description}</div>
-            <div className="status">{props.met ? "Met" : "Not met"}</div>
+            <div className="main">{props.mainTitle}</div>
+            <div className="legend">{props.legend}</div>
         </div>
     );
 }
@@ -210,18 +226,27 @@ type GoalModalProps = {
     requiredValue?: string | number;
     totalPenaltyAmount: string;
     enforceVowFunctionUrl: string;
+    validator: RunningEventValidator | GymVisitEventValidator | SleepEventValidator;
 }
 
 function RunningSessionsGoalModal(props: GoalModalProps) {
-    const goalDistance = metersToKms(Number(props.requiredValue));
+    const validator = props.validator as RunningEventValidator;
+    const requiredDistance = metersToKms(Number(validator.minimumDistanceInMeters));
 
     return (
         <div className="main">
             <GoalDetails
                 requirement={
-                    <p>
+                    <>
                         Within each seven-day period (“Weekly Term”), the Pledger (<em style={{ fontFamily: "cursive" }}>P.S</em>) shall complete{" "}
-                        <strong> at least one (1) running session of {goalDistance} kilometers or more</strong>.
+                        <strong> at least {props.requiredValue} Running Sessions.</strong>
+                    </>
+                }
+                definition={
+                    <p>
+                        A valid running session has a minimum distance of <b>{requiredDistance}km</b>, pace smaller{" "}
+                        than <b>{Number(validator.maximumPaceInSecondsPerKm / 60n)}min/km</b> and avarage heart rate during the{" "}
+                        exercise greater than <b>{Number(validator.minimumAvgBpm)}bpm</b>.
                     </p>
                 }
                 verificationBulletPoints={
@@ -235,15 +260,13 @@ function RunningSessionsGoalModal(props: GoalModalProps) {
                         </li>
                         <li>
                             FitVow - Sync queries all running sessions in the Weekly
-                            Term and submits the{" "}
-                            <strong>longest verified distance</strong> to the
-                            oracle.
+                            Term and submits them to the <i>PhysicalActivityOracle</i> contract that verifies if the records met the requirements.
                         </li>
                     </>
                 }
                 currentStatus={
                     <p>
-                        {props.currentValue} km / {goalDistance} km: <b>{props.goalMet ? 'Met' : 'Not Met'}</b>
+                        {props.currentValue} / {props.requiredValue}: <b>{props.goalMet ? 'Met' : 'Not Met'}</b>
                     </p>
                 }
                 {...props}
@@ -258,13 +281,21 @@ function RunningSessionsGoalModal(props: GoalModalProps) {
 }
 
 function SleepGoalModal(props: GoalModalProps) {
+    const validator = props.validator as SleepEventValidator;
+    const requiredSleepDuration = formatTime(Number(validator.minimumDurationInMinutes * 60n));
+
     return (
         <div className="main">
             <GoalDetails
                 requirement={
-                    <p>
+                    <>
                         Within each seven-day period (“Weekly Term”), the Pledger (<em style={{ fontFamily: "cursive" }}>P.S</em>) shall achieve{" "}
-                        <strong>at least {props.requiredValue} separate nights of eight (8) or more hours of sleep</strong>.
+                        <strong>at least {props.requiredValue} separate nights of {requiredSleepDuration} or more hours of sleep</strong>.
+                    </>
+                }
+                definition={
+                    <p>
+                        A valid sleep session has a minimum duration of <b>{requiredSleepDuration}</b> and heart rate between <b>{validator.avgBpmLowerBand}bpm</b> and <b>{validator.avgBpmUpperBand}bpm</b>.
                     </p>
                 }
                 verificationBulletPoints={
@@ -277,9 +308,8 @@ function SleepGoalModal(props: GoalModalProps) {
                             (e.g., the Pledger currently uses a <strong>Galaxy Watch 4</strong>), ensuring accurate and hardware-verified metrics.
                         </li>
                         <li>
-                            FitVow - Sync queries the Pledger's sleep records for the Weekly Term,
-                            counts the <strong>number of nights with ≥ 8 hours of sleep</strong>, and submits
-                            that count to the oracle.
+                            FitVow - Sync queries the Pledger's sleep records for the Weekly Term and submits
+                            them to the <i>PhysicalActivityOracle</i> contract that verifies if the records met the requirements.
                         </li>
                     </>
                 }
@@ -300,22 +330,37 @@ function SleepGoalModal(props: GoalModalProps) {
 }
 
 function GymVisitsGoalModal(props: GoalModalProps) {
+    const validator = props.validator as GymVisitEventValidator;
+    const requiredVisitDuration = formatTime(Number(validator.minimumVisitTimeInMinutes * 60n));
+    const gym1Lat = Number(validator.gym1Location.latitudeNanoDegree) / 1e7;
+    const gym1lon = Number(validator.gym1Location.longitudeNanoDegree) / 1e7;
+
+    const gym2lat = Number(validator.gym2Location.latitudeNanoDegree) / 1e7;
+    const gym2lon = Number(validator.gym2Location.longitudeNanoDegree) / 1e7;
+
     return (
         <div className="main">
             <GoalDetails
                 requirement={
-                    <p>
+                    <>
                         Within each seven-day period (“Weekly Term”), the Pledger (<em style={{ fontFamily: "cursive" }}>P.S</em>) shall complete{" "}
                         <strong>at least {props.requiredValue} verified gym visits</strong>.
+                    </>
+                }
+                definition={
+                    <p>
+                        A valid gym visit ocurs up to a 100 meters of either gym locations <code>({gym1Lat}°, {gym1lon}°)</code> or <code>({gym2lat}°, {gym2lon}°)</code>, has a minimum duration of <b>{requiredVisitDuration}</b> and average heart rate during the visit greater than <b>{validator.minimumAvgBpm}bpm</b>.
                     </p>
                 }
                 verificationBulletPoints={
-                    <li>
-                        FitVow - Sync detects gym visits using{" "}
-                        <strong>Android geofencing</strong> at registered gym locations, applying
-                        a <strong>minimum presence time</strong> requirement to confirm a valid visit,
-                        and submits the total verified count to the oracle.
-                    </li>
+                    <>
+                        <li>
+                            FitVow - Sync detects gym visits using{" "} <strong>Android geofencing</strong> at registered gym locations.
+                        </li>
+                        <li>
+                            Once a gym visit is over, it submits details regarding the visit and health data to the <i>PhysicalActivityOracle</i> contract which checks if the visit is valid.
+                        </li>
+                    </>
                 }
                 currentStatus={
                     <p>
@@ -340,6 +385,7 @@ type GoalDetailsProps = {
     currentStatus: JSX.Element;
     totalPenaltyAmount: string;
     enforceVowFunctionUrl: string;
+    definition: JSX.Element;
 };
 
 function GoalDetails(props: GoalDetailsProps) {
@@ -347,12 +393,14 @@ function GoalDetails(props: GoalDetailsProps) {
         <div className="weekly-goal-modal">
             <h4>Requirement</h4>
             <p>{props.requirement}</p>
+            <h4>Definition</h4>
+            {props.definition}
             <h4>Current Status</h4>
             {props.currentStatus}
             <h4>Measurement and Verification</h4>
             <ul>
                 <li>
-                    Recorded by <strong>FitVow - Sync</strong>, an Android
+                    Recorded by <a href="https://github.com/pedrooaugusto/fitness-unbreakable-vow/tree/main/%40androidapp" target="_blank">FitVow - Sync</a>, an Android
                     application installed on the Pledger's mobile device that
                     serves as the data collection agent.
                 </li>

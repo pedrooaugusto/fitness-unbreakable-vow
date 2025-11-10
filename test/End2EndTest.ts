@@ -2,13 +2,13 @@ import { time, loadFixture } from '@nomicfoundation/hardhat-toolbox/network-help
 import chai, { expect } from 'chai';
 import hre, { network } from 'hardhat';
 import chaiSubset from 'chai-subset';
-import { signPhysicalActivityRecord } from '../scripts/utils';
-import { PhysicalActivityRecordStruct } from '../typechain-types/contracts/PhysicalActivityOracle';
+import { PhysicalActivityStatsStruct } from '../typechain-types/contracts/PhysicalActivityOracle';
 import { WeeklyGoalStructOutput } from '../typechain-types/contracts/FitnessUnbreakableVow';
 import { FitnessUnbreakableVow, PhysicalActivityOracle } from '../typechain-types';
 import { recordEq } from './helpers/custom-chai-extensions';
-import createContractInteractions, { ContractInteraction, PushActivityRecordInteraction } from './helpers/generate-contract-interactions';
+import createContractInteractions, { ContractInteraction, numberOfFines, PublishEventInteraction } from './helpers/generate-contract-interactions';
 import { deployContractFixture, NUMBER_OF_CYLES, SEVEN_DAYS_IN_SECONDS, STAKED_AMOUNT } from './helpers/deploy-contract-fixture';
+import { EMPTY_GYM_VISIT_STAT, EMPTY_RUNNING_STAT, EMPTY_SLEEP_STAT, mergeGymVisit, mergeRunning, mergeSleep } from './helpers/Stats';
 
 chai.use(chaiSubset);
 chai.use(recordEq);
@@ -29,11 +29,9 @@ describe("EndToEndTest", function () {
 
             for (const { weekNumber, interactions } of weeklyContractInteractions) {
                 for (const interaction of interactions) {
-                    console.log(interaction);
                     switch (interaction.type) {
-                        case 'PUSH_ACTIVITY_RECORD':
-                            interaction.data.timestamp = await time.latest();
-                            await processPushActivity(interaction, physicalActivityOracle);
+                        case 'PUBLISH_ACTIVITY_EVENT':
+                            await processPublishEvent(interaction, physicalActivityOracle);
                         break;
 
                         case 'TERMINATE_VOW':
@@ -45,48 +43,49 @@ describe("EndToEndTest", function () {
                         break;
                     }
 
+                    //console.log(interaction.data?.request);
+
                     await time.increase(20);
                 }
 
-                const completedGoals = await assertCorrectPhysicalActivityRecords(weekNumber, otherAccount, interactions, fitnessUnbreakableVow, physicalActivityOracle);
+                const completedGoals = await assertEndOfWeek(weekNumber, otherAccount, interactions, fitnessUnbreakableVow, physicalActivityOracle);
 
                 completedGoalsHistory.push(completedGoals);
             }
 
-            await assertVowRemaningFunds(owner, otherAccount, completedGoalsHistory, fitnessUnbreakableVow);
-            await assertWeeksStatusMatch(completedGoalsHistory, fitnessUnbreakableVow);
+            await assertRemaningFunds(owner, otherAccount, completedGoalsHistory, fitnessUnbreakableVow);
+            assertAllWeeksStatusMatch(completedGoalsHistory, await fitnessUnbreakableVow.getAllWeeklyGoalsRecords());
+
+            console.log(await physicalActivityOracle.listAllPhysicalActivityStats());
+
         }).timeout(120_000);
     });
 });
 
-const INITIAL_BALANCE = hre.ethers.parseEther("10000");
+async function processPublishEvent(interaction: PublishEventInteraction, physicalActivityOracle: PhysicalActivityOracle) {
+    await interaction.data.create(await time.latest());
 
-async function processPushActivity(interaction: PushActivityRecordInteraction, physicalActivityOracle: PhysicalActivityOracle) {
-    if (interaction.data.useWrongSignature) {
-        const { signature: wrongSignature } = await signPhysicalActivityRecord({ ...interaction.data, timestamp: 32 });
+    const publishEvent = async() => {
+        const response = await physicalActivityOracle.publishPhysicalActivityEvent(interaction.data.request!);
+        const transaction = await response.wait();
+    }
 
-        await expect(pushPhysicalActivityRecord(physicalActivityOracle, interaction.data, wrongSignature)).to.be.rejected;
+    if (interaction.data.request!.useWrongSignature) {
+        await expect(publishEvent()).to.be.rejected;
     } else {
-        await pushPhysicalActivityRecord(physicalActivityOracle, interaction.data);
+        await publishEvent();
     }
 }
 
-async function pushPhysicalActivityRecord(contract: PhysicalActivityOracle, recordToAdd: PhysicalActivityRecordStruct, signature?: { r:  Uint8Array<ArrayBufferLike>, s:  Uint8Array<ArrayBufferLike> }) {
-    signature = signature || (await signPhysicalActivityRecord(recordToAdd)).signature;
-
-    const response = await contract.pushPhysicalActivityRecord(signature, recordToAdd);
-
-    const transaction = await response.wait();
-}
-
-const abs = (n: bigint) => (n < 0n) ? -n : n;
-async function assertVowRemaningFunds(
+async function assertRemaningFunds(
     owner: any,
     enforcerAddress: any,
     completedGoalsHistory: WeeklyGoalStructOutput[],
     fitnessUnbreakableVow: FitnessUnbreakableVow,
 ) {
-    const totalFines = await finesImposed(completedGoalsHistory, fitnessUnbreakableVow);
+    const INITIAL_BALANCE = hre.ethers.parseEther("10000");
+    const abs = (n: bigint) => (n < 0n) ? -n : n;
+    const totalFines = await fitnessUnbreakableVow.PENALTY_AMOUNT() * BigInt(numberOfFines(completedGoalsHistory));
     const vowBalance = await hre.ethers.provider.getBalance(await fitnessUnbreakableVow.getAddress());
     const enforcerBalance = abs(INITIAL_BALANCE - await hre.ethers.provider.getBalance(enforcerAddress.address));
     const enforcerFines = totalFines / 2n;
@@ -102,47 +101,44 @@ async function assertVowRemaningFunds(
         const transaction = await fitnessUnbreakableVow.terminateVow();
 
         await expect(() => transaction).to.changeEtherBalance(owner, vowBalance);
-        await expect(transaction).to.emit(fitnessUnbreakableVow, 'VowExpired').withArgs(vowBalance, owner.address);
+        await expect(transaction).to.emit(fitnessUnbreakableVow, 'VowTeminated').withArgs(vowBalance, owner.address);
     }
 
     await expect(fitnessUnbreakableVow.enforceAgreement()).to.be.revertedWith("Contract has expired.");
     await expect(fitnessUnbreakableVow.terminateVow()).to.be.revertedWith("No funds to release");
 }
 
-async function assertWeeksStatusMatch(
-    completedGoalsHistory: WeeklyGoalStructOutput[],
-    fitnessUnbreakableVow: FitnessUnbreakableVow,
-) {
-    const allWeeks = await fitnessUnbreakableVow.getAllWeeklyGoalsRecords();
-    for (let weekIndex = 0; weekIndex < allWeeks.length; weekIndex++) {
-        expect(Number(allWeeks[weekIndex][0])).to.be.equals(Number(completedGoalsHistory[weekIndex][0]));
+export function assertAllWeeksStatusMatch(expectedWeeklyGoalsHistory: WeeklyGoalStructOutput[], actualWeeklyGoalsHistory: WeeklyGoalStructOutput[]) {
+    for (let weekIndex = 0; weekIndex < actualWeeklyGoalsHistory.length; weekIndex++) {
+        expect(Number(actualWeeklyGoalsHistory[weekIndex][0])).to.be.equals(Number(expectedWeeklyGoalsHistory[weekIndex][0]));
     }
 }
 
-const EMPTY_RECORD = { timestamp: 0n, healthySleepNights: 0n, runDistanceMeters: 0n, gymVisits: 0n };
-async function assertCorrectPhysicalActivityRecords(
+async function assertEndOfWeek(
     weekNumber: number,
     enforcerAddress: any,
     contractInteractions: ContractInteraction[],
     fitnessUnbreakableVow: FitnessUnbreakableVow,
     physicalActivityOracle: PhysicalActivityOracle
 ) {
-    const highestRecord = getHighestRecord(contractInteractions);
-    const completedGoals = getCompletedGoals(highestRecord);
+    const finalWeekStats = getFinalStats(contractInteractions);
+    const weeklyGoalsStatus = getWeeklyGoalsStatus(finalWeekStats);
 
-    await assertCurrentWeekPhysicalRecordEquals(highestRecord, physicalActivityOracle);
+    expect((await physicalActivityOracle.getCurrentWeekPhysicalActivityStats())[1]).to.be.equalsRecord(finalWeekStats);
+
     await assertNoPenaltyWhenEnforceAgreement(fitnessUnbreakableVow);
 
     await time.increase(SEVEN_DAYS_IN_SECONDS);
 
-    await assertWhetherPenaltyShouldBeApplied(completedGoals, weekNumber, enforcerAddress, fitnessUnbreakableVow);
-    await assertWeeklyGoalsCompletion(fitnessUnbreakableVow, weekNumber, completedGoals);
+    await assertWhetherPenaltyShouldBeApplied(weeklyGoalsStatus, weekNumber, enforcerAddress, fitnessUnbreakableVow);
+    await assertWeeklyGoalsCompletion(fitnessUnbreakableVow, weekNumber, weeklyGoalsStatus);
 
-    return completedGoals;
+    return weeklyGoalsStatus;
 }
 
 async function assertWeeklyGoalsCompletion(fitnessUnbreakableVow: FitnessUnbreakableVow, weekNumber: number, completedGoals: WeeklyGoalStructOutput) {
     const weeklyRecors = await fitnessUnbreakableVow.getAllWeeklyGoalsRecords();
+
     expect(weeklyRecors[weekNumber][0]).to.be.equals(completedGoals[0]);
     expect(weeklyRecors[weekNumber][1]).to.be.equals(completedGoals[1]);
     expect(weeklyRecors[weekNumber][2]).to.be.equals(completedGoals[2]);
@@ -157,11 +153,6 @@ async function assertWhetherPenaltyShouldBeApplied(completedGoals: WeeklyGoalStr
     } else {
         await assertPenaltyWhenEnforceAgreement(await fitnessUnbreakableVow.PENALTY_AMOUNT(), weekIndex, enforcerAddress, fitnessUnbreakableVow);
     }
-}
-
-async function assertCurrentWeekPhysicalRecordEquals(thisRecord: PhysicalActivityRecordStruct, physicalActivityOracle: PhysicalActivityOracle) {
-    const [, record] = await physicalActivityOracle.getCurrentWeekPhysicalActivityRecord();
-    expect(record).to.be.equalsRecord(thisRecord);   
 }
 
 async function assertNoPenaltyWhenEnforceAgreement(fitnessUnbreakableVow: FitnessUnbreakableVow) {
@@ -179,35 +170,27 @@ async function assertPenaltyWhenEnforceAgreement(penaltyAmount: bigint, weekInde
     await expect(transaction).to.emit(fitnessUnbreakableVow, 'PenaltyApplied').withArgs(weekIndex, enforcerAddress.address);
 }
 
-async function finesImposed(
-    completedGoalsHistory: WeeklyGoalStructOutput[],
-    fitnessUnbreakableVow: FitnessUnbreakableVow,
-): Promise<bigint> {
-    const singlePenaltyAmount = await fitnessUnbreakableVow.PENALTY_AMOUNT();
-    const numberOfPenaltiesApplied = completedGoalsHistory.filter(([status, ]) => status !== 1n).length;
+function getFinalStats(contractInteractions: ContractInteraction[]): PhysicalActivityStatsStruct {
+    const validPublishInteractions = contractInteractions
+        .filter(interaction => interaction.type === 'PUBLISH_ACTIVITY_EVENT')
+        .filter(interaction => !interaction.data.request!.useWrongSignature);
 
-    return singlePenaltyAmount * BigInt(numberOfPenaltiesApplied);
+    const finalStats = { timestamp: 0, sleep: { ...EMPTY_SLEEP_STAT }, running: { ...EMPTY_RUNNING_STAT }, gym: { ...EMPTY_GYM_VISIT_STAT } }; 
+
+    for (const { data: { request } } of validPublishInteractions) {
+        finalStats.running = mergeRunning(finalStats.running, request!.running || []);
+        finalStats.sleep = mergeSleep(finalStats.sleep, request!.sleep || []);
+        finalStats.gym = mergeGymVisit(finalStats.gym, request!.gymVisit || []);
+    }
+
+    return finalStats;
 }
 
-function getHighestRecord(contractInteractions: ContractInteraction[]): PhysicalActivityRecordStruct {
-    return contractInteractions
-        .filter((interaction): interaction is PushActivityRecordInteraction => interaction.type === 'PUSH_ACTIVITY_RECORD' && !interaction.data.useWrongSignature)
-        .map(interaction => interaction.data)
-        .reduce((maximumRecorded: PhysicalActivityRecordStruct | null, record: PhysicalActivityRecordStruct) => {
-            if (maximumRecorded === null) return { ...record };
+function getWeeklyGoalsStatus(stats: PhysicalActivityStatsStruct) {
+    const wentoToTheGymEnoughTimes = BigInt(stats.gym.count) >= 2n;
+    const ran2km = BigInt(stats.running.count) >= 2n;
+    const sleptWell = BigInt(stats.sleep.count) >= 2n;
 
-            if (record.gymVisits > maximumRecorded.gymVisits) maximumRecorded.gymVisits = record.gymVisits;
-            if (record.healthySleepNights > maximumRecorded.healthySleepNights) maximumRecorded.healthySleepNights = record.healthySleepNights;
-            if (record.runDistanceMeters > maximumRecorded.runDistanceMeters) maximumRecorded.runDistanceMeters = record.runDistanceMeters;
-
-            return maximumRecorded;
-        }, null) || EMPTY_RECORD;
-}
-
-function getCompletedGoals(physicalActivityRecordStruct: PhysicalActivityRecordStruct) {
-    const wentoToTheGymEnoughTimes = BigInt(physicalActivityRecordStruct.gymVisits) >= 2n;
-    const ran2km = BigInt(physicalActivityRecordStruct.runDistanceMeters) > 2000n;
-    const sleptWell = BigInt(physicalActivityRecordStruct.healthySleepNights) >= 2n;
     const isCompleted = (wentoToTheGymEnoughTimes && ran2km) || (wentoToTheGymEnoughTimes && sleptWell) || (ran2km && sleptWell);
 
     const output = [isCompleted ? 1n : 5n, wentoToTheGymEnoughTimes, ran2km, sleptWell, isCompleted ? 0n : 1n] as WeeklyGoalStructOutput;

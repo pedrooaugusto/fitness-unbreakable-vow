@@ -22,8 +22,221 @@
   },
   {
     "anonymous": false,
-    "inputs": [],
-    "name": "PhysicalActivityRecordAdded",
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint8",
+        "name": "weekIndex",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "int64",
+        "name": "gymLocationLatitudeNanoDegree",
+        "type": "int64"
+      },
+      {
+        "indexed": false,
+        "internalType": "int64",
+        "name": "gymLocationLongitudeNanoDegree",
+        "type": "int64"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "timestamp",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "durationInMinutes",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "avgBpm",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "maxBpm",
+        "type": "uint8"
+      }
+    ],
+    "name": "GymVisitEventProcessed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint8",
+        "name": "weekIndex",
+        "type": "uint8"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint32",
+            "name": "timestamp",
+            "type": "uint32"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint8",
+                "name": "count",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint16",
+                "name": "longestDistanceInMeters",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "totalDistanceInMeters",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "bestPaceInSecondsPerKm",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint8",
+                "name": "maxAvgBpm",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct RunningStats",
+            "name": "running",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint8",
+                "name": "count",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint16",
+                "name": "totalMinutes",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint8",
+                "name": "avgBpm",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct GymVisitStats",
+            "name": "gym",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint8",
+                "name": "count",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint16",
+                "name": "longestSleepInMinutes",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "totalSleepInMinutes",
+                "type": "uint16"
+              }
+            ],
+            "internalType": "struct SleepStats",
+            "name": "sleep",
+            "type": "tuple"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct PhysicalActivityStats",
+        "name": "stats",
+        "type": "tuple"
+      }
+    ],
+    "name": "PhysicalActivityStatsUpdate",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint8",
+        "name": "weekIndex",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "timestamp",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "distanceInMeters",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "paceInSecondsPerKm",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "avgBpm",
+        "type": "uint8"
+      }
+    ],
+    "name": "RunningEventProcessed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint8",
+        "name": "weekIndex",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "timestamp",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "durationInMinutes",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "avgBpm",
+        "type": "uint8"
+      }
+    ],
+    "name": "SleepEventProcessed",
     "type": "event"
   },
   {
@@ -186,11 +399,11 @@
   },
   {
     "inputs": [],
-    "name": "getCurrentWeekPhysicalActivityRecord",
+    "name": "getCurrentWeekPhysicalActivityStats",
     "outputs": [
       {
         "internalType": "uint8",
-        "name": "",
+        "name": "currentWeekIndex",
         "type": "uint8"
       },
       {
@@ -201,27 +414,147 @@
             "type": "uint32"
           },
           {
-            "internalType": "uint16",
-            "name": "runDistanceMeters",
-            "type": "uint16"
+            "components": [
+              {
+                "internalType": "uint8",
+                "name": "count",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint16",
+                "name": "longestDistanceInMeters",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "totalDistanceInMeters",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "bestPaceInSecondsPerKm",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint8",
+                "name": "maxAvgBpm",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct RunningStats",
+            "name": "running",
+            "type": "tuple"
           },
           {
-            "internalType": "uint8",
-            "name": "healthySleepNights",
-            "type": "uint8"
+            "components": [
+              {
+                "internalType": "uint8",
+                "name": "count",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint16",
+                "name": "totalMinutes",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint8",
+                "name": "avgBpm",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct GymVisitStats",
+            "name": "gym",
+            "type": "tuple"
           },
           {
-            "internalType": "uint8",
-            "name": "gymVisits",
-            "type": "uint8"
+            "components": [
+              {
+                "internalType": "uint8",
+                "name": "count",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint16",
+                "name": "longestSleepInMinutes",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "totalSleepInMinutes",
+                "type": "uint16"
+              }
+            ],
+            "internalType": "struct SleepStats",
+            "name": "sleep",
+            "type": "tuple"
           }
         ],
-        "internalType": "struct PhysicalActivityRecord",
-        "name": "",
+        "internalType": "struct PhysicalActivityStats",
+        "name": "stats",
         "type": "tuple"
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "gymVisitValidator",
+    "outputs": [
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "int64",
+                "name": "latitudeNanoDegree",
+                "type": "int64"
+              },
+              {
+                "internalType": "int64",
+                "name": "longitudeNanoDegree",
+                "type": "int64"
+              }
+            ],
+            "internalType": "struct Location",
+            "name": "gym1Location",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "int64",
+                "name": "latitudeNanoDegree",
+                "type": "int64"
+              },
+              {
+                "internalType": "int64",
+                "name": "longitudeNanoDegree",
+                "type": "int64"
+              }
+            ],
+            "internalType": "struct Location",
+            "name": "gym2Location",
+            "type": "tuple"
+          },
+          {
+            "internalType": "uint8",
+            "name": "minimumVisitTimeInMinutes",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "minimumAvgBpm",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct GymVisitEventValidator",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "pure",
     "type": "function"
   },
   {
@@ -239,7 +572,7 @@
   },
   {
     "inputs": [],
-    "name": "listAllPhysicalActivityRecords",
+    "name": "listAllPhysicalActivityStats",
     "outputs": [
       {
         "components": [
@@ -249,22 +582,83 @@
             "type": "uint32"
           },
           {
-            "internalType": "uint16",
-            "name": "runDistanceMeters",
-            "type": "uint16"
+            "components": [
+              {
+                "internalType": "uint8",
+                "name": "count",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint16",
+                "name": "longestDistanceInMeters",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "totalDistanceInMeters",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "bestPaceInSecondsPerKm",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint8",
+                "name": "maxAvgBpm",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct RunningStats",
+            "name": "running",
+            "type": "tuple"
           },
           {
-            "internalType": "uint8",
-            "name": "healthySleepNights",
-            "type": "uint8"
+            "components": [
+              {
+                "internalType": "uint8",
+                "name": "count",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint16",
+                "name": "totalMinutes",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint8",
+                "name": "avgBpm",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct GymVisitStats",
+            "name": "gym",
+            "type": "tuple"
           },
           {
-            "internalType": "uint8",
-            "name": "gymVisits",
-            "type": "uint8"
+            "components": [
+              {
+                "internalType": "uint8",
+                "name": "count",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint16",
+                "name": "longestSleepInMinutes",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "totalSleepInMinutes",
+                "type": "uint16"
+              }
+            ],
+            "internalType": "struct SleepStats",
+            "name": "sleep",
+            "type": "tuple"
           }
         ],
-        "internalType": "struct PhysicalActivityRecord[]",
+        "internalType": "struct PhysicalActivityStats[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -293,7 +687,7 @@
         "type": "uint8"
       }
     ],
-    "name": "physicalActivityRecords",
+    "name": "physicalActivityStats",
     "outputs": [
       {
         "internalType": "uint32",
@@ -301,19 +695,99 @@
         "type": "uint32"
       },
       {
-        "internalType": "uint16",
-        "name": "runDistanceMeters",
-        "type": "uint16"
+        "components": [
+          {
+            "internalType": "uint8",
+            "name": "count",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint16",
+            "name": "longestDistanceInMeters",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "totalDistanceInMeters",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "bestPaceInSecondsPerKm",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint8",
+            "name": "maxAvgBpm",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct RunningStats",
+        "name": "running",
+        "type": "tuple"
       },
       {
-        "internalType": "uint8",
-        "name": "healthySleepNights",
-        "type": "uint8"
+        "components": [
+          {
+            "internalType": "uint8",
+            "name": "count",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint16",
+            "name": "totalMinutes",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint8",
+            "name": "avgBpm",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct GymVisitStats",
+        "name": "gym",
+        "type": "tuple"
       },
       {
-        "internalType": "uint8",
-        "name": "gymVisits",
-        "type": "uint8"
+        "components": [
+          {
+            "internalType": "uint8",
+            "name": "count",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint16",
+            "name": "longestSleepInMinutes",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "totalSleepInMinutes",
+            "type": "uint16"
+          }
+        ],
+        "internalType": "struct SleepStats",
+        "name": "sleep",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "processedEvents",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -324,49 +798,156 @@
       {
         "components": [
           {
-            "internalType": "bytes32",
-            "name": "r",
-            "type": "bytes32"
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "bytes32",
+                    "name": "r",
+                    "type": "bytes32"
+                  },
+                  {
+                    "internalType": "bytes32",
+                    "name": "s",
+                    "type": "bytes32"
+                  }
+                ],
+                "internalType": "struct P256Signature",
+                "name": "signature",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint32",
+                "name": "timestamp",
+                "type": "uint32"
+              },
+              {
+                "internalType": "uint16",
+                "name": "distanceInMeters",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint16",
+                "name": "paceInSecondsPerKm",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint8",
+                "name": "avgBpm",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct RunningEvent[]",
+            "name": "running",
+            "type": "tuple[]"
           },
           {
-            "internalType": "bytes32",
-            "name": "s",
-            "type": "bytes32"
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "bytes32",
+                    "name": "r",
+                    "type": "bytes32"
+                  },
+                  {
+                    "internalType": "bytes32",
+                    "name": "s",
+                    "type": "bytes32"
+                  }
+                ],
+                "internalType": "struct P256Signature",
+                "name": "signature",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint32",
+                "name": "timestamp",
+                "type": "uint32"
+              },
+              {
+                "internalType": "uint16",
+                "name": "durationInMinutes",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint8",
+                "name": "avgBpm",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct SleepEvent[]",
+            "name": "sleep",
+            "type": "tuple[]"
+          },
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "bytes32",
+                    "name": "r",
+                    "type": "bytes32"
+                  },
+                  {
+                    "internalType": "bytes32",
+                    "name": "s",
+                    "type": "bytes32"
+                  }
+                ],
+                "internalType": "struct P256Signature",
+                "name": "signature",
+                "type": "tuple"
+              },
+              {
+                "components": [
+                  {
+                    "internalType": "int64",
+                    "name": "latitudeNanoDegree",
+                    "type": "int64"
+                  },
+                  {
+                    "internalType": "int64",
+                    "name": "longitudeNanoDegree",
+                    "type": "int64"
+                  }
+                ],
+                "internalType": "struct Location",
+                "name": "location",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint32",
+                "name": "timestamp",
+                "type": "uint32"
+              },
+              {
+                "internalType": "uint8",
+                "name": "durationInMinutes",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint8",
+                "name": "avgBpm",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint8",
+                "name": "maxBpm",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct GymVisitEvent[]",
+            "name": "gymVisit",
+            "type": "tuple[]"
           }
         ],
-        "internalType": "struct P256Signature",
-        "name": "signature",
-        "type": "tuple"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "timestamp",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint16",
-            "name": "runDistanceMeters",
-            "type": "uint16"
-          },
-          {
-            "internalType": "uint8",
-            "name": "healthySleepNights",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint8",
-            "name": "gymVisits",
-            "type": "uint8"
-          }
-        ],
-        "internalType": "struct PhysicalActivityRecord",
-        "name": "newRecord",
+        "internalType": "struct PublishPhysicalActivityEventRequest",
+        "name": "request",
         "type": "tuple"
       }
     ],
-    "name": "pushPhysicalActivityRecord",
+    "name": "publishPhysicalActivityEvent",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -379,9 +960,39 @@
         "type": "address"
       }
     ],
-    "name": "registerOnNewPhysicalActivityRecordListener",
+    "name": "registerPhysicalActivityStatsUpdateListener",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "runningValidator",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint16",
+            "name": "minimumDistanceInMeters",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "maximumPaceInSecondsPerKm",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint8",
+            "name": "minimumAvgBpm",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct RunningEventValidator",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "pure",
     "type": "function"
   },
   {
@@ -429,6 +1040,36 @@
     "name": "setPublicKey",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "sleepValidator",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint16",
+            "name": "minimumDurationInMinutes",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint8",
+            "name": "avgBpmLowerBand",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "avgBpmUpperBand",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct SleepEventValidator",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "pure",
     "type": "function"
   }
 ]

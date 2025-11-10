@@ -31,15 +31,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
-import com.august.fitnessvowsync.model.SyncedPhysicalActivityRecord
+import com.august.fitnessvowsync.physicalactivity.model.PhysicalActivityEvents
 import kotlinx.coroutines.launch
-import java.math.BigInteger
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun RowScope.PhysicalActivityDetailsCard(icon: ImageVector, iconColor: Color, title: String, value: String, onClick: suspend () -> Unit) {
+fun RowScope.PhysicalActivityDetailsCard(icon: ImageVector, iconColor: Color, title: String, count: String, metric: String, onClick: suspend () -> Unit) {
     val coroutineScope = rememberCoroutineScope()
 
     Column(
@@ -58,16 +57,25 @@ fun RowScope.PhysicalActivityDetailsCard(icon: ImageVector, iconColor: Color, ti
             tint = iconColor,
             modifier = Modifier.size(24.dp)
         )
-        Text(text = value, fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color.White)
-        Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.Normal, color = Color(0xff9ca3af))
+        Row() {
+            Text(text = count, fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color.White)
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(text = "($metric)", fontSize = 12.sp, fontWeight = FontWeight.Normal, color = Color(0xff9ca3af))
+        }
+        Text(text = title, fontSize = 12.sp, fontWeight = FontWeight.Normal, color = Color(0xff9ca3af))
     }
 }
 
 @Composable
-fun SyncedPhysicalActivityRecordCard(record: SyncedPhysicalActivityRecord, modifier: Modifier) {
+fun SyncedPhysicalActivityRecordCard(activities:  PhysicalActivityEvents.GroupedEvents, modifier: Modifier) {
     val context = LocalContext.current
-    val formattedDate = formatInstant(record.timestamp)
-    val formattedDetails = String.format("Week: #%s, Run: %sm, 8h Sleep: %s, Gym Visits: %s", record.weekIndex, record.runDistanceMeters, record.healthySleepNights, record.gymVisits)
+    val formattedDate = formatInstant(activities.syncDetails.timestamp)
+    val formattedDetails = String.format("Week: #%s, Runs: %s, Sleep: %s, Gym Visits: %s", activities.syncDetails.weekIndex, activities.running.size, activities.sleep.size, activities.gymVisits.size)
+    val transactionUrl = if (activities.syncDetails.network == "sepolia") {
+        "http://sepolia.arbiscan.io/tx/${activities.syncDetails.transactionHash}"
+    } else {
+        "https://www.arbiscan.io/tx/${activities.syncDetails.transactionHash}"
+    }
 
     Row(
         modifier = modifier
@@ -75,7 +83,7 @@ fun SyncedPhysicalActivityRecordCard(record: SyncedPhysicalActivityRecord, modif
             .clip(RoundedCornerShape(10.dp))
             .background(Color(0xff1f2937))
             .clickable {
-                val intent = Intent(Intent.ACTION_VIEW, record.transactionUrl.toUri())
+                val intent = Intent(Intent.ACTION_VIEW, transactionUrl.toUri())
 
                 context.startActivity(intent)
             }

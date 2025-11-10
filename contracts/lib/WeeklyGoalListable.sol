@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {PhysicalActivityRecord, WeeklyGoalStatus, WeeklyGoalFunctions, WeeklyGoal} from "./Types.sol";
+import { WeeklyGoalStatus, WeeklyGoalFunctions, WeeklyGoal, PhysicalActivityStats } from "./Types.sol";
 import { Expirable, ContractPhase } from "./Expirable.sol";
 
 abstract contract WeeklyGoalListable is Expirable {
@@ -9,7 +9,7 @@ abstract contract WeeklyGoalListable is Expirable {
 
     uint8 public constant GYM_VISITS_GOAL = 2;
     uint8 public constant HEALTHY_SLEEP_NIGHTS_GOAL = 2;
-    uint16 public constant RUN_DISTANCE_GOAL = 2000;
+    uint16 public constant RUNNING_SESSIONS_GOAL = 2;
     uint8 public constant REQUIRED_NUMBER_OF_COMPLETED_GOALS = 2;
 
     uint8 private lastSettledWeek = 255; // [255 + 1 == -1 + 1] :-)
@@ -124,12 +124,10 @@ abstract contract WeeklyGoalListable is Expirable {
         return records;
     }
 
-    function buildWeeklyGoalFrom(
-        PhysicalActivityRecord calldata record
-    ) internal pure returns (WeeklyGoal memory) {
-        bool wentoToTheGymEnoughTimes = record.gymVisits >= GYM_VISITS_GOAL;
-        bool ran2km = record.runDistanceMeters >= RUN_DISTANCE_GOAL;
-        bool sleptWell = record.healthySleepNights >= HEALTHY_SLEEP_NIGHTS_GOAL;
+    function buildWeeklyGoalFrom(PhysicalActivityStats calldata stats) internal pure returns (WeeklyGoal memory) {
+        bool wentoToTheGymEnoughTimes = stats.gym.count >= GYM_VISITS_GOAL;
+        bool ran2km = stats.running.count >= RUNNING_SESSIONS_GOAL;
+        bool sleptWell = stats.sleep.count >= HEALTHY_SLEEP_NIGHTS_GOAL;
 
         return WeeklyGoal(
             WeeklyGoalStatus.PENDING_END_OF_WEEK,

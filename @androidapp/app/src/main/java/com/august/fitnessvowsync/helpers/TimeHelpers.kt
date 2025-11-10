@@ -35,5 +35,20 @@ class TimeHelpers {
 
             return parts.joinToString(" ")
         }
+
+        @JvmStatic
+        fun formatMinutes(totalMinutes: Long): String {
+            val days = totalMinutes / (24 * 60)
+            val hours = (totalMinutes % (24 * 60)) / 60
+            val minutes = totalMinutes % 60
+
+            val parts = buildString {
+                if (days > 0) append("${days}d")
+                if (hours > 0) append("${hours}h")
+                if (minutes > 0 || isEmpty()) append("${minutes}m") // always show minutes if nothing else
+            }
+
+            return parts
+        }
     }
 }

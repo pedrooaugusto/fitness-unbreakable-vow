@@ -38,7 +38,7 @@ export async function getEvents(contractAddress: string, previousWeekIndex: numb
     url.searchParams.set('toBlock', String(toBlock));
     url.searchParams.set('address', contractAddress);
     url.searchParams.set('chainid', chainId);
-    url.searchParams.set('topic0', '0xce8f94cce62ecfe0d7d97f750754089fb11637fec853afb2f745c291eb5d836a');
+    url.searchParams.set('topic0', '0x9c8e15dd5df224e4656c6d145fc83045037d5788e2aadf392212aa6ea2a047a4');
     url.searchParams.set('topic0_1_opr', 'and');
     url.searchParams.set('topic1', '0x' + previousWeekIndex.toString(16).padStart(64, '0'));
     url.searchParams.set('page', '0');
@@ -74,8 +74,6 @@ export async function getBlockNumber(timestampSeconds: number): Promise<number> 
     if (!response.ok) throw new Error(`Etherscan blockByTime failed: HTTP ${response.status}`);
     
     const payload = await response.json() as EtherscanResponse<string>;
-
-    console.log(payload);
 
     if (payload.status !== '1') throw new Error(`Etherscan blockByTime error: ${payload.message}`);
 

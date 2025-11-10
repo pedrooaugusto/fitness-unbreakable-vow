@@ -1,8 +1,8 @@
 import * as dotenv from 'dotenv';
 import { ScheduledHandler } from 'aws-lambda';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { loadContract, parseEvent } from './contract';
-import { getBlockNumber, getEvents, LogEntry } from './etherscan';
+import { loadContract, parsePhysicalActivityStatsUpdateEvent } from './contract';
+import { getBlockNumber, getEvents } from './etherscan';
 import { requireEnv } from './helpers';
 
 dotenv.config();
@@ -34,26 +34,23 @@ export const handler: ScheduledHandler = async (event: any, context) => {
     console.log(`[INFO] Querying events between blocks ${weekStartBlockNumber} and ${weekEndBlockNumber}`);
 
     const events = await getEvents(address, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
-    const physicalActivityRecords = decodeEvents(events);
 
-    console.log('[INFO] Saving events to S3: ', physicalActivityRecords);
+    console.log('[INFO] Trying to parse '+ events.length +' events returned by Etherscan.' );
 
-    await saveToS3(JSON.stringify(physicalActivityRecords), `events/${address}/week-${previousWeek}/PhysicalActivityRecordProcessed.json`);
+    const physicalActivityStatsUpdate = JSON.stringify(parsePhysicalActivityStatsUpdateEvent(events), (_, value) => typeof value === 'bigint' ? Number(value) : value);
+
+    console.log('[INFO] Saving events to S3: ', physicalActivityStatsUpdate);
+
+    await saveToS3(physicalActivityStatsUpdate, `events/${address}/week-${previousWeek}/PhysicalActivityStatsUpdate.json`);
+
+    console.log('[INFO] Completed.');
 }
-
 
 function getWeekStartAndEnd(creationDate: number, weekIndex: number, secondsInOneWeek: number) {
     const weekStart = creationDate + weekIndex * secondsInOneWeek;
     const weekEnd = weekStart + secondsInOneWeek - 1;
 
     return { weekStart, weekEnd };
-}
-
-
-function decodeEvents(events: LogEntry[]) {
-    if (!events || events.length === 0) return [] as Array<{ weekIndex: number; runDistanceMeters: number; gymVisits: number; healthySleepNights: number; transactionHash: string }>;
-
-    return events.map(evt => parseEvent(evt.topics[0], evt.topics[1], evt.data, evt.transactionHash, Number(evt.blockNumber)));
 }
 
 async function saveToS3(body: string, key: string) {

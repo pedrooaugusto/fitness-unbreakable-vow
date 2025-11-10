@@ -33,7 +33,7 @@ fun TransactionPanel(transactionUrl: String?) {
                 shape = RoundedCornerShape(8.dp)
             ),
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xff1f2937))
+        colors = CardDefaults.cardColors(containerColor = Color(0xff2562b7).copy(alpha = 0.95f))
     ) {
         Box(
             modifier = Modifier.fillMaxWidth(),
@@ -44,7 +44,7 @@ fun TransactionPanel(transactionUrl: String?) {
                 fontSize = 14.sp,
                 color = Color.White,
                 textDecoration = TextDecoration.Underline,
-                modifier = Modifier.padding(16.dp).clickable {
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 21.dp).clickable {
                     if (transactionUrl == null) return@clickable
 
                     val intent = Intent(Intent.ACTION_VIEW, transactionUrl.toUri())

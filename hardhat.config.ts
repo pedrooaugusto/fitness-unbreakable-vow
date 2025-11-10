@@ -1,18 +1,19 @@
 import '@nomicfoundation/hardhat-toolbox';
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, task } from "hardhat/config";
-import { signPhysicalActivityRecord } from './scripts/utils';
 import { getRawPublicKey } from './scripts/keys';
 import { getContractAddress, saveContractAddress } from './scripts/addresses';
 import setContractVersion from './scripts/set-contract-version';
 import path from 'path';
 import fs from 'fs';
+import { GymVisitEventStruct, RunningEventStruct, SleepEventStruct } from './typechain-types/contracts/PhysicalActivityOracle';
+import { signGymVisitEvent, signRunningEvent, signSleepEvent } from './test/helpers/Stats';
 
 // Defaults
 const STAKED_AMOUNT = "0.001";
 const CREATION_DATE = new Date().toISOString();
 const NUMBER_OF_CYLES = "5.2";
-const SECONDS_IN_WEEK = "120";
+const SECONDS_IN_WEEK = (95 * 60).toString(); // 95min
 
 dotenv.config();
 
@@ -84,13 +85,34 @@ task('PushPhysicalActivityRecord', "Calls contract pushPhysicalActivityRecord fu
             const healthySleepNights = parseInt(taskArgs.s, 10);
             const gymVisits = parseInt(taskArgs.g, 10);
 
-            const record = { timestamp: Math.floor(+new Date() / 1000), runDistanceMeters, healthySleepNights, gymVisits };
+            const running: RunningEventStruct = await signRunningEvent({
+                timestamp: parseInt((+ new Date() / 1000).toFixed(0)),
+                avgBpm: 115,
+                distanceInMeters: parseInt(taskArgs.d, 10),
+                paceInSecondsPerKm: 5 * 60
+            });
 
-            const { signature } = await signPhysicalActivityRecord(record);
+            const gymVisit: GymVisitEventStruct = await signGymVisitEvent({
+                timestamp: parseInt((+ new Date() / 1000).toFixed(0)),
+                avgBpm: 130,
+                maxBpm: 167,
+                durationInMinutes: 65,
+                location: { latitudeNanoDegree: 0n, longitudeNanoDegree: 0n }
+            });
 
-            const result = await contract.pushPhysicalActivityRecord(signature, record);
+            const sleep: SleepEventStruct = await signSleepEvent({
+                timestamp: parseInt((+ new Date() / 1000).toFixed(0)),
+                avgBpm: 60,
+                durationInMinutes: 9*60,
+            });
 
-            await result.wait();
+            const result = await contract.publishPhysicalActivityEvent({
+                gymVisit: [gymVisit],
+                sleep: [sleep],
+                running: [running]
+            });
+
+            const tx = await result.wait();
         } catch (err) {
             console.error(err);
         }

@@ -2,9 +2,10 @@ package com.august.fitnessvowsync.ui.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.august.fitnessvowsync.service.PermissionService
-import com.august.fitnessvowsync.service.PermissionService.Permission
-import com.august.fitnessvowsync.service.PhysicalActivityOracleService
+import com.august.fitnessvowsync.BuildConfig
+import com.august.fitnessvowsync.security.PermissionService
+import com.august.fitnessvowsync.security.PermissionService.Permission
+import com.august.fitnessvowsync.contract.PhysicalActivityOracleService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -75,19 +76,19 @@ interface PermissionsScreenViewModel {
 class PreviewPermissionsScreenViewModel: PermissionsScreenViewModel {
     override val uiState: StateFlow<PermissionsUiState> = MutableStateFlow(PermissionsUiState(emptyMap()))
     override fun requestPermission(permission: Permission) {
-        TODO("Not yet implemented")
+        error("mock")
     }
 
     override suspend fun exchangeKeys() {
-        TODO("Not yet implemented")
+        error("mock")
     }
 
     override suspend fun updatePermissions() {
-        TODO("Not yet implemented")
+        error("mock")
     }
 
     override fun dismissErrorMessage() {
-        TODO("Not yet implemented")
+        error("mock")
     }
 }
 
@@ -96,4 +97,5 @@ data class PermissionsUiState(
     val errorMessage: String? = null,
     val isExchangingKeys: Boolean = false,
     val keysExchanged: Boolean = false,
+    val network: String = BuildConfig.NETWORK,
 )

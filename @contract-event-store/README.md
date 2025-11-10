@@ -1,7 +1,7 @@
-## Simple Event Exlorer
+## Simple Event Store
 
-Block explorers have a limit where you can only query 50,000 contract events per request. Since this project does not have a backend and relies entirely on queries made to public RPC endpoints this becomes an issue because there's no way to to cache those events.
+Public RPC Nodes have a limit where you can only query 50,000 blocks when searching for contract events. Since this project does not have a backend and relies entirely on queries made to public RPC endpoints this becomes an issue because there's no way to query all events emmited by the contract to show them in the frontend, specially since the contract may span more than 3 months.
 
-This project is lambda functions that runs once a week to save all the events emmited for one contract in S3. Later the frontend can query those events direcly from there.
+This module is a lambda function that runs once a week to save all the events emmited by the contract in the S3 bucket where the frontend is deployed. This way, the frontend can directly query the events.
 
-Don't pay much attention to it.
+**This module is not essentiall at all, and it could be replaced with a link to Etherscan. I choose to add it because it makes the UI better.**

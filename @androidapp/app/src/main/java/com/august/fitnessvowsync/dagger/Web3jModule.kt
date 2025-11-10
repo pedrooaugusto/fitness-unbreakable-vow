@@ -11,7 +11,7 @@ import org.web3j.protocol.http.HttpService
 import javax.inject.Named
 import javax.inject.Singleton
 import com.august.fitnessvowsync.BuildConfig
-import com.august.fitnessvowsync.contract.ContractSettingsService
+import com.august.fitnessvowsync.helpers.SettingsService
 import org.web3j.tx.gas.StaticGasProvider
 import java.math.BigInteger
 
@@ -19,7 +19,7 @@ import java.math.BigInteger
 class Web3jModule {
     @Provides
     @Singleton
-    fun provideFitnessUnbreakableVow(contractSettings: ContractSettingsService): ContractProvider<FitnessUnbreakableVow> {
+    fun provideFitnessUnbreakableVow(contractSettings: SettingsService): ContractProvider<FitnessUnbreakableVow> {
         return ContractProvider(contractSettings) { walletKey, rpcEndpoint ->
             val web3j = provideWeb3j(rpcEndpoint)
             val contractAddress = BuildConfig.FITNESS_UNBREAKABLE_VOW_ADDRESS
@@ -32,10 +32,10 @@ class Web3jModule {
 
     @Provides
     @Singleton
-    fun providePhysicalActivityOracle(contractSettings: ContractSettingsService): ContractProvider<PhysicalActivityOracle> {
+    fun providePhysicalActivityOracle(contractSettings: SettingsService): ContractProvider<PhysicalActivityOracle> {
         return ContractProvider(contractSettings) { walletKey, rpcEndpoint ->
             val web3j = provideWeb3j(rpcEndpoint)
-            val contractAddress = BuildConfig.PHYSICAL_ACTIVITY_ORACLE_ADDRESS
+            val contractAddress = contractSettings.getPhysicalActivityRecordOracleAddress()
             val credentials = Credentials.create(walletKey)
             val contractGasProvider = createGasProvider(web3j)
 
@@ -56,7 +56,7 @@ class Web3jModule {
             .multiply(BigInteger.valueOf(110))
             .divide(BigInteger.valueOf(100))
 
-        return StaticGasProvider(gasPrice, BigInteger.valueOf(2_000_000))
+        return StaticGasProvider(gasPrice, BigInteger.valueOf(30_000_000))
     }
 
     private fun provideWeb3j(rpcEndpoint: String): Web3j {

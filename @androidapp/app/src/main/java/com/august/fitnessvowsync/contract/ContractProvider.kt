@@ -1,11 +1,12 @@
 package com.august.fitnessvowsync.contract
 
 import android.util.Log
+import com.august.fitnessvowsync.helpers.SettingsService
 import org.web3j.tx.Contract
 import java.util.function.BiFunction
 
 class ContractProvider<T: Contract> constructor(
-    private val contractSettings: ContractSettingsService,
+    private val contractSettings: SettingsService,
     private val createContract: BiFunction<String, String, T>
 ) {
     private var contract: T? = null

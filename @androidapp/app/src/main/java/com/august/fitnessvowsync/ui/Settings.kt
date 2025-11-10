@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
@@ -33,19 +34,21 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.august.fitnessvowsync.BuildConfig
-import com.august.fitnessvowsync.contract.ContractSettingsService
+import com.august.fitnessvowsync.helpers.SettingsService
 import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Settings(
     navigateToPermission: () -> Unit,
-    settingsService: ContractSettingsService
+    settingsService: SettingsService
 ) {
     val focusManager = LocalFocusManager.current
     var walletPrivateKey by remember { mutableStateOf(settingsService.getClientAccountPrivateKey() ?: "") }
@@ -95,14 +98,19 @@ fun Settings(
             label = { Text("Account Private Key") } ,
             supportingText = {
                 Text("Account used to interact with contracts in the blockchain.", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
-            }
+            },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done
+            ),
         )
 
 
         Spacer(modifier = Modifier.height(12.dp))
 
         TextField(
-            value = settingsService.getRegisteredPublicKey() ?: "<unknown>",
+            value = settingsService.getAppFormattedPublicKey() ?: "<not registered>",
             readOnly = true,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
@@ -165,6 +173,11 @@ fun Settings(
             supportingText = {
                 Text("Key attestation files are stored in the IPFS.", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
             },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done
+            ),
         )
 
         Spacer(modifier = Modifier.weight(1f))
@@ -205,6 +218,6 @@ fun Settings(
 @Composable
 fun SettingsPreview() {
     FitnessVowSyncTheme {
-        Settings({}, ContractSettingsService.PreviewContractSettingsService())
+        Settings({}, SettingsService.PreviewSettingsService())
     }
 }

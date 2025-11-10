@@ -16,6 +16,7 @@ import XIcon from "../../../assets/x-circle-icon";
 import DonateIcon from "../../../assets/donate-icon";
 import {
     formatCurrency,
+    formatDate,
     getAddressBlockExplorerUrl,
     getTransactionBlockExplorerUrl,
     GIVETH_PAGE_URL,
@@ -80,7 +81,7 @@ export const PastWeeksSection: React.FC<PastWeeksSectionProps> = ({
                                         penaltyAmount={overview.penaltyAmount}
                                         requiredNumberOfCompletedGoals={overview.requiredNumberOfCompletedGoals}
                                         gymVisitsGoal={overview.gymVisitsGoal}
-                                        runDistanceGoal={overview.runDistanceGoal}
+                                        runningSessionsGoal={overview.runningSessionsGoal}
                                         healthySleepNightsGoal={overview.healthySleepNightsGoal}
                                     />
                                 );
@@ -97,7 +98,7 @@ function PastWeekCard({
     weekIndex,
     requiredNumberOfCompletedGoals,
     gymVisitsGoal,
-    runDistanceGoal,
+    runningSessionsGoal,
     healthySleepNightsGoal,
     openModal,
     network,
@@ -115,7 +116,7 @@ function PastWeekCard({
     vowAddress: string;
     requiredNumberOfCompletedGoals: number;
     gymVisitsGoal: number,
-    runDistanceGoal: number,
+    runningSessionsGoal: number,
     healthySleepNightsGoal: number,
     upkeeperAddress: string
 } & WithModalProps) {
@@ -157,14 +158,10 @@ function PastWeekCard({
             closeModal={closeModal}
             requiredNumberOfCompletedGoals={requiredNumberOfCompletedGoals}
             gymVisitsGoal={gymVisitsGoal}
-            runDistanceGoal={runDistanceGoal}
+            runningSessionsGoal={runningSessionsGoal}
             healthySleepNightsGoal={healthySleepNightsGoal}
         />
     );
-
-    React.useEffect(() => {
-        //if (weekIndex === 6) openModal(modal, title);
-    }, []);
 
     return (
         <div
@@ -207,7 +204,7 @@ interface PastWeekDetailsModalProps {
     status: WeeklyGoalStatusType;
     requiredNumberOfCompletedGoals: number;
     gymVisitsGoal: number,
-    runDistanceGoal: number,
+    runningSessionsGoal: number,
     healthySleepNightsGoal: number,
     penaltyAmount: number;
     upkeeperAddress: string;
@@ -237,17 +234,16 @@ function PastWeekDetailsModal(props: Omit<PastWeekDetailsModalProps, 'weekDetail
     }
 }
 
-function TargetGoalsList(props: { weekDetails: GetWeekDetailsResponse; gymVisitsGoal: number; runDistanceGoal: number; healthySleepNightsGoal: number }) {
-    const { weekDetails, gymVisitsGoal, runDistanceGoal, healthySleepNightsGoal } = props;
+function TargetGoalsList(props: { weekDetails: GetWeekDetailsResponse; gymVisitsGoal: number; runningSessionsGoal: number; healthySleepNightsGoal: number }) {
+    const { weekDetails, gymVisitsGoal, runningSessionsGoal, healthySleepNightsGoal } = props;
 
     return (
         <ul>
             <li>
-                {weekDetails.goals.run2KmGoalMet ? "✔️" : "❌"}🏃 Running session of
-                at least {runDistanceGoal} meters. (<small>{weekDetails.goals.highestDistanceRanInMeters} / {runDistanceGoal} meters</small>).
+                {weekDetails.goals.run2KmGoalMet ? "✔️" : "❌"}🏃 Go running at least {runningSessionsGoal} times. (<small>{weekDetails.goals.runningSessions} / {runningSessionsGoal} running sessions</small>).
             </li>
             <li>
-                {weekDetails.goals.sleptWellGoalMet ? "✔️" : "❌"}🛏️ Sleeping 8+
+                {weekDetails.goals.sleptWellGoalMet ? "✔️" : "❌"}🛏️ Sleeping 7h+
                 hours on at least {healthySleepNightsGoal} nights. (<small>{weekDetails.goals.healthySleepNights} / {healthySleepNightsGoal} nights</small>).
             </li>
             <li>
@@ -276,7 +272,7 @@ function RecordsHistory({ weekDetails, network, oracleAddress }: { weekDetails: 
                                 target="_blank"
                                 style={{ fontWeight: 600, fontSize: '14px' }}
                             >
-                                🏃 {record.runDistanceMeters} m, 💪 {record.gymVisits} visits, 🛏️ {record.healthySleepNights} nights <small>({shortAddress(record.transactionHash)})</small>.
+                                {formatDate(Number(record.stats.timestamp))} <small>[{shortAddress(record.transactionHash)}]</small> {":"} 🏃 {record.stats.running.totalDistanceInMeters} m, 🏋️‍♀️ {record.stats.gym.totalMinutes} min, 🛏️ {(Number(record.stats.sleep.totalSleepInMinutes) / 60).toFixed(1)} hours.
                             </a>
                         </li>
                     ))}

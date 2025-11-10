@@ -1,18 +1,19 @@
-import { PhysicalActivityRecordStruct } from "../typechain-types/contracts/PhysicalActivityOracle";
+import { RunningEventStruct } from "../typechain-types/contracts/PhysicalActivityOracle";
 import { sign, verify } from "./keys";
 import { HardhatRuntimeEnvironment } from "hardhat/types/runtime";
 
-export async function signPhysicalActivityRecord(record: PhysicalActivityRecordStruct) {
-    const buffer = Buffer.alloc(16);
+export async function signPhysicalActivityRecord(record: Omit<RunningEventStruct, 'signature'>) {
+    const buffer = Buffer.alloc(20);
 
-    buffer.writeUInt32BE(record.timestamp.valueOf() as number >>> 0, 0);
-    buffer.writeUInt32BE(record.runDistanceMeters.valueOf() as number >>> 0, 4);
-    buffer.writeUInt32BE(record.healthySleepNights.valueOf() as number >>> 0, 8);
-    buffer.writeUInt32BE(record.gymVisits.valueOf() as number >>> 0, 12);
+    buffer.writeUInt32BE(5 >> 0, 0);
+    buffer.writeUInt32BE(record.timestamp.valueOf() as number >>> 0, 4);
+    buffer.writeUInt32BE(record.distanceInMeters.valueOf() as number >>> 0, 8);
+    buffer.writeUInt32BE(record.paceInSecondsPerKm.valueOf() as number >>> 0, 12);
+    buffer.writeUInt32BE(record.avgBpm.valueOf() as number >>> 0, 16);
 
     const signature = await sign(buffer);
 
-    return { signature, data: buffer };
+    return { signature, data: buffer, signedRecord: { ...record, signature: signature } };
 }
 
 export async function test() {

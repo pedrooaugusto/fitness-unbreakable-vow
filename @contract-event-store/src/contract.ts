@@ -1,11 +1,21 @@
-import { ethers } from 'ethers';
+import { ethers, Interface } from 'ethers';
 import { requireEnv } from './helpers';
+import MIN_ABI from './abi.json';
+import { LogEntry } from './etherscan';
 
-const MIN_ABI = [
-    { "inputs": [], "name": "getCurrentWeekIndex", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
-    { "inputs": [], "name": "SECONDS_IN_ONE_WEEK", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-    { "inputs": [], "name": "CREATION_DATE", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
-];
+export interface PhysicalActivityStatsUpdate {
+    transactionHash: string;
+    blockNumber: number;
+    weekIndex: number;
+    stats: {
+        timestamp: number;
+        running: any;
+        gym: any;
+        sleep: any;
+    }
+}
+
+const PhysicalActivityOracleInterface = new Interface(MIN_ABI);
 
 export function loadContract(address?: string) {
     if (address == null) throw new Error('Contract address not provided');
@@ -16,22 +26,34 @@ export function loadContract(address?: string) {
     return { contract: new ethers.Contract(address, MIN_ABI, provider), address: address };
 }
 
-export function parseEvent(topic0: string, topic1: string, data: string, transactionHash: string, blockNumber: number) {
-    const weekIndex = Number(BigInt(topic1));
+export function parsePhysicalActivityStatsUpdateEvent(etherScanLogs: LogEntry[]) {
+    const decoded: PhysicalActivityStatsUpdate[] = [];
 
-    const runDistanceMeters = Number(parseUintFromDataSlot(data, 0));
-    const gymVisits = Number(parseUintFromDataSlot(data, 1));
-    const healthySleepNights = Number(parseUintFromDataSlot(data, 2));
+    for (const logEntry of etherScanLogs) {
+        try {
+            const parsed = PhysicalActivityOracleInterface.parseLog({ topics: logEntry.topics, data: logEntry.data });
 
-    return { weekIndex, runDistanceMeters, gymVisits, healthySleepNights, transactionHash, blockNumber };
-}
+            const stats: PhysicalActivityStatsUpdate['stats'] = {
+                timestamp: parsed!.args.stats.toObject().timestamp,
+                sleep: parsed!.args.stats.sleep.toObject(),
+                gym: parsed!.args.stats.gym.toObject(),
+                running: parsed!.args.stats.running.toObject()
+            }
 
-function parseUintFromDataSlot(data: string, slotIndex: number): bigint {
-    // data is 0x + 64*n hex chars; slotIndex is 0-based
-    const clean = data.startsWith('0x') ? data.slice(2) : data;
-    const start = slotIndex * 64;
-    const end = start + 64;
-    const slice = clean.slice(start, end);
+            decoded.push({
+                weekIndex: parsed!.args.weekIndex,
+                stats: stats,
+                transactionHash: logEntry.transactionHash,
+                blockNumber: Number(logEntry.blockNumber)
+            });
 
-    return BigInt('0x' + slice);
+        } catch (err) {
+            // nothing tot do...
+            console.error('Unable to parse event: ', err);
+
+            throw err;
+        }
+    }
+
+    return decoded;
 }

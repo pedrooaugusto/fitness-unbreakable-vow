@@ -2,7 +2,6 @@ package com.august.fitnessvowsync.ui
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,15 +26,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.august.fitnessvowsync.contract.PhysicalActivityOracleService
 import com.august.fitnessvowsync.helpers.TimeHelpers
-import com.august.fitnessvowsync.model.ContractPhase
-import com.august.fitnessvowsync.model.PhysicalActivityRecord
-import com.august.fitnessvowsync.model.SyncedPhysicalActivityRecord
+import com.august.fitnessvowsync.helpers.TimeHelpers.Companion.formatMinutes
+import com.august.fitnessvowsync.physicalactivity.model.PhysicalActivityEvents
 import com.august.fitnessvowsync.ui.components.AppNameSection
+import com.august.fitnessvowsync.ui.components.DashboardLink
 import com.august.fitnessvowsync.ui.components.ErrorDialog
 import com.august.fitnessvowsync.ui.components.LoadingGuard
 import com.august.fitnessvowsync.ui.components.PhysicalActivityDetailsCard
+import com.august.fitnessvowsync.ui.components.SettingsButton
 import com.august.fitnessvowsync.ui.components.SyncNowButton
 import com.august.fitnessvowsync.ui.components.SyncedPhysicalActivityRecordCard
 import com.august.fitnessvowsync.ui.components.TextWithIcon
@@ -52,6 +54,7 @@ import kotlinx.coroutines.launch
 fun FitnessVowApp(
     viewModel: MainScreenViewModel,
     navigateToSettings: () -> Unit,
+    __debugPleaseRemove__randomValueFor: (suspend (String) -> Unit)? = null
 ) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
@@ -59,12 +62,8 @@ fun FitnessVowApp(
     val state = rememberPullToRefreshState()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val __debugPleaseRemove__randomValueFor: suspend (String) -> Unit = { goal: String ->
-        viewModel.__debugPleaseRemove__randomValueFor(goal)
-    }
-
-    val syncRecord: suspend () -> Unit = {
-        viewModel.syncRecord()
+    val syncPhysicalActivities: suspend () -> Unit = {
+        viewModel.syncPhysicalActivities()
     }
 
     LaunchedEffect(Unit) {
@@ -72,9 +71,9 @@ fun FitnessVowApp(
         viewModel.setupGymGeofence(context)
     }
 
-    LaunchedEffect(key1 = uiState.syncedRecord?.timestamp?.epochSecond) {
+    LaunchedEffect(key1 = uiState.lastSyncTransactionHash) {
         delay(10000)
-        viewModel.eraseSyncedRecord()
+        viewModel.eraseLastSyncTransactionHash()
     }
 
     PullToRefreshBox(
@@ -94,22 +93,29 @@ fun FitnessVowApp(
                     .verticalScroll(rememberScrollState())
                     .fillMaxSize(),
             ) {
-                SettingsButton(navigateToSettings)
-                AppNameSection()
-                Spacer(modifier = Modifier.height(36.dp))
+
+                Box(modifier = Modifier.fillMaxWidth().statusBarsPadding()) {
+                    SettingsButton(navigateToSettings, modifier = Modifier.align(Alignment.TopEnd).zIndex(1f).offset(y = 6.dp))
+                    Column {
+                        AppNameSection()
+                        DashboardLink(uiState.network)
+                    }
+                }
+                Spacer(modifier = Modifier.height(21.dp))
                 LoadingGuard(isLoading = uiState.isRefreshingScreen || uiState.isFetchingData) {
-                    NextSyncSection(
-                        uiState.nextRecordToSync,
-                        uiState.contractOverview,
-                        __debugPleaseRemove__randomValueFor,
+                    CurrentWeekPhysicalActivitiesSection(
+                        physicalActivities = uiState.thisWeekPhysicalActivities,
+                        contractOverview = uiState.contractOverview,
+                        onClickGoalCard = __debugPleaseRemove__randomValueFor,
                     )
-                    Spacer(modifier = Modifier.height(36.dp))
-                    SyncHistorySection(uiState.syncedRecordsList)
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(21.dp))
+                    SyncHistorySection(uiState.syncedPhysicalActivities)
+                    Spacer(modifier = Modifier.height(26.dp))
                     SyncNowSection(
-                        syncNextRecord = syncRecord,
-                        isSyncing = uiState.isSyncingRecord,
-                        syncedRecord = uiState.syncedRecord
+                        syncNextRecord = syncPhysicalActivities,
+                        isSyncing = uiState.isSyncingPhysicalActivities,
+                        lastSyncTransactionHash = uiState.lastSyncTransactionHash,
+                        network = uiState.contractOverview?.network ?: ""
                     )
                 }
                 ErrorDialog(
@@ -122,14 +128,14 @@ fun FitnessVowApp(
 }
 
 @Composable
-fun NextSyncSection(
-    nextRecordToSync: PhysicalActivityRecord?,
+fun CurrentWeekPhysicalActivitiesSection(
+    physicalActivities: PhysicalActivityEvents?,
     contractOverview: ContractOverview?,
     onClickGoalCard: (suspend (goal: String) -> Unit)?
 ) {
-    if (nextRecordToSync == null || contractOverview == null) return
+    if (physicalActivities == null || contractOverview == null) return
 
-    val isExpired = contractOverview.phase != ContractPhase.Active
+    val isExpired = contractOverview.phase != PhysicalActivityOracleService.ContractPhase.Active
     val currentWeek = contractOverview.currentWeek
     val timeRemaining = TimeHelpers.formatTimeRemaining(currentWeek.end)
 
@@ -142,9 +148,9 @@ fun NextSyncSection(
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        TextWithIcon(icon = Icons.Default.Sync, text = "Next Sync Data")
+        TextWithIcon(icon = Icons.Default.Sync, text = "Physical Activities")
         Text(
-            text = "Physical activity records data that will be submitted for week #%s.".format(currentWeek.index),
+            text = "Physical activities detected in week #%s that will be submitted to the oracle.".format(currentWeek.index),
             fontSize = 14.sp,
             fontWeight = FontWeight.Normal,
             color = Color(0xff9ca3af)
@@ -155,29 +161,35 @@ fun NextSyncSection(
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val formattedDistance = if (isExpired) "--" else "%.2f km".format((nextRecordToSync.runDistanceMeters / 1000.0))
-            val formattedHealthySleepNights = if (isExpired) "--" else "%02d".format(nextRecordToSync.healthySleepNights)
-            val formattedGymVisits = if (isExpired) "--" else "%02d".format(nextRecordToSync.gymVisits)
+            val formattedRunningSessions = if (isExpired) "--" else "%02d".format(physicalActivities.running.size)
+            val formattedSleepSessions = if (isExpired) "--" else "%02d".format(physicalActivities.sleep.size)
+            val formattedGymVisits = if (isExpired) "--" else "%02d".format(physicalActivities.gymVisits.size)
+            val formattedTotalDistance = if (isExpired) ".." else "%.1fkm".format(physicalActivities.running.sumOf { it.distanceInMeters } / 1000.0)
+            val formattedSleepTotalTime = if (isExpired) ".." else formatMinutes(physicalActivities.sleep.sumOf { it.durationInMinutes }.toLong())
+            val formattedGymVisitTotalTime = if (isExpired) ".." else formatMinutes(physicalActivities.gymVisits.sumOf { it.durationInMinutes }.toLong())
 
             PhysicalActivityDetailsCard(
                 icon = Icons.Default.DirectionsRun,
                 iconColor = Color(0xff4ade80),
-                title = "Distance Ran",
-                value = formattedDistance,
+                title = "Run Sessions",
+                count = formattedRunningSessions,
+                metric = formattedTotalDistance,
                 onClick = { onClickGoalCard?.invoke("run") }
             )
             PhysicalActivityDetailsCard(
                 icon = Icons.Default.Bed,
                 iconColor = Color(0xfff87171),
-                title = "8h Sleep",
-                value = formattedHealthySleepNights,
+                title = "Sleep Sessions",
+                count = formattedSleepSessions,
+                metric = formattedSleepTotalTime,
                 onClick = { onClickGoalCard?.invoke("sleep") }
             )
             PhysicalActivityDetailsCard(
                 icon = Icons.Default.FitnessCenter,
                 iconColor = Color(0xfffacc15),
                 title = "Gym Visits",
-                value = formattedGymVisits,
+                count = formattedGymVisits,
+                metric = formattedGymVisitTotalTime,
                 onClick = { onClickGoalCard?.invoke("gym") }
             )
         }
@@ -198,7 +210,7 @@ fun NextSyncSection(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SyncHistorySection(syncedRecords: List<SyncedPhysicalActivityRecord>) {
+fun SyncHistorySection(syncedPhysicalActivities: PhysicalActivityEvents) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -214,51 +226,43 @@ fun SyncHistorySection(syncedRecords: List<SyncedPhysicalActivityRecord>) {
             reverseLayout = true
         ) {
             items(
-                items = syncedRecords,
-                key = { it.timestamp }
-            ) { record ->
-                SyncedPhysicalActivityRecordCard(record, Modifier.animateItemPlacement())
+                items = syncedPhysicalActivities.groupByTransactionHash(),
+                key = { it.syncDetails.transactionHash }
+            ) { events ->
+                SyncedPhysicalActivityRecordCard(events, Modifier.animateItemPlacement())
             }
         }
     }
 }
 
 @Composable
-fun SettingsButton(onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.End,
-    ) {
-        Icon(
-            imageVector = Icons.Default.Settings,
-            contentDescription = Icons.Default.Settings.name,
-            tint = Color.White,
-            modifier = Modifier.size(24.dp).clickable { onClick() },
-        )
-    }
-}
-
-@Composable
-fun SyncNowSection(syncNextRecord: suspend () -> Unit, isSyncing: Boolean, syncedRecord: SyncedPhysicalActivityRecord?) {
+fun SyncNowSection(syncNextRecord: suspend () -> Unit, isSyncing: Boolean, network: String, lastSyncTransactionHash: String?) {
     val coroutineScope = rememberCoroutineScope()
 
-    Column {
-        SyncNowButton(
-            isSyncing = isSyncing,
-            onClick = { coroutineScope.launch { syncNextRecord() } }
-        )
+    val transactionUrl = when {
+        lastSyncTransactionHash.isNullOrEmpty() -> null
+        network == "sepolia" -> "https://sepolia.arbiscan.io/tx/$lastSyncTransactionHash"
+        else -> "https://arbiscan.io/tx/$lastSyncTransactionHash"
+    }
 
-        Spacer(modifier = Modifier.height(24.dp))
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            SyncNowButton(
+                isSyncing = isSyncing,
+                onClick = { coroutineScope.launch { syncNextRecord() } }
+            )
+        }
 
         AnimatedVisibility(
-            visible = !syncedRecord?.transaction.isNullOrEmpty(),
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = (-15).dp)
+                .zIndex(1f),
+            visible = !lastSyncTransactionHash.isNullOrEmpty(),
+            enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
+            exit  = fadeOut() + slideOutVertically(targetOffsetY = { -it / 2 })
         ) {
-            TransactionPanel(transactionUrl = syncedRecord?.transaction)
+            TransactionPanel(transactionUrl = transactionUrl)
         }
     }
 }

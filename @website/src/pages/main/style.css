@@ -107,6 +107,13 @@ section.overview {
                 text-decoration: none;
                 color: white;
             }
+            
+            @media (max-width: 390px) {
+                & {
+                    top: -25px;
+                    right: 15px;
+                }
+            }
         }
     }
 
@@ -307,7 +314,7 @@ section.current-week-results {
                 background: var(--met, #016b2b);
             }
 
-            .description {
+            .main {
                 color: var(--text, #fafafa);
                 text-align: center;
                 font-family: Oxygen;
@@ -321,6 +328,15 @@ section.current-week-results {
                 small {
                     font-weight: 400;
                 }
+            }
+
+            .legend {
+                color: var(--text, #fafafa);
+                text-align: center;
+                font-family: Oxygen;
+                font-size: 12px;
+                font-style: normal;
+                font-weight: 500;
             }
 
             .status {

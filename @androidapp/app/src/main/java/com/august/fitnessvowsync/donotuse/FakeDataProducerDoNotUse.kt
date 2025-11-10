@@ -8,11 +8,11 @@ import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.units.Length
-import com.august.fitnessvowsync.service.GymVisitService
+import com.august.fitnessvowsync.geofencing.GymConfig
+import com.august.fitnessvowsync.physicalactivity.data.GymVisitTracker
 import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
-import kotlin.time.Duration.Companion.minutes
 
 /**
  * All the methods in this file are used to test the application
@@ -23,11 +23,11 @@ import kotlin.time.Duration.Companion.minutes
 
 class FakeDataProducerDoNotUse @Inject constructor(
     private val healthConnectClient: HealthConnectClient,
-    private val gymVisitService: GymVisitService,
+    private val gymVisitTracker: GymVisitTracker,
 ) {
     suspend fun addFakeRunningSession(distance: Long) {
         val startTime = Instant.now()
-        val endTime = Instant.now().plus(Duration.ofSeconds(5))
+        val endTime = Instant.now().plus(Duration.ofSeconds(60))
 
         val runningSessionRecord: Record = ExerciseSessionRecord(
             startTime = startTime,
@@ -39,8 +39,19 @@ class FakeDataProducerDoNotUse @Inject constructor(
 
         val distanceRecord: Record = DistanceRecord(
             startTime = startTime.plus(Duration.ofSeconds(2)),
-            endTime = endTime,
+            endTime = endTime.minus(Duration.ofSeconds(2)),
             distance = Length.meters(distance.toDouble()),
+            startZoneOffset = null,
+            endZoneOffset = null,
+        )
+
+        val heartRateRecord: Record = HeartRateRecord(
+            startTime = startTime,
+            endTime = endTime,
+            samples = listOf(
+                HeartRateRecord.Sample(startTime.plus(Duration.ofSeconds(5)), 115),
+                HeartRateRecord.Sample(endTime.minus(Duration.ofSeconds(5)), 115)
+            ),
             startZoneOffset = null,
             endZoneOffset = null,
         )
@@ -48,12 +59,12 @@ class FakeDataProducerDoNotUse @Inject constructor(
         Log.i("FitVow", "Adding fake running session with session: $runningSessionRecord")
         Log.i("FitVow", "Adding fake running session with distance: $distanceRecord")
 
-        healthConnectClient.insertRecords(listOf(runningSessionRecord, distanceRecord))
+        healthConnectClient.insertRecords(listOf(runningSessionRecord, distanceRecord, heartRateRecord))
     }
 
     suspend fun addFakeSleepSession(avgHeartRate: Long) {
         val startTime = Instant.now()
-        val endTime = Instant.now().plus(Duration.ofSeconds(5))
+        val endTime = Instant.now().plus(Duration.ofSeconds(60))
 
         val sleepSessionRecord: Record = SleepSessionRecord(
             startTime = startTime,
@@ -81,10 +92,27 @@ class FakeDataProducerDoNotUse @Inject constructor(
 
     suspend fun addFakeGymVisit() {
         val startTime = Instant.now()
-        val visitRecord = GymVisitService.GymVisitRecord(startTime.plus(Duration.ofSeconds(2)), 20.minutes)
+        val endTime = Instant.now().plus(GymConfig.PRIMARY.minimumPermanence + Duration.ofSeconds(60))
 
-        gymVisitService.addGymVisit(visitRecord)
+        val heartRateRecord: Record = HeartRateRecord(
+            startTime = startTime,
+            endTime = endTime,
+            samples = listOf(
+                HeartRateRecord.Sample(startTime.plus(Duration.ofSeconds(2)), 90),
+                HeartRateRecord.Sample(startTime.plus(Duration.ofSeconds(4)), 115),
+                HeartRateRecord.Sample(startTime.plus(Duration.ofSeconds(6)), 115),
+                HeartRateRecord.Sample(startTime.plus(Duration.ofSeconds(8)), 115),
+                HeartRateRecord.Sample(startTime.plus(Duration.ofSeconds(10)), 115)
+            ),
+            startZoneOffset = null,
+            endZoneOffset = null,
+        )
 
-        Log.i("FitVow", "Adding fake gym visit: $visitRecord")
+        healthConnectClient.insertRecords(listOf(heartRateRecord))
+        gymVisitTracker.startVisit(startTime, GymConfig.PRIMARY)
+        gymVisitTracker.markVisitAsValid()
+        val visit = gymVisitTracker.finishVisit(endTime)
+
+        Log.i("FitVow", "Adding fake gym visit: $visit")
     }
 }

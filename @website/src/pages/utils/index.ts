@@ -19,6 +19,10 @@ export function formatCurrency(
 export function timeRemaining(secondsToExpire: number) {
     if (secondsToExpire <= 0) return "EXPIRED";
 
+    return formatTime(secondsToExpire, " ");
+}
+
+export function formatTime(secondsToExpire: number, separator = " ") {
     const days = Math.floor(secondsToExpire / (60 * 60 * 24));
     const hours = Math.floor((secondsToExpire % (60 * 60 * 24)) / (60 * 60));
     const minutes = Math.floor((secondsToExpire % (60 * 60)) / 60);
@@ -30,18 +34,21 @@ export function timeRemaining(secondsToExpire: number) {
     if (minutes > 0) result.push(`${minutes}m`);
     if (seconds > 0) result.push(`${seconds}s`);
 
-    return result.join(" ");
+    if (result.length === 0) return '0 minutes';
+
+    return result.join(separator);
 }
 
 export function formatDate(
     timestamp: number,
-    year: "numeric" | "2-digit" | null = "numeric"
+    year: "numeric" | "2-digit" | null = "numeric",
+    month: "2-digit" | "short" = "short"
 ) {
     const date = new Date(timestamp * 1000);
 
     return date.toLocaleDateString("en-US", {
         year: year == null ? undefined : year,
-        month: "short",
+        month: month,
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit",

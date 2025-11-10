@@ -25,7 +25,7 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         upkeeperAddress,
         gymVisitsGoal,
         healthySleepNightsGoal,
-        runDistanceGoal,
+        runningSessionsGoal,
         requiredNumberOfCompletedGoals,
     ] = await executeMulticall(FitnessUnbreakableVow, [
         "PHYSICAL_ACTIVITY_ORACLE",
@@ -40,27 +40,27 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         "CHAINLINK_UPKEEP_ADDRESS",
         "GYM_VISITS_GOAL",
         "HEALTHY_SLEEP_NIGHTS_GOAL",
-        "RUN_DISTANCE_GOAL",
+        "RUNNING_SESSIONS_GOAL",
         "REQUIRED_NUMBER_OF_COMPLETED_GOALS",
     ]);
 
     const [
-        [, currentWeekPhysicalActivityRecordRaw],
+        [, currentWeekPhysicalActivityStats],
         secondsInAWeek,
         publicKeyAttestation,
         publicKey,
+        sleepValidator,
+        runningValidator,
+        gymVisitValidator,
     ] = await executeMulticall(PhysicalActivityOracle, [
-        'getCurrentWeekPhysicalActivityRecord',
+        'getCurrentWeekPhysicalActivityStats',
         'SECONDS_IN_ONE_WEEK',
         "PUBLIC_KEY_ATTESTATION",
         "PUBLIC_KEY",
+        "sleepValidator",
+        "runningValidator",
+        "gymVisitValidator",
     ]);
-
-    const currentWeekPhysicalActivityRecord = {
-        gymVisits: Number(currentWeekPhysicalActivityRecordRaw.gymVisits),
-        highestDistanceRanInMeters: Number(currentWeekPhysicalActivityRecordRaw.runDistanceMeters),
-        healthySleepNights: Number(currentWeekPhysicalActivityRecordRaw.healthySleepNights),
-    };
 
     const allWeeks = allWeeksRaw.map((weeklyGoal: Record<string, unknown>) => enrichWeeklyGoal(weeklyGoal)) as WeeklyGoal[];
 
@@ -74,7 +74,7 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         penaltyAmount: Number(ethers.formatEther(penaltyAmount)),
         currentBalance: Number(ethers.formatEther(contractBalance)),
         currentWeekNumber: Number(currentWeekNumber),
-        currentWeekPhysicalActivityRecord,
+        currentWeekPhysicalActivityStats,
         allWeeks,
         upkeeperAddress,
         isContractExpired: Number(contractPhase) != 0,
@@ -83,9 +83,12 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         secondsInAWeek: Number(secondsInAWeek),
         network: FitnessUnbreakableVow.network,
         gymVisitsGoal: Number(gymVisitsGoal),
-        runDistanceGoal: Number(runDistanceGoal),
+        runningSessionsGoal: Number(runningSessionsGoal),
         healthySleepNightsGoal: Number(healthySleepNightsGoal),
         requiredNumberOfCompletedGoals: Number(requiredNumberOfCompletedGoals),
+        sleepValidator,
+        runningValidator,
+        gymVisitValidator,
         publicKeyInfo: {
             x: publicKey.x,
             y: publicKey.y,

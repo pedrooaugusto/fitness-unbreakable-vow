@@ -11,16 +11,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.health.connect.client.HealthConnectClient
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.august.fitnessvowsync.contract.ContractSettingsService
-import com.august.fitnessvowsync.dagger.ViewModelFactoryModule
-import com.august.fitnessvowsync.service.PermissionService
-import com.august.fitnessvowsync.service.PhysicalActivityOracleService
+import com.august.fitnessvowsync.helpers.SettingsService
+
 import com.august.fitnessvowsync.ui.FitnessVowApp
 import com.august.fitnessvowsync.ui.RequiredPermissions
 import com.august.fitnessvowsync.ui.Settings
@@ -33,19 +30,29 @@ import javax.inject.Named
 
 class MainActivity : ComponentActivity() {
     @Inject
-    lateinit var physicalActivityOracleService: PhysicalActivityOracleService
-    @Inject
-    lateinit var healthConnectClient: HealthConnectClient
-    @Inject
-    lateinit var settingsService: ContractSettingsService.ContractSettingsServiceImpl
+    lateinit var settingsService: SettingsService
     @Inject
     @Named("MAIN_VIEW_MODEL")
     lateinit var mainScreenViewModelFactory: ViewModelProvider.Factory
+    @Inject
+    @Named("PERMISSIONS_VIEW_MODEL")
+    lateinit var permissionsViewModelFactory: ViewModelProvider.Factory
+
+    //TODO: Remove support fake data during development
+    /*@Inject
+    lateinit var doNotUse: FakeDataProducerDoNotUse
+    suspend fun __debug_PleaseRemove__randomValueFor(goal: String): Unit {
+        when (goal) {
+            "run" -> doNotUse.addFakeRunningSession(500)
+            "sleep" -> doNotUse.addFakeSleepSession((60).toLong())
+            "gym" -> doNotUse.addFakeGymVisit()
+        }
+    }*/
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION])
     override fun onCreate(savedInstanceState: Bundle?) {
         val appComponent = (application as MyApplication).appComponent
-        val mainActivityComponent = appComponent.mainActivityComponentBuilder().build()
+        val mainActivityComponent = appComponent.mainActivityComponentBuilder().activity(this).build()
 
         mainActivityComponent.inject(this)
 
@@ -59,10 +66,8 @@ class MainActivity : ComponentActivity() {
             val navigateToMain = { navigationController.navigate("main") }
             val navigateToPermission = { navigationController.navigate("permissions") }
 
-            val permissionService = PermissionService.PermissionServiceImpl(this, navigateToSettings, healthConnectClient, settingsService)
             val mainScreenViewModel: DefaultMainScreenViewModel = viewModel(factory = mainScreenViewModelFactory)
-            // Kill me if you don't like it. https://www.youtube.com/watch?v=yjRagoONBcc
-            val permissionScreenViewModel: DefaultPermissionsScreenViewModel = viewModel(factory =  ViewModelFactoryModule.providePermissionViewModelFactory(physicalActivityOracleService, permissionService))
+            val permissionScreenViewModel: DefaultPermissionsScreenViewModel = viewModel(factory = permissionsViewModelFactory)
 
             FitnessVowSyncTheme {
                 NavHost(
@@ -77,6 +82,11 @@ class MainActivity : ComponentActivity() {
                         FitnessVowApp(
                             viewModel = mainScreenViewModel,
                             navigateToSettings = navigateToSettings,
+                            // TODO: Remove support fake data during development
+                            /*__debugPleaseRemove__randomValueFor = { activity ->
+                                __debug_PleaseRemove__randomValueFor(activity)
+                                mainScreenViewModel.refreshScreen()
+                            }*/
                         )
                     }
                     composable("permissions") {
@@ -97,4 +107,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-

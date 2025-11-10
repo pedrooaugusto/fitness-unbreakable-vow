@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { WeeklyGoalStatus, WeeklyGoal, PhysicalActivityRecord, Listener, Observable, ISignatureVerifier } from './lib/Types.sol';
+import { WeeklyGoalStatus, WeeklyGoal, PhysicalActivityStats, Listener, Observable } from './lib/Types.sol';
+import { SignatureVerifier } from './lib/signature/Types.sol';
 import { Ownable } from './lib/Ownable.sol';
-import { IExpirable } from "./lib/Expirable.sol";
-import { Versioned } from "./lib/Versioned.sol";
+import { IExpirable } from './lib/Expirable.sol';
+import { Versioned } from './lib/Versioned.sol';
 import { console } from './lib/variants/console.sol';
 import { WeeklyGoalListable } from './lib/WeeklyGoalListable.sol';
 
 event NoPenaltyApplied();
 event PenaltyApplied(uint8 weekIndex, address enforcer);
-event PhysicalActivityRecordProcessed(uint8 indexed weekIndex, uint16 runDistanceMeters, uint8 gymVisits, uint8 healthySleepNights);
-event VowExpired(uint256 releasedFunds, address receiver);
+event VowTeminated(uint256 releasedFunds, address receiver);
 
 /**
  * @title FitnessUnbreakableVow: Penalizes Physical Inactivity with Fund Deduction.
@@ -95,13 +95,11 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Version
 
         payable(owner).transfer(balance);
 
-        emit VowExpired(balance, msg.sender);
+        emit VowTeminated(balance, msg.sender);
     }
 
-    function onNewPhysicalActivityRecord(uint8 weekIndex, PhysicalActivityRecord calldata record) external onlyOracle {
-        putWeek(weekIndex, buildWeeklyGoalFrom(record));
-
-        emit PhysicalActivityRecordProcessed(weekIndex, record.runDistanceMeters, record.gymVisits, record.healthySleepNights);
+    function onPhysicalActivityStatsUpdate(uint8 weekIndex, PhysicalActivityStats calldata stats) external onlyOracle {
+        putWeek(weekIndex, buildWeeklyGoalFrom(stats));
     }
 
     /** 
@@ -144,7 +142,7 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Version
     }
 
     function isPublicKeyNotSet() private view returns (bool) {
-        return !ISignatureVerifier(PHYSICAL_ACTIVITY_ORACLE).isPublicKeySet();
+        return !SignatureVerifier(PHYSICAL_ACTIVITY_ORACLE).isPublicKeySet();
     }
 
     function syncWithOracle(address oracle, uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek) private {
@@ -152,7 +150,7 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Version
         require(IExpirable(oracle).EXPIRATION_DATE() == expirationDate, "Oracle and Vow expiration dates diverge.");
         require(IExpirable(oracle).SECONDS_IN_ONE_WEEK() == secondsInOneWeek, "Oracle and Vow seconds in one week diverge.");
 
-        Observable(oracle).registerOnNewPhysicalActivityRecordListener(address(this));
+        Observable(oracle).registerPhysicalActivityStatsUpdateListener(address(this));
     }
 
     modifier onlyOracle() {
