@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { WeeklyGoalStatus, WeeklyGoal, PhysicalActivityStats, Listener, TimeLord, TimeBound, OracleInterface, Environment } from './lib/Types.sol';
+import { WeeklyGoalStatus, WeeklyGoal, PhysicalActivityStats, Listener, OracleInterface, Environment } from './lib/Types.sol';
+import { TimeLord, TimeBound } from './lib/timelord/Types.sol';
 import { Ownable } from './lib/Ownable.sol';
 import { Versioned } from './lib/Versioned.sol';
 import { UpkeeperManager } from './lib/UpkeeperManager.sol';

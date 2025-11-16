@@ -22,56 +22,48 @@ buildContractJavaClient() {
 case "$1" in
     build)
         echo "Building contracts..."
-        npx hardhat compile --network $2
+        npx hardhat compile --network "$2"
         echo "Done."
         ;;
     build-prod)
         echo "Building all artifacts..."
-        npx hardhat compile --network $2
+        npx hardhat compile --network "$2"
         buildContractJavaClient
         copyContractAbiToFrontend
         echo "Done."
         ;;
     deploy)
-        echo "Building artifacts."
+        network="$2"
 
-        npx hardhat compile --network $2
+        # Strip subcommand and network from arguments, leaving only deploy options
+        shift 2
+
+        echo "Building artifacts."
+        npx hardhat compile --network "$network"
+
+        # Optional staked amount (others go straight to Hardhat)
+        vow_args=()
+        oracle_args=()
+
+        # Parse deploy options (all optional)
+        while [ "$#" -gt 0 ]; do
+            case "$1" in
+                --stakedamount)
+                    vow_args+=("$1" "$2")
+                    shift 2
+                    ;;
+                *)
+                    oracle_args+=("$1")
+                    shift
+                    ;;
+            esac
+        done
 
         echo "Deploying DeployPhysicalActivityOracle Contract..."
-        ARGS=()
-        ARGS+=("--network" "$2")
-        if [ "$#" -ge 3 ] && [ -n "${3}" ]; then
-            ARGS+=("--s" "${3}")
-        fi
-        if [ "$#" -ge 4 ] && [ -n "${4}" ]; then
-            ARGS+=("--w" "${4}")
-        fi
-        if [ "$#" -ge 5 ] && [ -n "${5}" ]; then
-            ARGS+=("--d" "${5}")
-        fi
-
-        deploy_oracle_output=$(npx hardhat DeployPhysicalActivityOracle "${ARGS[@]}" 2>&1)
-        echo "$deploy_oracle_output"
-        verifyOracle=$(printf "%s\n" "$deploy_oracle_output" | tail -n 1)
-
-        if [ "$2" != "localhost" ]; then
-            echo "Veryfing DeployPhysicalActivityOracle..."
-            echo "$verifyOracle"
-            timeout 45s bash -c "$verifyOracle" || true
-        fi
+        npx hardhat DeployPhysicalActivityOracle --network "$network" "${oracle_args[@]}"
 
         echo "Deploying DeployFitnessUnbreakableVow Contract..."
-
-        stakedAmount="${6+--a $6}"
-        deploy_vow_output=$(npx hardhat --network $2 DeployFitnessUnbreakableVow $stakedAmount 2>&1)
-        echo "$deploy_vow_output"
-        verifyVow=$(printf "%s\n" "$deploy_vow_output" | tail -n 1)
-
-        if [ "$2" != "localhost" ]; then
-            echo "Veryfing DeployFitnessUnbreakableVow..."
-            echo "$verifyVow"
-            timeout 45s bash -c "$verifyVow" || true
-        fi
+        npx hardhat DeployFitnessUnbreakableVow --network "$network" "${vow_args[@]}"
 
         echo "Copying new addresses to webapp and android app"
         cp contracts/.addresses @website/public/addresses

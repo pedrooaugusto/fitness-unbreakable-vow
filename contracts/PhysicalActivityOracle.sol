@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.28;
 
-import { PhysicalActivityStats, PublishPhysicalActivityEventRequest, Listener, Observable, TimeLord, TimeBound } from './lib/Types.sol';
+import { PhysicalActivityStats, PublishPhysicalActivityEventRequest, Listener, Observable } from './lib/Types.sol';
+import { TimeLord, TimeBound } from './lib/timelord/Types.sol';
 import { RunningEventFunctions, RunningEvent, RunningEventValidator } from './lib/Running.sol';
 import { SleepEventFunctions, SleepEvent, SleepEventValidator } from './lib/Sleep.sol';
 import { GymVisitEventFunctions, GymVisitEvent, GymVisitEventValidator, Geofence } from './lib/GymVisit.sol';

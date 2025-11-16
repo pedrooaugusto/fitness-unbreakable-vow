@@ -92,15 +92,14 @@ jobs:
             echo "ETHERSCAN_API_KEY=${{ secrets.ETHERSCAN_API_KEY }}";
           } > .env
 
-      - name: Deploy to Arbitrum Sepolia
+      - name: Deploy to Arbitrum
         run: |
           chmod +x run.sh
-            startDate="${{ inputs.start_date }}"
-            secondsInOneWeek="${{ inputs.seconds_in_one_week }}"
-            numberOfWeeks="${{ inputs.number_of_weeks }}"
-            network="${{ inputs.network }}"
-            stake="${{ inputs.stake }}"
-          ./run.sh deploy $network "$startDate" $numberOfWeeks $secondsInOneWeek $stake
+          ./run.sh deploy "${{ inputs.network }}" \
+            --startdate "${{ inputs.start_date }}" \
+            --secondsinweek "${{ inputs.seconds_in_one_week }}" \
+            --durationinweeks "${{ inputs.number_of_weeks }}" \
+            --stakedamount "${{ inputs.stake }}"
 
       - name: Create event saver scheduler args
         run: |

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { WeeklyGoalStatus, WeeklyGoalFunctions, WeeklyGoal, PhysicalActivityStats, TimeLord, ContractPhase } from "./Types.sol";
+import { WeeklyGoalStatus, WeeklyGoalFunctions, WeeklyGoal, PhysicalActivityStats } from './Types.sol';
+import { TimeLord, ContractPhase } from './timelord/Types.sol';
 
 abstract contract WeeklyGoalListable {
     using WeeklyGoalFunctions for WeeklyGoal;

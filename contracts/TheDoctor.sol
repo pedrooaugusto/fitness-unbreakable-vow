@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.28;
 
-import { TimeLord, ContractPhase } from './lib/Types.sol';
+import { TimeLord, ContractPhase } from './lib/timelord/Types.sol';
 
 function min256(uint256 a, uint256 b) pure returns (uint256) { return a > b ? b : a; }
 

@@ -9,6 +9,7 @@ import fs from 'fs';
 import { GymVisitEventStruct, RunningEventStruct, SleepEventStruct } from './typechain-types/contracts/PhysicalActivityOracle';
 import { signGymVisitEvent, signRunningEvent, signSleepEvent } from './test/helpers/Stats';
 import { deployContract, FitnessUnbreakableVowUpkeeper, getContract } from './scripts/utils';
+import verify from './scripts/verify-contract';
 
 // Defaults
 const STAKED_AMOUNT = "0.0001";
@@ -26,6 +27,7 @@ const ARBITRUM_WALLET_PRIVATE_KEY = process.env['arbitrum.WALLET_PRIVATE_KEY'];
 const ARBITRUM_SEPOLIA_WALLET_PRIVATE_KEY = process.env['arbiSep.WALLET_PRIVATE_KEY'];
 const ETHERSCAN_API_KEY = process.env['ETHERSCAN_API_KEY'];
 const COINMARKETCAP_API_KEY = process.env['GAS_REPORTER.COIN_MARKET_API_KEY'];
+
 
 task('pre:compile')
     .setAction(async(_, { network: { name: networkName } }) => {
@@ -129,13 +131,13 @@ task('EnforceVow', "Enforces the FitnessUnbreakableVow.")
     })
 
 task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
-    .addParam('s', 'Agreement start date', CREATION_DATE)
-    .addParam('w', 'Agreement duration in weeks', NUMBER_OF_CYLES)
-    .addParam('d', 'Seconds in one week', SECONDS_IN_WEEK)
+    .addParam('startdate', 'Agreement start date', CREATION_DATE)
+    .addParam('secondsinweek', 'Seconds in one week', SECONDS_IN_WEEK)
+    .addParam('durationinweeks', 'Agreement duration in weeks', NUMBER_OF_CYLES)
     .setAction(async (taskArgs, hre) => {
-        const creationDate = Math.floor(+new Date(taskArgs.s) / 1000);
-        const numberOfCycles = parseFloat(taskArgs.w);
-        const secondsInOneWeek = parseInt(taskArgs.d);
+        const creationDate = Math.floor(+new Date(taskArgs['startdate']) / 1000);
+        const secondsInOneWeek = parseInt(taskArgs['secondsinweek']);
+        const numberOfCycles = parseFloat(taskArgs['durationinweeks']);
         const expirationDate = creationDate + secondsInOneWeek * numberOfCycles;
 
         const { contractAddress: timeLordAddess } = await deployContract(
@@ -150,17 +152,23 @@ task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
             async (factory) => await factory.deploy(timeLordAddess)
         );
 
-        console.log('⚠️ Add the new contract address to ChainLink consumers list.');
-        console.log('⚠️ Verify contract source code in Etherscan with: ');
-        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${timeLordAddess}"`);
-        console.log(`npx hardhat verify --network ${hre.network.name} ${timeLordAddess} "${creationDate}" "${expirationDate}" "${secondsInOneWeek}"`);
+        const network = hre.network.name;
+
+        if (network === 'localhost') return console.log('Skipping Etherscan verification for local network.');
+
+        try {
+            await verify(network, 'PhysicalActivityOracle', contractAddress, [timeLordAddess]);
+            await verify(network, 'TheDoctor', timeLordAddess, [creationDate, expirationDate, secondsInOneWeek]);
+        } catch (err) {
+            console.error('Etherscan verification failed:', err);
+        }
     })
 
 task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
-    .addParam('a', 'Staked amount', STAKED_AMOUNT)
+    .addParam('stakedamount', 'Staked amount', STAKED_AMOUNT)
     .setAction(async (taskArgs, hre) => {
         const oracleAddress = getContractAddress('PhysicalActivityOracle', hre.network.name);
-        const initialStake = hre.ethers.parseEther(taskArgs.a);
+        const initialStake = hre.ethers.parseEther(taskArgs['stakedamount']);
 
         const { contract, contractAddress } = await deployContract(
             hre,
@@ -168,12 +176,17 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
             async (factory) => await factory.deploy(oracleAddress, { value: initialStake })
         );
 
-        if (hre.network.name !== 'localhost') {
-            await FitnessUnbreakableVowUpkeeper.create(contract, await getContract(hre, 'TheDoctor'), hre);
-        }
+        const network = hre.network.name;
 
-        console.log('⚠️ Verify contract source code in Etherscan with: ');
-        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${oracleAddress}"`);
+        if (network === 'localhost') return console.log('Skipping Etherscan verification for local network.');
+
+        await FitnessUnbreakableVowUpkeeper.create(contract, await getContract(hre, 'TheDoctor'), hre);
+
+        try {
+            await verify(network, 'FitnessUnbreakableVow', contractAddress, [oracleAddress]);
+        } catch (err) {
+            console.error('Etherscan verification failed:', err);
+        }
     })
 
 task('config-upkeeper', "Config upkeeper")
