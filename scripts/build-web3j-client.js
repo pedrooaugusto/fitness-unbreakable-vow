@@ -21,6 +21,14 @@ const contracts = [
       "artifacts/contracts/PhysicalActivityOracle.sol/PhysicalActivityOracle.json"
     ),
   },
+  {
+    name: "TheDoctor",
+    source: path.join(
+      __dirname,
+      "..",
+      "artifacts/contracts/TheDoctor.sol/TheDoctor.json"
+    ),
+  },
 ];
 
 const resourcesDir = path.resolve(

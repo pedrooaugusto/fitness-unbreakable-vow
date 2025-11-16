@@ -2,18 +2,19 @@ import '@nomicfoundation/hardhat-toolbox';
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig, task } from "hardhat/config";
 import { getRawPublicKey } from './scripts/keys';
-import { getContractAddress, saveContractAddress } from './scripts/addresses';
+import { getContractAddress } from './scripts/addresses';
 import setContractVersion from './scripts/set-contract-version';
 import path from 'path';
 import fs from 'fs';
 import { GymVisitEventStruct, RunningEventStruct, SleepEventStruct } from './typechain-types/contracts/PhysicalActivityOracle';
 import { signGymVisitEvent, signRunningEvent, signSleepEvent } from './test/helpers/Stats';
+import { deployContract, FitnessUnbreakableVowUpkeeper, getContract } from './scripts/utils';
 
 // Defaults
-const STAKED_AMOUNT = "0.001";
+const STAKED_AMOUNT = "0.0001";
 const CREATION_DATE = new Date().toISOString();
-const NUMBER_OF_CYLES = "5.2";
-const SECONDS_IN_WEEK = (95 * 60).toString(); // 95min
+const NUMBER_OF_CYLES = "3.2";
+const SECONDS_IN_WEEK = (5 * 60).toString(); // 95min to run android test
 
 dotenv.config();
 
@@ -50,9 +51,7 @@ task("compile")
 task('TerminateVow', "Terminates the FitnessUnbreakableVow.")
     .setAction(async (taskArgs, hre) => {
         try {
-            const contractAddress = getContractAddress("FitnessUnbreakableVow", hre.network.name);
-
-            const contract = await hre.ethers.getContractAt("FitnessUnbreakableVow", contractAddress);
+            const contract = await getContract(hre, 'FitnessUnbreakableVow');
 
             const result = await contract.terminateVow();
 
@@ -68,16 +67,14 @@ task('PushPhysicalActivityRecord', "Calls contract pushPhysicalActivityRecord fu
     .addParam('g', 'Gym visits')
     .setAction(async (taskArgs, hre) => {
         try {
-            const contractAddress = getContractAddress('PhysicalActivityOracle', hre.network.name);
-
-            const contract = await hre.ethers.getContractAt("PhysicalActivityOracle", contractAddress);
+            const contract = await getContract(hre, 'PhysicalActivityOracle');
 
             const registeredPublicKey = await contract.PUBLIC_KEY();
             const testPublicKey = await getRawPublicKey();
 
             // convert to ethers hex and then compare
             if (registeredPublicKey.x !== hre.ethers.hexlify(testPublicKey.x)) {
-                const result1 = await contract.setPublicKey(testPublicKey, { attestationSha256: '', attestationChallenge: '', attestationIpfsCID: '' });
+                const result1 = await contract.setPublicKey(testPublicKey, { attestationSha256: '0xfff', attestationChallenge: 'sAMple', attestationIpfsCID: 'bfci4' });
                 result1.wait();
             }
 
@@ -121,9 +118,7 @@ task('PushPhysicalActivityRecord', "Calls contract pushPhysicalActivityRecord fu
 task('EnforceVow', "Enforces the FitnessUnbreakableVow.")
     .setAction(async (taskArgs, hre) => {
         try {
-            const contractAddress = getContractAddress('FitnessUnbreakableVow', hre.network.name);
-
-            const contract = await hre.ethers.getContractAt("FitnessUnbreakableVow", contractAddress);
+            const contract = await getContract(hre, 'FitnessUnbreakableVow');
 
             const result = await contract.enforceAgreement();
 
@@ -143,67 +138,57 @@ task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
         const secondsInOneWeek = parseInt(taskArgs.d);
         const expirationDate = creationDate + secondsInOneWeek * numberOfCycles;
 
-        const PhysicalActivityOracle = await hre.ethers.getContractFactory("PhysicalActivityOracle");
+        const { contractAddress: timeLordAddess } = await deployContract(
+            hre,
+            'TheDoctor',
+            async (factory) => await factory.deploy(creationDate, expirationDate, secondsInOneWeek)
+        );
 
-        const contract = await PhysicalActivityOracle.deploy(creationDate, expirationDate, secondsInOneWeek);
-
-        await contract.waitForDeployment();
-
-        const { blockNumber = null } = await contract.deploymentTransaction()?.wait() || {};
-
-        if (blockNumber == null) throw new Error('Unable to determine block number.');
-
-        const contractAddress = await contract.getAddress();
-
-        console.log(`PhysicalActivityOracle contract deployed to: ${contractAddress}`);
-
-        saveContractAddress('PhysicalActivityOracle', contractAddress, hre.network.name, String(blockNumber));
+        const { contractAddress } = await deployContract(
+            hre,
+            'PhysicalActivityOracle',
+            async (factory) => await factory.deploy(timeLordAddess)
+        );
 
         console.log('⚠️ Add the new contract address to ChainLink consumers list.');
         console.log('⚠️ Verify contract source code in Etherscan with: ');
-        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${creationDate}" "${expirationDate}" "${secondsInOneWeek}"`);
+        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${timeLordAddess}"`);
+        console.log(`npx hardhat verify --network ${hre.network.name} ${timeLordAddess} "${creationDate}" "${expirationDate}" "${secondsInOneWeek}"`);
     })
 
 task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
     .addParam('a', 'Staked amount', STAKED_AMOUNT)
     .setAction(async (taskArgs, hre) => {
         const oracleAddress = getContractAddress('PhysicalActivityOracle', hre.network.name);
-        const chainLinkUpkeepAddress = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"; //"0xb83E47C2bC239B3bf370bc41e1459A34b41238D0";
+        const initialStake = hre.ethers.parseEther(taskArgs.a);
 
-        const stakedAmount = taskArgs.a;
-
-        console.log(stakedAmount);
-
-        const oracle = await hre.ethers.getContractAt("PhysicalActivityOracle", oracleAddress);
-
-        const creationDate = await oracle.CREATION_DATE();
-        const expirationDate = await oracle.EXPIRATION_DATE();
-        const secondsInOneWeek = await oracle.SECONDS_IN_ONE_WEEK();
-
-        const FitnessUnbreakableVowFactory = await hre.ethers.getContractFactory('FitnessUnbreakableVow');
-        const fitnessUnbreakableVow = await FitnessUnbreakableVowFactory.deploy(
-            oracleAddress,
-            chainLinkUpkeepAddress,
-            creationDate,
-            expirationDate,
-            secondsInOneWeek,
-            { value: hre.ethers.parseEther(stakedAmount) }
+        const { contract, contractAddress } = await deployContract(
+            hre,
+            'FitnessUnbreakableVow',
+            async (factory) => await factory.deploy(oracleAddress, { value: initialStake })
         );
 
-        await fitnessUnbreakableVow.waitForDeployment();
-
-        const { blockNumber = null } = await fitnessUnbreakableVow.deploymentTransaction()?.wait() || {};
-
-        if (blockNumber == null) throw new Error('Unable to determine block number.');
-
-        const contractAddress = await fitnessUnbreakableVow.getAddress();
-
-        console.log(`FitnessUnbreakableVow contract deployed to: ${contractAddress}`);
-
-        saveContractAddress('FitnessUnbreakableVow', contractAddress, hre.network.name, String(blockNumber));
+        if (hre.network.name !== 'localhost') {
+            await FitnessUnbreakableVowUpkeeper.create(contract, await getContract(hre, 'TheDoctor'), hre);
+        }
 
         console.log('⚠️ Verify contract source code in Etherscan with: ');
-        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${oracleAddress}" "${chainLinkUpkeepAddress}" "${creationDate}" "${expirationDate}" "${secondsInOneWeek}"`);
+        console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress} "${oracleAddress}"`);
+    })
+
+task('config-upkeeper', "Config upkeeper")
+    .setAction(async (taskArgs, hre) => {
+        try {
+            const contractAddress = getContractAddress('FitnessUnbreakableVow', hre.network.name);
+
+            const contract = await hre.ethers.getContractAt("FitnessUnbreakableVow", contractAddress);
+            const result2 = await contract.withdrawUpkeeperFunds();
+
+            await result2.wait();
+        } catch (err) {
+            console.error(err);
+            throw err;
+        }
     })
 
 const config: HardhatUserConfig = {

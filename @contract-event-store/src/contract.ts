@@ -1,6 +1,7 @@
 import { ethers, Interface } from 'ethers';
 import { requireEnv } from './helpers';
-import MIN_ABI from './abi.json';
+import { abi as PhysicalActivityOracleAbi } from './abi/PhysicalActivityOracle.json';
+import { abi as TimeLordAbi } from './abi/TheDoctor.json';
 import { LogEntry } from './etherscan';
 
 export interface PhysicalActivityStatsUpdate {
@@ -15,15 +16,18 @@ export interface PhysicalActivityStatsUpdate {
     }
 }
 
-const PhysicalActivityOracleInterface = new Interface(MIN_ABI);
+const PhysicalActivityOracleInterface = new Interface(PhysicalActivityOracleAbi);
 
-export function loadContract(address?: string) {
-    if (address == null) throw new Error('Contract address not provided');
+export async function loadContracts(physicalActivityOracleAddress?: string) {
+    if (physicalActivityOracleAddress == null) throw new Error('Contract address not provided');
 
     const rpcUrl = requireEnv('RPC_PROVIDER');
     const provider = new ethers.JsonRpcProvider(rpcUrl);
+    const physicalActivityOracle = new ethers.Contract(physicalActivityOracleAddress, PhysicalActivityOracleAbi, provider);
+    const timeLordAddress = await physicalActivityOracle.TIME_LORD();
+    const timeLord = new ethers.Contract(timeLordAddress, TimeLordAbi, provider);
 
-    return { contract: new ethers.Contract(address, MIN_ABI, provider), address: address };
+    return { physicalActivityOracle, timeLord, physicalActivityOracleAddress, timeLordAddress  };
 }
 
 export function parsePhysicalActivityStatsUpdateEvent(etherScanLogs: LogEntry[]) {

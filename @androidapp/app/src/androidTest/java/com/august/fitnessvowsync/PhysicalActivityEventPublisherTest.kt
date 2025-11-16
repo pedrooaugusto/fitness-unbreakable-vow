@@ -5,6 +5,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.august.fitnessvowsync.contract.InterPlanetaryFileSystemService
 import com.august.fitnessvowsync.contract.PhysicalActivityOracleService
 import com.august.fitnessvowsync.contract.SignatureMapper
+import com.august.fitnessvowsync.contract.TimeLordService
 import com.august.fitnessvowsync.dagger.EncryptedSharedPreferencesModule
 import com.august.fitnessvowsync.dagger.HealthConnectModule
 import com.august.fitnessvowsync.dagger.KeyStoreModule
@@ -15,6 +16,7 @@ import com.august.fitnessvowsync.physicalactivity.collection.PhysicalActivityEve
 import com.august.fitnessvowsync.physicalactivity.collection.PhysicalActivityEventPublisher
 import com.august.fitnessvowsync.physicalactivity.data.GymVisitTracker
 import com.august.fitnessvowsync.physicalactivity.data.PhysicalActivityEventRepository
+import com.august.fitnessvowsync.physicalactivity.mapper.GymVisitValidatorMapper
 import com.august.fitnessvowsync.physicalactivity.mapper.PhysicalActivityEventMapper
 import com.august.fitnessvowsync.security.HardwareProtectedKeyService
 import com.august.fitnessvowsync.testing.HealthConnectTestHelper
@@ -32,6 +34,8 @@ class PhysicalActivityEventPublisherTest {
     private lateinit var repository: PhysicalActivityEventRepository
     private lateinit var publisher: PhysicalActivityEventPublisher
     private lateinit var oracle: PhysicalActivityOracleService
+    private lateinit var timeLord: TimeLordService
+    private lateinit var gymVisitTracker: GymVisitTracker
     private lateinit var periodStart: java.time.Instant
     private lateinit var periodEnd: java.time.Instant
 
@@ -63,12 +67,13 @@ class PhysicalActivityEventPublisherTest {
         val signatureMapper = SignatureMapper()
         val physicalActivityEventMapper = PhysicalActivityEventMapper(signatureMapper)
         val settingsService = initSettings(SettingsService.SettingsServiceImpl(encryptedPreferences, protectedKeyService, signatureMapper))
-        val gymVisitTracker = GymVisitTracker(encryptedPreferences)
         val healthConnectClient = HealthConnectModule().provideHealthConnectClient(context)
         val healthConnectAggregator = HealthConnectAggregator(com.august.fitnessvowsync.health.HealthConnectClient(healthConnectClient))
         val physicalActivityOracle = Web3jModule().providePhysicalActivityOracle(settingsService)
+        val timeLordContact = Web3jModule().provideTimeLord(settingsService, physicalActivityOracle)
         val ipfsService = InterPlanetaryFileSystemService(settingsService)
 
+        gymVisitTracker = GymVisitTracker(encryptedPreferences)
         oracle = PhysicalActivityOracleService(
             protectedKeyService,
             signatureMapper,
@@ -76,25 +81,29 @@ class PhysicalActivityEventPublisherTest {
             physicalActivityOracle,
             physicalActivityEventMapper,
         )
+        timeLord = TimeLordService(timeLordContact)
         repository = PhysicalActivityEventRepository(encryptedPreferences)
         healthConnectTestHelper = HealthConnectTestHelper(healthConnectClient, gymVisitTracker)
         collector = PhysicalActivityEventCollector(healthConnectAggregator, gymVisitTracker, physicalActivityEventMapper)
-        publisher = PhysicalActivityEventPublisher(repository, collector, oracle)
+        publisher = PhysicalActivityEventPublisher(repository, collector, oracle, timeLord)
 
         oracle.registerAppAsRecordPublisher()
+        GymVisitValidatorMapper()
+            .toTrackedGyms(oracle.getGymVisitValidator())
+            .forEach { gymVisitTracker.addTrackedGym(it) }
 
         // Cache the current week for later cleanup
-        val (start, end) = oracle.getCurrentWeekStartAndEnd()
+        val (start, end) = timeLord.getCurrentWeekStartAndEnd()
         periodStart = start
         periodEnd = end
     }
 
     // Helpers
     private suspend fun getWeekWindow(): Triple<Int, java.time.Instant, java.time.Instant> {
-        val (start, end) = oracle.getCurrentWeekStartAndEnd()
+        val (start, end) = timeLord.getCurrentWeekStartAndEnd()
         periodStart = start
         periodEnd = end
-        val index = oracle.getCurrentWeekIndex().toInt()
+        val index = timeLord.getCurrentWeekIndex().toInt()
         return Triple(index, start, end)
     }
 
@@ -118,9 +127,9 @@ class PhysicalActivityEventPublisherTest {
         val gymStart = base.plusSeconds(3600)
         val gymEnd = gymStart.plusSeconds(1800)
         healthConnectTestHelper.insertGymVisit(
-            gymStart,
-            gymEnd,
-            com.august.fitnessvowsync.geofencing.GymConfig.PRIMARY,
+            start = gymStart,
+            end = gymEnd,
+            gym = gymVisitTracker.getTrackedGyms().first(),
             avgBpm = 120
         )
 

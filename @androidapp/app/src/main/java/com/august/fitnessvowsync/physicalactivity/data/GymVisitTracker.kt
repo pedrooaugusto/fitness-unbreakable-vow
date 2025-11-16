@@ -2,9 +2,9 @@ package com.august.fitnessvowsync.physicalactivity.data
 
 import android.content.SharedPreferences
 import androidx.annotation.VisibleForTesting
-import com.august.fitnessvowsync.geofencing.GymConfig
 import com.august.fitnessvowsync.helpers.DurationTypeAdapter
 import com.august.fitnessvowsync.helpers.InstantTypeAdapter
+import com.august.fitnessvowsync.physicalactivity.model.TrackedGymConfig
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import java.time.Instant
@@ -12,10 +12,11 @@ import javax.inject.Inject
 import kotlin.time.Duration
 
 class GymVisitTracker @Inject constructor (private val encryptedPreferences: SharedPreferences) {
-    data class GymVisitSession(val startTime: Instant, val endTime: Instant?, val isValid: Boolean, val gym: GymConfig)
+    data class GymVisitSession(val startTime: Instant, val endTime: Instant?, val isValid: Boolean, val gym: TrackedGymConfig)
 
     private val CURRENT_GYM_VISIT_PREF_KEY = "CURRENT_GYM_VISIT_PREF_KEY"
     private val GYM_VISITS_PREF_KEY = "GYM_VISITS_PREF_KEY"
+    private val GYM_CONFIG_PREF_KEY = "GYM_CONFIG_PREF_KEY"
     private val gson: Gson by lazy {
         GsonBuilder()
             .registerTypeAdapter(Instant::class.java, InstantTypeAdapter().nullSafe())
@@ -23,7 +24,7 @@ class GymVisitTracker @Inject constructor (private val encryptedPreferences: Sha
             .create()
     }
 
-    fun startVisit(startTime: Instant, gym: GymConfig) {
+    fun startVisit(startTime: Instant, gym: TrackedGymConfig) {
         updateCurrentGymVisit(null)
 
         val gymVisitSession = GymVisitSession(startTime, null, false, gym)
@@ -62,9 +63,43 @@ class GymVisitTracker @Inject constructor (private val encryptedPreferences: Sha
         return getGymVisitsList().filter { it.startTime >= periodStart && it.startTime <= periodEnd }
     }
 
+    fun addTrackedGym(trackedGymConfig: TrackedGymConfig) {
+        val trackedGyms = getTrackedGyms()
+
+        if (trackedGyms.find { it.id == trackedGymConfig.id } != null) return
+
+        trackedGyms.add(trackedGymConfig)
+
+        with(encryptedPreferences.edit()) {
+            putString(GYM_CONFIG_PREF_KEY, gson.toJson(trackedGyms))
+            apply()
+        }
+    }
+
+    fun getTrackedGyms(): MutableList<TrackedGymConfig> {
+        val json = encryptedPreferences.getString(GYM_CONFIG_PREF_KEY, "[]")
+
+        if (json.isNullOrBlank()) return mutableListOf<TrackedGymConfig>()
+
+        val typeOfT = object : com.google.gson.reflect.TypeToken<List<TrackedGymConfig>>() {}.type
+
+        return gson.fromJson(json, typeOfT)
+    }
+
     private fun updateCurrentGymVisit(gymVisitSession: GymVisitSession?) {
         with(encryptedPreferences.edit()) {
             putString(CURRENT_GYM_VISIT_PREF_KEY, gson.toJson(gymVisitSession))
+            apply()
+        }
+    }
+
+    fun gymGeofenceCreated(): Boolean {
+        return encryptedPreferences.getBoolean("GYM_GEOFENCE_CREATED", false)
+    }
+
+    fun setGymGeofenceCreated(created: Boolean) {
+        with(encryptedPreferences.edit()) {
+            putBoolean("GYM_GEOFENCE_CREATED", created)
             apply()
         }
     }

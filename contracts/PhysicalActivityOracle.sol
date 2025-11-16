@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.28;
 
-import { PhysicalActivityStats, PublishPhysicalActivityEventRequest, Listener, Observable } from './lib/Types.sol';
+import { PhysicalActivityStats, PublishPhysicalActivityEventRequest, Listener, Observable, TimeLord, TimeBound } from './lib/Types.sol';
 import { RunningEventFunctions, RunningEvent, RunningEventValidator } from './lib/Running.sol';
 import { SleepEventFunctions, SleepEvent, SleepEventValidator } from './lib/Sleep.sol';
-import { GymVisitEventFunctions, GymVisitEvent, GymVisitEventValidator, Location } from './lib/GymVisit.sol';
+import { GymVisitEventFunctions, GymVisitEvent, GymVisitEventValidator, Geofence } from './lib/GymVisit.sol';
 import { Ownable } from './lib/Ownable.sol';
-import { Expirable } from './lib/Expirable.sol';
 import { Versioned } from './lib/Versioned.sol';
 import { DefaultSignatureVerifier } from './lib/signature/DefaultSignatureVerifier.sol';
 import { PhysicalActivityListable } from './lib/PhysicalActivityListable.sol';
@@ -14,7 +13,7 @@ import { console } from './lib/variants/console.sol';
 
 event PhysicalActivityStatsUpdate(uint8 indexed weekIndex, PhysicalActivityStats stats);
 
-contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityListable, Observable, Expirable, Ownable, Versioned {
+contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityListable, Observable, TimeBound, Ownable, Versioned {
 
     function sleepValidator() public pure returns (SleepEventValidator memory) {
         return SleepEventValidator({
@@ -34,25 +33,25 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
 
     function gymVisitValidator() public pure returns (GymVisitEventValidator memory) {
         return GymVisitEventValidator({
-            gym1Location: Location({
-                latitudeNanoDegree: -228969577, // int(-22.896957745611775 * 1e7)
-                longitudeNanoDegree: -432726589 // int(-43.27265899080379 * 1e7)
-            }),
-            gym2Location: Location({
-                latitudeNanoDegree: -228934446, // -22.893444688409225, 
-                longitudeNanoDegree: -432925724 // -43.29257247192793
-            }),
+            // int(-22.896957745611775 * 1e7),  int(-43.27265899080379 * 1e7)
+            gym1Location: Geofence({ latitudeNanoDegree: -228969577, longitudeNanoDegree: -432726589, radiusInMeters: 150 }),
+            gym2Location: Geofence({ latitudeNanoDegree: -228934446, longitudeNanoDegree: -432925724, radiusInMeters: 400 }),
+            // waka waka https://www.youtube.com/watch?v=pRpeEdMmmQ0&t=55s
+            gym3Location: Geofence({ latitudeNanoDegree: -260758108, longitudeNanoDegree:  280636459, radiusInMeters: 150 }),
             minimumVisitTimeInMinutes: uint8((10 minutes) / 60), // 40 minutes
             minimumAvgBpm: 95
         });
     }
 
+    TimeLord public immutable TIME_LORD;
     Listener public ORACLE_UPDATE_LISTENER;
 
-    constructor(uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek) Expirable(creationDate, expirationDate, secondsInOneWeek) {}
+    constructor(TimeLord timeLordAddress) {
+        TIME_LORD = timeLordAddress;
+    }
 
     function publishPhysicalActivityEvent(PublishPhysicalActivityEventRequest calldata request) external onlyOwner onlyWhileActive {
-        uint8 currentWeekIndex = getCurrentWeekIndex();
+        uint8 currentWeekIndex = TIME_LORD.getCurrentWeekIndex();
 
         processRunningEvents(currentWeekIndex, request.running);
         processSleepEvents(currentWeekIndex, request.sleep);
@@ -70,19 +69,19 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
     }
 
     function getCurrentWeekPhysicalActivityStats() external view returns (uint8 currentWeekIndex, PhysicalActivityStats memory stats) {
-        currentWeekIndex = getCurrentWeekIndex();
+        currentWeekIndex = TIME_LORD.getCurrentWeekIndex();
         stats = get(currentWeekIndex);
 
         return (currentWeekIndex, stats);
     }
 
     function listAllPhysicalActivityStats() external view returns (PhysicalActivityStats[] memory) {
-        return list(getCurrentWeekIndex());
+        return list(TIME_LORD.getCurrentWeekIndex());
     }
 
     function processRunningEvents(uint8 currentWeekIndex, RunningEvent[] calldata eventos) private {
         for (uint8 i = 0; i < eventos.length; i++) {
-            uint8 eventWeekIndex = getWeekIndexOf(uint256(eventos[i].timestamp));
+            uint8 eventWeekIndex = TIME_LORD.getWeekIndexOf(uint256(eventos[i].timestamp));
             bytes32 eventHash = RunningEventFunctions.hash(eventos[i]);
 
             require(verifySignature(eventos[i].signature, eventHash), "youtu.be/LYb_nqU_43w&t=178s");
@@ -98,7 +97,7 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
 
     function processSleepEvents(uint8 currentWeekIndex, SleepEvent[] calldata eventos) private {
         for (uint8 i = 0; i < eventos.length; i++) {
-            uint8 eventWeekIndex = getWeekIndexOf(uint256(eventos[i].timestamp));
+            uint8 eventWeekIndex = TIME_LORD.getWeekIndexOf(uint256(eventos[i].timestamp));
             bytes32 eventHash = SleepEventFunctions.hash(eventos[i]);
 
             require(verifySignature(eventos[i].signature, eventHash), "youtu.be/LYb_nqU_43w&t=178s");
@@ -114,7 +113,7 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
 
     function processGymVisitEvents(uint8 currentWeekIndex, GymVisitEvent[] calldata eventos) private {
         for (uint8 i = 0; i < eventos.length; i++) {
-            uint8 eventWeekIndex = getWeekIndexOf(uint256(eventos[i].timestamp));
+            uint8 eventWeekIndex = TIME_LORD.getWeekIndexOf(uint256(eventos[i].timestamp));
             bytes32 eventHash = GymVisitEventFunctions.hash(eventos[i]);
 
             require(verifySignature(eventos[i].signature, eventHash), "youtu.be/LYb_nqU_43w&t=178s");
@@ -126,5 +125,10 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
                 GymVisitEventFunctions.emitProcessedEvent(eventos[i], eventWeekIndex);
             }
         }
+    }
+
+    modifier onlyWhileActive() {
+        require(TIME_LORD.isContractActive(), "Contract has expired.");
+        _;
     }
 }

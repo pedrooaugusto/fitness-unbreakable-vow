@@ -147,7 +147,7 @@ export function mergeGymVisit(current: GymVisitStatsStruct, events: GymVisitEven
         } else {
             const weightedSum = Number(result.avgBpm) * Number(oldCount) + Number(ev.avgBpm);
 
-            const newAvg = weightedSum / (oldCount + 1);
+            const newAvg = Math.floor(weightedSum / (oldCount + 1));
 
             result.avgBpm = newAvg;
         }

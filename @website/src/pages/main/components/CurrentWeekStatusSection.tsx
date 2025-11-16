@@ -13,6 +13,7 @@ import { SectionTitle } from "../../components/SectionTitle";
 import { ContractPhase, type GetContractOverviewResponse, type GymVisitEventValidator, type RunningEventValidator, type SleepEventValidator } from "../types";
 import type { WithModalProps } from "../../components/modal";
 import LiveTimeCountdown from "./LiveTimeCountdown";
+import InfoIcon from "../../../assets/info-icon";
 
 interface CurrentWeekStatusSectionProps extends WithModalProps {
     overview: GetContractOverviewResponse;
@@ -166,6 +167,7 @@ function WeeklyGoal(props: {
             className={`weekly-goal ${props.met ? "met" : "not-met"}`}
             onClick={props.onClick}
         >
+            <span><InfoIcon color="#fff" /></span>
             {props.met ? <CheckCircleIcon /> : <XIcon />}
             <div className="main">{props.mainTitle}</div>
             <div className="legend">{props.legend}</div>
@@ -256,7 +258,7 @@ function RunningSessionsGoalModal(props: GoalModalProps) {
                         </li>
                         <li>
                             Health data is published to Android Health Connect by a compatible wearable device 
-                            (e.g., the Pledger currently uses a <strong>Galaxy Watch 4</strong>), ensuring accurate and hardware-verified metrics.
+                            (e.g., the Pledger currently uses a <strong>Galaxy Watch 4</strong>), ensuring accurate and hardware-verified metrics. It only considers data added by the Samsumg Health app.
                         </li>
                         <li>
                             FitVow - Sync queries all running sessions in the Weekly
@@ -301,7 +303,8 @@ function SleepGoalModal(props: GoalModalProps) {
                 verificationBulletPoints={
                     <>
                         <li>
-                            FitVow - Sync integrates with the <a href="https://developer.android.com/health-and-fitness/guides/health-connect" target="_blank"><strong>Android Health Connect API</strong></a> to securely access running, sleep, heart rate and other health related metrics.
+                            FitVow - Sync integrates with the <a href="https://developer.android.com/health-and-fitness/guides/health-connect" target="_blank"><strong>Android Health Connect API</strong></a> to{' '}
+                            securely access running, sleep, heart rate and other health related metrics. It only considers data added by the Samsumg Health app.
                         </li>
                         <li>
                             Health data is published to Android Health Connect by a compatible wearable device 
@@ -332,11 +335,9 @@ function SleepGoalModal(props: GoalModalProps) {
 function GymVisitsGoalModal(props: GoalModalProps) {
     const validator = props.validator as GymVisitEventValidator;
     const requiredVisitDuration = formatTime(Number(validator.minimumVisitTimeInMinutes * 60n));
-    const gym1Lat = Number(validator.gym1Location.latitudeNanoDegree) / 1e7;
-    const gym1lon = Number(validator.gym1Location.longitudeNanoDegree) / 1e7;
-
-    const gym2lat = Number(validator.gym2Location.latitudeNanoDegree) / 1e7;
-    const gym2lon = Number(validator.gym2Location.longitudeNanoDegree) / 1e7;
+    const gymLocations = [validator.gym1Location, validator.gym2Location, validator.gym3Location]
+        .map(item => [Number(item.latitudeNanoDegree) / 1e7, Number(item.longitudeNanoDegree) / 1e7])
+        .map(([lat, lon], index, arr) => <><code>({lat}°, {lon}°)</code>{index === arr.length - 1 ? '' : ' or '}</>)
 
     return (
         <div className="main">
@@ -349,7 +350,7 @@ function GymVisitsGoalModal(props: GoalModalProps) {
                 }
                 definition={
                     <p>
-                        A valid gym visit ocurs up to a 100 meters of either gym locations <code>({gym1Lat}°, {gym1lon}°)</code> or <code>({gym2lat}°, {gym2lon}°)</code>, has a minimum duration of <b>{requiredVisitDuration}</b> and average heart rate during the visit greater than <b>{validator.minimumAvgBpm}bpm</b>.
+                        A valid gym visit ocurs up to X meters of either gym locations {gymLocations}, has a minimum duration of <b>{requiredVisitDuration}</b> and average heart rate during the visit greater than <b>{validator.minimumAvgBpm}bpm</b>.
                     </p>
                 }
                 verificationBulletPoints={

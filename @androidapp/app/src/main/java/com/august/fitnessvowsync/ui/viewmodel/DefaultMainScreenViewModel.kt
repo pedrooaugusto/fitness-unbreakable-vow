@@ -8,11 +8,12 @@ import androidx.lifecycle.ViewModel
 import com.august.fitnessvowsync.BuildConfig
 import com.august.fitnessvowsync.geofencing.GymGeofenceCreator
 import com.august.fitnessvowsync.contract.PhysicalActivityOracleService
-import com.august.fitnessvowsync.geofencing.GymConfig
-import com.august.fitnessvowsync.helpers.SettingsService
+import com.august.fitnessvowsync.contract.TimeLordService
 import com.august.fitnessvowsync.physicalactivity.collection.PhysicalActivityEventCollector
 import com.august.fitnessvowsync.physicalactivity.collection.PhysicalActivityEventPublisher
+import com.august.fitnessvowsync.physicalactivity.data.GymVisitTracker
 import com.august.fitnessvowsync.physicalactivity.data.PhysicalActivityEventRepository
+import com.august.fitnessvowsync.physicalactivity.mapper.GymVisitValidatorMapper
 import com.august.fitnessvowsync.physicalactivity.model.GymVisitEvent
 import com.august.fitnessvowsync.physicalactivity.model.PhysicalActivityEvent
 import com.august.fitnessvowsync.physicalactivity.model.PhysicalActivityEvents
@@ -26,11 +27,13 @@ import java.time.Instant
 
 open class DefaultMainScreenViewModel (
     private val oracleService: PhysicalActivityOracleService,
+    private val timeLordService: TimeLordService,
     private val physicalActivityCollector: PhysicalActivityEventCollector,
     private val physicalActivityRepository: PhysicalActivityEventRepository,
     private val physicalActivityPublisher: PhysicalActivityEventPublisher,
     private val gymGeofenceCreator: GymGeofenceCreator,
-    private val settingsService: SettingsService,
+    private val gymVisitTracker: GymVisitTracker,
+    private val gymVisitValidatorMapper: GymVisitValidatorMapper,
 ): ViewModel(), MainScreenViewModel {
     private val _uiState = MutableStateFlow(MainUiState())
     override val uiState: StateFlow<MainUiState> = _uiState
@@ -65,7 +68,7 @@ open class DefaultMainScreenViewModel (
 
             _uiState.update { it.copy(lastSyncTransactionHash = transaction, syncedPhysicalActivities = syncedPhysicalActivities) }
         } catch (ex: Exception) {
-            showErrorMessage("Sync physical activities error: ${(ex.message ?: "").take(40)}", ex)
+            showErrorMessage("Sync physical activities error: ${(ex.message ?: "").take(120)}", ex)
         } finally {
             _uiState.update { it.copy(isSyncingPhysicalActivities = false) }
         }
@@ -88,9 +91,13 @@ open class DefaultMainScreenViewModel (
     }
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION])
-    override fun setupGymGeofence(context: Context) {
+    override suspend fun setupGymGeofence(context: Context) {
         try {
-            if (!settingsService.gymGeofenceCreated()) {
+            if (!gymVisitTracker.gymGeofenceCreated()) {
+                val trackedGyms = gymVisitValidatorMapper.toTrackedGyms(oracleService.getGymVisitValidator())
+
+                trackedGyms.forEach { gymVisitTracker.addTrackedGym(it) }
+
                 gymGeofenceCreator.create(context)
             }
         } catch (ex: Exception) {
@@ -105,12 +112,12 @@ open class DefaultMainScreenViewModel (
     }
 
     private suspend fun getContractOverview(): ContractOverview {
-        val creationDate = Instant.ofEpochSecond(oracleService.getCreationDate().toLong())
-        val expirationDate = Instant.ofEpochSecond(oracleService.getExpirationDate().toLong())
-        val currentWeekStartEndPair = oracleService.getCurrentWeekStartAndEnd()
-        val currentWeek = Week(oracleService.getCurrentWeekIndex().toInt(), currentWeekStartEndPair.first, currentWeekStartEndPair.second)
-        val secondsInOneWeek = Duration.ofSeconds(oracleService.getSecondsInWeek().toLong())
-        val phase = oracleService.getContractPhase()
+        val creationDate = Instant.ofEpochSecond(timeLordService.getCreationDate().toLong())
+        val expirationDate = Instant.ofEpochSecond(timeLordService.getExpirationDate().toLong())
+        val currentWeekStartEndPair = timeLordService.getCurrentWeekStartAndEnd()
+        val currentWeek = Week(timeLordService.getCurrentWeekIndex().toInt(), currentWeekStartEndPair.first, currentWeekStartEndPair.second)
+        val secondsInOneWeek = Duration.ofSeconds(timeLordService.getSecondsInWeek().toLong())
+        val phase = timeLordService.getContractPhase()
         val network = BuildConfig.NETWORK
 
         return ContractOverview(creationDate, expirationDate, currentWeek, secondsInOneWeek, phase, network)
@@ -130,7 +137,7 @@ interface MainScreenViewModel {
 
     fun dismissErrorMessage()
 
-    fun setupGymGeofence(context: Context)
+    suspend fun setupGymGeofence(context: Context)
 }
 
 class PreviewMainScreenViewModel: MainScreenViewModel {
@@ -140,20 +147,20 @@ class PreviewMainScreenViewModel: MainScreenViewModel {
             expirationDate = Instant.now(),
             currentWeek = Week(1, Instant.now().minus(Duration.ofMinutes(60)), Instant.now().minus(Duration.ofMinutes(30))),
             secondsInOneWeek = Duration.ofMinutes(30),
-            phase = PhysicalActivityOracleService.ContractPhase.Active,
+            phase = TimeLordService.ContractPhase.Active,
             network = "localhost",
         ),
         thisWeekPhysicalActivities = PhysicalActivityEvents(
             sleep = mutableListOf(SleepEvent(Instant.now().minus(Duration.ofMinutes(50)), 20, 50, null)),
             running = mutableListOf(RunningEvent(Instant.now().minus(Duration.ofMinutes(40)), 2100, 400, 110)),
             gymVisits = mutableListOf(
-                GymVisitEvent(GymVisitEvent.Location(GymConfig.PRIMARY.latitude, GymConfig.PRIMARY.longitude), Instant.now().minus(Duration.ofMinutes(42)), 123, 110, 120)),
+                GymVisitEvent(GymVisitEvent.Location(-22.43434, 44.34423), Instant.now().minus(Duration.ofMinutes(42)), 123, 110, 120)),
         ),
         syncedPhysicalActivities = PhysicalActivityEvents(
             sleep = mutableListOf(SleepEvent(Instant.now().minus(Duration.ofMinutes(50)), 20, 50, PhysicalActivityEvent.SyncDetails("0x000000000000000000001", Instant.now(), "localhost", 0))),
             running = mutableListOf(RunningEvent(Instant.now().minus(Duration.ofMinutes(40)), 2100, 400, 110, PhysicalActivityEvent.SyncDetails("0x000000000000000000001", Instant.now(), "localhost", 0))),
             gymVisits = mutableListOf(
-                GymVisitEvent(GymVisitEvent.Location(GymConfig.PRIMARY.latitude, GymConfig.PRIMARY.longitude), Instant.now().minus(Duration.ofMinutes(42)), 123, 110, 120, PhysicalActivityEvent.SyncDetails("0x000000000000000000001", Instant.now(), "localhost", 0))),
+                GymVisitEvent(GymVisitEvent.Location(-22.43434, 44.34423), Instant.now().minus(Duration.ofMinutes(42)), 123, 110, 120, PhysicalActivityEvent.SyncDetails("0x000000000000000000001", Instant.now(), "localhost", 0))),
         ),
         isFetchingData = false
     ))
@@ -167,7 +174,7 @@ class PreviewMainScreenViewModel: MainScreenViewModel {
 
     override fun dismissErrorMessage() { error("mock") }
 
-    override fun setupGymGeofence(context: Context) { error("mock") }
+    override suspend fun setupGymGeofence(context: Context) { error("mock") }
 }
 
 data class MainUiState (
@@ -193,6 +200,6 @@ data class ContractOverview (
     val expirationDate: Instant,
     val currentWeek: Week,
     val secondsInOneWeek: Duration,
-    val phase: PhysicalActivityOracleService.ContractPhase,
+    val phase: TimeLordService.ContractPhase,
     val network: String,
 )

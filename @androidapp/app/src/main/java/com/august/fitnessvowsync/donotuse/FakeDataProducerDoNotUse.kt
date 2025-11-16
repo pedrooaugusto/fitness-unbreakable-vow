@@ -8,7 +8,6 @@ import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.units.Length
-import com.august.fitnessvowsync.geofencing.GymConfig
 import com.august.fitnessvowsync.physicalactivity.data.GymVisitTracker
 import java.time.Duration
 import java.time.Instant
@@ -91,8 +90,9 @@ class FakeDataProducerDoNotUse @Inject constructor(
     }
 
     suspend fun addFakeGymVisit() {
+        val gym = gymVisitTracker.getTrackedGyms().first()
         val startTime = Instant.now()
-        val endTime = Instant.now().plus(GymConfig.PRIMARY.minimumPermanence + Duration.ofSeconds(60))
+        val endTime = Instant.now().plus(gym.minimumPermanence + Duration.ofSeconds(60))
 
         val heartRateRecord: Record = HeartRateRecord(
             startTime = startTime,
@@ -109,7 +109,7 @@ class FakeDataProducerDoNotUse @Inject constructor(
         )
 
         healthConnectClient.insertRecords(listOf(heartRateRecord))
-        gymVisitTracker.startVisit(startTime, GymConfig.PRIMARY)
+        gymVisitTracker.startVisit(startTime, gym)
         gymVisitTracker.markVisitAsValid()
         val visit = gymVisitTracker.finishVisit(endTime)
 

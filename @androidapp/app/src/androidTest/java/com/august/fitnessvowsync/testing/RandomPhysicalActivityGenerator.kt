@@ -1,6 +1,6 @@
 package com.august.fitnessvowsync.testing
 
-import com.august.fitnessvowsync.geofencing.GymConfig
+import com.august.fitnessvowsync.physicalactivity.model.TrackedGymConfig
 import java.time.Duration
 import java.time.Instant
 import kotlin.math.roundToLong
@@ -16,10 +16,10 @@ data class PeriodSpec(
 
 data class RunSpec(val start: Instant, val end: Instant, val distanceMeters: Int, val paceInSecondsPerKm: Int, val avgBpm: Int)
 data class SleepSpec(val start: Instant, val end: Instant, val avgBpm: Int)
-data class GymSpec(val start: Instant, val end: Instant, val avgBpm: Int, val maxBpm: Int, val gym: GymConfig)
+data class GymSpec(val start: Instant, val end: Instant, val avgBpm: Int, val maxBpm: Int, val gym: TrackedGymConfig)
 
 object RandomPhysicalActivityGenerator {
-    fun generate(base: Instant, count: Int, seed: Long? = null): List<PeriodSpec> {
+    fun generate(base: Instant, count: Int, trackedGyms: List<TrackedGymConfig>, seed: Long? = null): List<PeriodSpec> {
         val rnd = if (seed != null) Random(seed) else Random.Default
         val periods = mutableListOf<PeriodSpec>()
 
@@ -41,7 +41,7 @@ object RandomPhysicalActivityGenerator {
             // 3) Gym block: 60 minutes
             val gymsStart = sleepsEnd.plus(Duration.ofMinutes(1))
             val gymsEnd = gymsStart.plus(Duration.ofMinutes(60))
-            val gyms = addGymVisits(start = gymsStart, end = gymsEnd, rnd = rnd)
+            val gyms = addGymVisits(start = gymsStart, end = gymsEnd, rnd = rnd, trackedGyms = trackedGyms)
 
             periods += PeriodSpec(periodStart, periodEnd, runs, sleeps, gyms)
 
@@ -112,7 +112,7 @@ object RandomPhysicalActivityGenerator {
         return sessions
     }
 
-    private fun addGymVisits(start: Instant, end: Instant, rnd: Random): List<GymSpec> {
+    private fun addGymVisits(start: Instant, end: Instant, rnd: Random, trackedGyms: List<TrackedGymConfig>): List<GymSpec> {
         val totalMin = Duration.between(start, end).toMinutes().toInt()
         val sepMin = 2
         val minDur = 5
@@ -132,7 +132,7 @@ object RandomPhysicalActivityGenerator {
             val thisLen = baseLen + if (remainder > 0) { remainder--; 1 } else 0
             val e = s.plus(Duration.ofMinutes(thisLen.toLong()))
             val bpm = rnd.nextInt(100, 150)
-            val gymCfg = if (rnd.nextInt(0, 2) == 0) GymConfig.PRIMARY else GymConfig.SECONDARY
+            val gymCfg = trackedGyms.random()
             sessions += GymSpec(s, e, bpm, bpm, gymCfg)
             s = if (i == n - 1) e else e.plus(Duration.ofMinutes(sepMin.toLong()))
         }

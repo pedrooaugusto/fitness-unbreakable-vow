@@ -9,8 +9,8 @@ import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
 import com.august.fitnessvowsync.helpers.NotificationService
-import com.august.fitnessvowsync.helpers.SettingsService
 import com.august.fitnessvowsync.physicalactivity.collection.GymVisitGeofenceEventReceiver
+import com.august.fitnessvowsync.physicalactivity.data.GymVisitTracker
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingClient
 import com.google.android.gms.location.GeofencingRequest
@@ -19,13 +19,13 @@ import javax.inject.Inject
 class GymGeofenceCreator @Inject constructor (
     private val geofencingClient: GeofencingClient,
     private val notificationService: NotificationService,
-    private val settingsService: SettingsService,
+    private val gymVisitTracker: GymVisitTracker,
 ) {
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION])
     fun create(context: Context) {
         Log.i("FitVow", "Trying to create gym geofences.")
 
-        settingsService.setGymGeofenceCreated(false)
+        gymVisitTracker.setGymGeofenceCreated(false)
 
         if (!hasRequiredPermissions(context)) {
             notificationService.showGeofenceNotification("Not enough permissions to start gym geofences monitoring.", context)
@@ -33,13 +33,14 @@ class GymGeofenceCreator @Inject constructor (
             return
         }
 
+        val trackedGyms = gymVisitTracker.getTrackedGyms()
         val geofences = mutableListOf<Geofence>()
 
-        for (gym in GymConfig.entries) {
+        for (gym in trackedGyms) {
             geofences.add(
                 Geofence.Builder()
                     .setRequestId(gym.id)
-                    .setCircularRegion(gym.latitude, gym.longitude, 400f)
+                    .setCircularRegion(gym.latitude, gym.longitude, gym.radius.toFloat())
                     .setLoiteringDelay(gym.minimumPermanence.toMillis().toInt())
                     .setTransitionTypes(
                         Geofence.GEOFENCE_TRANSITION_ENTER or
@@ -69,13 +70,13 @@ class GymGeofenceCreator @Inject constructor (
             .addOnSuccessListener {
                 Log.i("FitVow", "Gym Geofence added!")
 
-                settingsService.setGymGeofenceCreated(true)
+                gymVisitTracker.setGymGeofenceCreated(true)
                 notificationService.showGeofenceNotification("Gym geofences monitoring has started.", context)
             }
             .addOnFailureListener {
                 Log.i("FitVow", "Failed to add gym geofence: ${it.message}")
 
-                settingsService.setGymGeofenceCreated(false)
+                gymVisitTracker.setGymGeofenceCreated(false)
                 notificationService.showGeofenceNotification("Unable to start gym geofences.", context)
             }
     }

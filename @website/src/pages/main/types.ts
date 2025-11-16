@@ -52,14 +52,16 @@ export interface RunningEventValidator {
     minimumAvgBpm: bigint;
 }
 
-export interface Location {
+export interface Geofence {
     latitudeNanoDegree: bigint;
     longitudeNanoDegree: bigint;
+    radiusInMeters: bigint;
 }
 
 export interface GymVisitEventValidator {
-    gym1Location: Location;
-    gym2Location: Location;
+    gym1Location: Geofence;
+    gym2Location: Geofence;
+    gym3Location: Geofence;
     minimumVisitTimeInMinutes: bigint;
     minimumAvgBpm: bigint;
 }

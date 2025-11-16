@@ -37,13 +37,13 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                     className="certified"
                     onClick={() => 
                         openModal(
-                            <KeyAttestationModal
+                            <SecurityModel
                                 closeModal={closeModal}
                                 publicKey={overview.publicKeyInfo}
                                 network={overview.network}
                                 oracleAddress={overview.oracleAddress}
                             />,
-                            'Android Key Attestation'
+                            'Off-chain Security Model'
                         )
                     }
                 >
@@ -399,52 +399,68 @@ type KeyAttestationModalProps = {
     network: Network;
 }
 
-function KeyAttestationModal(props: KeyAttestationModalProps) {
+function SecurityModel(props: KeyAttestationModalProps) {
     const ipfsLink = `https://${props.publicKey.attestation.cidFile}.ipfs.w3s.link`;
     const attestationInspector = `https://pedrooaugusto.github.io/android-key-attestation-inspector?attestationFileUrl=${ipfsLink}`;
+    const appGithub = 'https://github.com/pedrooaugusto/fitness-unbreakable-vow/tree/main/%40androidapp';
     const blockExplorer = getAddressBlockExplorerUrl(props.oracleAddress, props.network);
-    const CK = ({ f, l, c }: {f: string, l: string, c: string }) => <a href={blockExplorer + `#code#F${f}#L${l}`} target="_blank">{c}</a>;
+    const CL = ({ f, l, c }: {f: string, l: string, c: string }) => <a href={blockExplorer + `#code#F${f}#L${l}`} target="_blank">{c}</a>;
+    const FL = ({ f, c }: {f: string, c: string }) => <a href={blockExplorer + `#writeContract#F${f}`} target="_blank">{c}</a>;
+    const FRL = ({ f, c }: {f: string, c: string }) => <a href={blockExplorer + `#readContract#F${f}`} target="_blank">{c}</a>;
+    const EL = ({ l, c }: {l: string, c: string }) => <a href={l} target="_blank">{c}</a>;
 
     return (
         <div className="main">
-            <div className="weekly-goal-modal">
+            <div className="security-model-modal">
                 <p>
-                    Each Physical Activity Record submitted to the FitVow
-                    Contract must be <b>cryptographically signed</b> using the private key
-                    corresponding to the public key registered on-chain (the{" "}
-                    <b>Registered Key</b>) <CK f="1" l="38" c="[1]" />. The Contract verifies every
-                    submission using <b>P-256 (secp256r1)</b> digital signature
-                    validation <CK f="5" l="61" c="[2]" />. Any record that fails verification is
-                    automatically rejected and produces no on-chain effect <CK f="1" l="38" c="[3]" />.
-                    <br />
-                    <br />
-                    Possession of the private key alone demonstrates control,
-                    but not <i>authentic origin</i>. To establish device authenticity
-                    and ensure the key is securely stored, FitVow employs{" "}
-                    <b>Android Key Attestation</b>. When "Fit Vow - Sync", the Android app
-                    that publishes data to the FitVow contract, is first installed on a device
-                    a key pair is generated and the operating system
-                    produces a <b>hardware-signed certificate chain</b> issued by
-                    Google, confirming that the private key was created and
-                    remains protected within a verified {' '}
-                    <b>Trusted Execution Environment (TEE)</b> or{" "}
-                    <b>StrongBox</b> chip. This attestation cannot be forged and stabilishes
-                    that the private key cannot be exported, meaning that any data signed with that key 
-                    originated from genuine unrooted android device.
-                    <br />
-                    <br />
-                    For full transparency, the Contract records both the
-                    Registered Key and a reference to its attestation
-                    certificate <CK f="5" l="82" c="[6]" />. Anyone may independently verify that the
-                    attested public key corresponds to the on-chain Registered
-                    Key and that the certificate chain is signed by Google's
-                    trusted root authority.
-                    <br />
-                    <br />
-                    To review this attestation, open the{" "}
-                    <b>Key Attestation Inspector</b> below and confirm that the
-                    X and Y coordinates of the public key match those shown
-                    here or do it manually on your own.
+                    <a href={appGithub} target="_blank">FitVow - Sync</a> is the mobile app responsible for collecting 
+                    the pledger's physical activity data (runs, sleep, gym visits) from Android Health Connect and publishing those records to the{' '}
+                    <a href={blockExplorer} target="_blank">PhysicalActivity Oracle Contract</a> which uses this data to 
+                    decide whether fines should be applied. The Oracle accepts only properly signed records — any submission 
+                    that fails cryptographic verification is ignored and produces no on-chain effect{' '}<CL f="1" l="91" c="[1]" />.
+                </p>
+                <h4>Signed submissions & on-chain checks</h4>
+                <p>
+                    Every record sent by FitVow-Sync is cryptographically signed with a private key whose public part is 
+                    permanently registered on-chain (the Registered Key) and cannot be changed{' '}<FL f="3" c="[2]" />. The Contract verifies
+                    signatures using <i>P-256 (secp256r1)</i>, ensuring that only data from the holder of the corresponding private key is accepted.
+                </p>
+                <h4>Device authenticity — Android Key Attestation</h4>
+                <p>
+                    Possession of a private key proves control but not authentic origin. To guarantee device integrity and secure key storage, 
+                    FitVow-Sync uses{' '}<EL l="https://developer.android.com/privacy-and-security/security-key-attestation" c="Android Key Attestation" />.
+                </p>
+                <p>
+                    On first install, the app generates a hardware-protected private key along with a hardware-signed Attestation Certificate 
+                    issued by Google{' '}<EL l="https://github.com/pedrooaugusto/fitness-unbreakable-vow/blob/322dcb1622dd45f874ec2ca76a23812470ec3c12/%40androidapp/app/src/main/java/com/august/fitnessvowsync/security/HardwareProtectedKeyService.kt#L36-L50" c="[3]"/>.{' '}
+                    This certificate confirms that the key was created and remains protected inside a verified{' '}
+                    <EL l="https://source.android.com/docs/security/features/trusty" c="Trusted Execution Environment (TEE)"/>{' '}or StrongBox chip, and that it cannot be exported.
+                </p>
+                <p>
+                    As a result, any data signed with 
+                    that key is proven to originate from the FitVow-Sync app running on a genuine unrooted Android device.{' '}
+                    Both the attestation certificate and public key are public available on-chain <FRL f="2" c="[4]" />.
+                </p>
+                <h4>App integrity — Sign-and-Forget (unique APK signing)</h4>
+                <p>
+                    To prevent tampering or reinstallation attacks, each FitVow-Sync APK is signed with a unique, random, 
+                    ephemeral signing key — a mechanism called Sign-and-Forget. The proccess of creating such APKs happens publicly on Github Actions <EL l="https://github.com/pedrooaugusto/fitness-unbreakable-vow/actions/runs/19219023055" c="[5]" />.
+                </p>
+                <p>
+                    Android treats apps signed with different keys as completely separate applications. A new version signed with a 
+                    different key cannot be installed over the existing one — the system requires uninstalling the current app first. 
+                    Uninstalling deletes all app data, including the hardware-backed private keys.
+                </p>
+                <p>
+                    This behavior prevents a malicious actor from installing a “modified upgrade” that keeps access to the original keys. 
+                    By using unique signing keys for every release, FitVow ensures that each installation has a one-to-one 
+                    link to its cryptographic identity, permanently isolating it from any tampered builds.
+                </p>
+                <h4>Transparency & verification</h4>
+                <p>
+                    For transparency, the Contract stores both the Registered Key and a reference to its Attestation Certificate <FRL f="2" c="[6]" />{' '}<FRL f="3" c="[7]" />. 
+                    Anyone can verify that the attested public key matches the on-chain key and that the certificate chain is signed 
+                    by Google's trusted root authority. This can be done by using the 'Attestation Key Inspector' tool below or manually.
                 </p>
                 <div style={{ marginTop: 12 }}>
                     <p>

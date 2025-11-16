@@ -16,7 +16,7 @@ import kotlin.math.roundToLong
 class HealthConnectAggregator @Inject constructor(private val client: HealthConnectClient) {
     // Fix cases where you get up to pee and then goes back to sleep ~20min later.
     // When that happens your SmartWatch might count 2 separate sleep sessions.
-    private var MERGE_SLEEP_SESSION_THRESHOLD = Duration.ofMinutes(40)
+    private var MERGE_SLEEP_SESSION_THRESHOLD = Duration.ofMinutes(70)
 
     // Secondary constructor for tests to override merge threshold
     constructor(client: HealthConnectClient, mergeThreshold: Duration): this(client) {
@@ -77,9 +77,19 @@ class HealthConnectAggregator @Inject constructor(private val client: HealthConn
         for ((startTime, endTime) in sleepRecords) {
             val timeRangeFilter = TimeRange.between(startTime, endTime)
             val metrics = setOf(SleepSessionRecord.SLEEP_DURATION_TOTAL, HeartRateRecord.BPM_AVG)
+
             val result = client.aggregate(timeRangeFilter, metrics)
 
-            val duration = result[SleepSessionRecord.SLEEP_DURATION_TOTAL] ?: Duration.ofSeconds(0)
+            // SLEEP_DURATION_TOTAL:
+            //      Total time spent not in the `SleepStageRecord.STAGE_TYPE_AWAKE`.
+            //      Sometimes the watch might interpret a sudden hand movement during sleep
+            //      as "awake". For this reason this value is not the best metric for total
+            //      sleep duration.
+            //      On the other hand it is a good indicator that a sleep session actually
+            //      occurred. A valid sleep session must have `SLEEP_DURATION_TOTAL`.
+            if (result[SleepSessionRecord.SLEEP_DURATION_TOTAL] == null) continue
+
+            val duration = Duration.between(startTime, endTime)
             val avgBpmDuringSleep = getAverageHeartRateDuringSleep(startTime, endTime)
             val avgBpm = avgBpmDuringSleep ?: (result[HeartRateRecord.BPM_AVG] ?: 0).toInt()
 

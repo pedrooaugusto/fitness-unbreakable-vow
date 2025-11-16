@@ -3,6 +3,7 @@ package com.august.fitnessvowsync.physicalactivity.collection
 import android.util.Log
 import com.august.fitnessvowsync.BuildConfig
 import com.august.fitnessvowsync.contract.PhysicalActivityOracleService
+import com.august.fitnessvowsync.contract.TimeLordService
 import com.august.fitnessvowsync.physicalactivity.data.PhysicalActivityEventRepository
 import com.august.fitnessvowsync.physicalactivity.model.PhysicalActivityEvent
 import java.time.Instant
@@ -12,9 +13,10 @@ class PhysicalActivityEventPublisher @Inject constructor(
     private val repository: PhysicalActivityEventRepository,
     private val collector: PhysicalActivityEventCollector,
     private val oracle: PhysicalActivityOracleService,
+    private val timeLordService: TimeLordService,
 ) {
     suspend fun publish(): String {
-        val (periodStart, periodEnd) = oracle.getCurrentWeekStartAndEnd()
+        val (periodStart, periodEnd) = timeLordService.getCurrentWeekStartAndEnd()
 
         val events = collector.collect(periodStart, periodEnd)
         Log.i("FitVow - Sync", "Collected events: $events")
@@ -28,7 +30,7 @@ class PhysicalActivityEventPublisher @Inject constructor(
         val gymVisitEventsToPublish = repository.getGymVisitSessions().filter { it.timestamp.between(periodStart, periodEnd) && it.syncDetails == null }
 
         val timestamp = Instant.now()
-        val weekIndex = oracle.getCurrentWeekIndex().toInt()
+        val weekIndex = timeLordService.getCurrentWeekIndex().toInt()
         val transactionHash = oracle.publishPhysicalActivityEvents(
             runningEventsToPublish,
             sleepEventsToPublish,

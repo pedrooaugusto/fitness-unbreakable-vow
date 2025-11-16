@@ -1,16 +1,16 @@
 import * as dotenv from 'dotenv';
 import { ScheduledHandler } from 'aws-lambda';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { loadContract, parsePhysicalActivityStatsUpdateEvent } from './contract';
+import { loadContracts, parsePhysicalActivityStatsUpdateEvent } from './contract';
 import { getBlockNumber, getEvents } from './etherscan';
 import { requireEnv } from './helpers';
 
 dotenv.config();
 
 export const handler: ScheduledHandler = async (event: any, context) => {
-    const { contract, address } = loadContract(event?.contractAddress);
+    const { timeLord, physicalActivityOracleAddress } = await loadContracts(event?.contractAddress);
 
-    const currentWeekIndex = event?.currentWeekIndex || Number(await contract.getCurrentWeekIndex());
+    const currentWeekIndex = event?.currentWeekIndex || Number(await timeLord.getCurrentWeekIndex());
     const previousWeek = currentWeekIndex - 1;
 
     if (previousWeek < 0) {
@@ -21,8 +21,8 @@ export const handler: ScheduledHandler = async (event: any, context) => {
 
     console.log('[INFO] Fetching events for week #' + previousWeek);
 
-    const secondsInOneWeek = Number(await contract.SECONDS_IN_ONE_WEEK());
-    const creationDate = Number(await contract.CREATION_DATE());
+    const secondsInOneWeek = Number(await timeLord.SECONDS_IN_ONE_WEEK());
+    const creationDate = Number(await timeLord.CREATION_DATE());
 
     const { weekStart, weekEnd } = getWeekStartAndEnd(creationDate, previousWeek, secondsInOneWeek);
 
@@ -33,7 +33,7 @@ export const handler: ScheduledHandler = async (event: any, context) => {
 
     console.log(`[INFO] Querying events between blocks ${weekStartBlockNumber} and ${weekEndBlockNumber}`);
 
-    const events = await getEvents(address, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
+    const events = await getEvents(physicalActivityOracleAddress, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
 
     console.log('[INFO] Trying to parse '+ events.length +' events returned by Etherscan.' );
 
@@ -41,7 +41,7 @@ export const handler: ScheduledHandler = async (event: any, context) => {
 
     console.log('[INFO] Saving events to S3: ', physicalActivityStatsUpdate);
 
-    await saveToS3(physicalActivityStatsUpdate, `events/${address}/week-${previousWeek}/PhysicalActivityStatsUpdate.json`);
+    await saveToS3(physicalActivityStatsUpdate, `events/${physicalActivityOracleAddress}/week-${previousWeek}/PhysicalActivityStatsUpdate.json`);
 
     console.log('[INFO] Completed.');
 }
@@ -61,3 +61,6 @@ async function saveToS3(body: string, key: string) {
 
     await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: 'application/json' }));
 }
+
+
+handler({ contractAddress: '0xe57bA78A124638a436D55B87aAc2F3318f9d360C' } as any, {} as any, () => {});

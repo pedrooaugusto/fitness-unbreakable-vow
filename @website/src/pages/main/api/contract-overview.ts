@@ -8,20 +8,32 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         executeMulticall,
         PhysicalActivityOracle,
         FitnessUnbreakableVow,
+        TimeLordContract,
     } = await loadContract();
  
     const contractBalance = await getBalance(FitnessUnbreakableVow);
 
     const [
-        oracleAddress,
         startDate,
         expirationDate,
-        initialStakedAmount,
-        penaltyAmount,
         currentWeekNumber,
-        allWeeksRaw,
         contractPhase,
         gracePeriod,
+        secondsInAWeek,
+    ] = await executeMulticall(TimeLordContract, [
+        'CREATION_DATE',
+        'EXPIRATION_DATE',
+        'getCurrentWeekIndex',
+        'getContractPhase',
+        'GRACE_PERIOD',
+        'SECONDS_IN_ONE_WEEK',
+    ])
+
+    const [
+        oracleAddress,
+        initialStakedAmount,
+        penaltyAmount,
+        allWeeksRaw,
         upkeeperAddress,
         gymVisitsGoal,
         healthySleepNightsGoal,
@@ -29,15 +41,10 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         requiredNumberOfCompletedGoals,
     ] = await executeMulticall(FitnessUnbreakableVow, [
         "PHYSICAL_ACTIVITY_ORACLE",
-        "CREATION_DATE",
-        "EXPIRATION_DATE",
         "STAKED_AMOUNT",
         "PENALTY_AMOUNT",
-        "getCurrentWeekIndex",
         "getAllWeeklyGoalsRecords",
-        "getContractPhase",
-        "GRACE_PERIOD",
-        "CHAINLINK_UPKEEP_ADDRESS",
+        "CHAINLINK_UPKEEPER_ADDRESS",
         "GYM_VISITS_GOAL",
         "HEALTHY_SLEEP_NIGHTS_GOAL",
         "RUNNING_SESSIONS_GOAL",
@@ -46,7 +53,6 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
 
     const [
         [, currentWeekPhysicalActivityStats],
-        secondsInAWeek,
         publicKeyAttestation,
         publicKey,
         sleepValidator,
@@ -54,12 +60,11 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         gymVisitValidator,
     ] = await executeMulticall(PhysicalActivityOracle, [
         'getCurrentWeekPhysicalActivityStats',
-        'SECONDS_IN_ONE_WEEK',
-        "PUBLIC_KEY_ATTESTATION",
-        "PUBLIC_KEY",
-        "sleepValidator",
-        "runningValidator",
-        "gymVisitValidator",
+        'PUBLIC_KEY_ATTESTATION',
+        'PUBLIC_KEY',
+        'sleepValidator',
+        'runningValidator',
+        'gymVisitValidator',
     ]);
 
     const allWeeks = allWeeksRaw.map((weeklyGoal: Record<string, unknown>) => enrichWeeklyGoal(weeklyGoal)) as WeeklyGoal[];

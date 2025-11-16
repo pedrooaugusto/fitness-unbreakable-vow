@@ -9,7 +9,6 @@ import com.august.fitnessvowsync.security.HardwareProtectedKeyService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.math.BigInteger
-import java.time.Instant
 import javax.inject.Inject
 
 class PhysicalActivityOracleService @Inject constructor(
@@ -19,12 +18,6 @@ class PhysicalActivityOracleService @Inject constructor(
     private val physicalActivityOracle: ContractProvider<PhysicalActivityOracle>,
     private val physicalActivityEventMapper: PhysicalActivityEventMapper,
 ) {
-    enum class ContractPhase(val phase: Int) {
-        Active(0),
-        Grace(1),
-        FullyExpired(2)
-    }
-
     suspend fun publishPhysicalActivityEvents(
         runningEvents: List<RunningEvent>,
         sleepEvents: List<SleepEvent>,
@@ -77,54 +70,17 @@ class PhysicalActivityOracleService @Inject constructor(
         }
     }
 
-    suspend fun getCreationDate(): BigInteger {
-        return withContext(Dispatchers.IO) {
-            physicalActivityOracle.get().CREATION_DATE().send()
-        }
-    }
-
-    suspend fun getExpirationDate(): BigInteger {
-        return withContext(Dispatchers.IO) {
-            physicalActivityOracle.get().EXPIRATION_DATE().send()
-        }
-    }
-
-    suspend fun getCurrentWeekIndex(): BigInteger {
-        return withContext(Dispatchers.IO) {
-            physicalActivityOracle.get().currentWeekIndex.send()
-        }
-    }
-
-    suspend fun getSecondsInWeek(): BigInteger {
-        return withContext(Dispatchers.IO) {
-            physicalActivityOracle.get().SECONDS_IN_ONE_WEEK().send()
-        }
-    }
-
-    suspend fun getContractPhase(): ContractPhase {
-        return withContext(Dispatchers.IO) {
-            val phase = physicalActivityOracle.get().contractPhase.send().toInt()
-
-            ContractPhase.entries.firstOrNull { it.phase == phase } as ContractPhase
-        }
-    }
-
-    suspend fun getCurrentWeekStartAndEnd(): Pair<Instant, Instant> {
-        val secondsInWeek = getSecondsInWeek()
-        val creationDate = getCreationDate()
-        val currentWeekIndex = getCurrentWeekIndex()
-
-        val currentWeekStartDate = creationDate + currentWeekIndex * secondsInWeek
-        val currentWeekEndDate = currentWeekStartDate + secondsInWeek
-
-        return Pair(Instant.ofEpochSecond(currentWeekStartDate.toLong()), Instant.ofEpochSecond(currentWeekEndDate.toLong()))
-    }
-
     suspend fun getPhysicalActivityStats(weekIndex: Int): PhysicalActivityOracle.PhysicalActivityStats {
         return withContext(Dispatchers.IO) {
             val result = physicalActivityOracle.get().physicalActivityStats(BigInteger.valueOf(weekIndex.toLong())).send()
 
             PhysicalActivityOracle.PhysicalActivityStats(result.component1()!!, result.component2()!!, result.component3()!!, result.component4()!!)
+        }
+    }
+
+    suspend fun getGymVisitValidator(): PhysicalActivityOracle.GymVisitEventValidator {
+        return withContext(Dispatchers.IO) {
+            physicalActivityOracle.get().gymVisitValidator().send()
         }
     }
 

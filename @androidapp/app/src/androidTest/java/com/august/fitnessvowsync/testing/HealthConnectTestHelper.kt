@@ -11,9 +11,8 @@ import androidx.health.connect.client.records.SleepStageRecord
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Length
 import androidx.test.platform.app.InstrumentationRegistry
-import com.august.fitnessvowsync.geofencing.GymConfig
 import com.august.fitnessvowsync.physicalactivity.data.GymVisitTracker
-import org.junit.Before
+import com.august.fitnessvowsync.physicalactivity.model.TrackedGymConfig
 import java.time.Duration
 import java.time.Instant
 
@@ -22,7 +21,7 @@ class HealthConnectTestHelper(
     private val gymVisitTracker: GymVisitTracker,
 ) {
 
-    suspend fun insertGymVisit(start: Instant, end: Instant, gym: GymConfig, avgBpm: Long) {
+    suspend fun insertGymVisit(start: Instant, end: Instant, gym: TrackedGymConfig, avgBpm: Long) {
         insertConstantHeartRate(start, end, avgBpm)
 
         gymVisitTracker.startVisit(start, gym)

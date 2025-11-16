@@ -9,6 +9,13 @@ struct Location {
     int64 longitudeNanoDegree;
 }
 
+struct Geofence {
+    // latitude and longitude are stored as degrees * 1e7 (nano-degree precision)
+    int64 latitudeNanoDegree;
+    int64 longitudeNanoDegree;
+    uint16 radiusInMeters;
+}
+
 struct GymVisitEvent {
     P256Signature signature;
     Location location; // { latitudeNanoDegree: int(-22.5454554 * 1e7), longitudeNanoDegree: int(-40.3232 * 1e7) }
@@ -35,8 +42,9 @@ event GymVisitEventProcessed(
 );
 
 struct GymVisitEventValidator {
-    Location gym1Location;
-    Location gym2Location;
+    Geofence gym1Location;
+    Geofence gym2Location;
+    Geofence gym3Location;
     uint8 minimumVisitTimeInMinutes;
     uint8 minimumAvgBpm;
 }
@@ -46,14 +54,28 @@ library GymVisitEventValidatorFunctions {
         GymVisitEventValidator memory self,
         GymVisitEvent calldata evento
     ) internal pure returns (bool) {
-        bool correctLocation = isSameLocation(evento.location, self.gym1Location) || isSameLocation(evento.location, self.gym2Location);
+        Geofence[3] memory gymLocations;
 
-        return  correctLocation &&
+        gymLocations[0] = self.gym1Location;
+        gymLocations[1] = self.gym2Location;
+        gymLocations[2] = self.gym3Location;
+
+        return  isValidGymLocation(evento.location, gymLocations) &&
                 evento.durationInMinutes >= self.minimumVisitTimeInMinutes &&
                 evento.avgBpm >= self.minimumAvgBpm;
     }
 
-    function isSameLocation(Location calldata a, Location memory b) private pure returns (bool) {
+    function isValidGymLocation(Location calldata location, Geofence[3] memory geofences) private pure returns (bool) {
+        for(uint i = 0; i < geofences.length; i++) {
+            if (isInsideGeofence(location, geofences[i])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function isInsideGeofence(Location calldata a, Geofence memory b) private pure returns (bool) {
         return a.latitudeNanoDegree == b.latitudeNanoDegree && a.longitudeNanoDegree == b.longitudeNanoDegree;
     }
 }

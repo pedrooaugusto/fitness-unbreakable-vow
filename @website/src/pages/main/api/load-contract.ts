@@ -29,7 +29,6 @@ const RPC_URL_MAP: Record<Network, Networkish & { rpc: string[] }> = {
         rpc: [
             "https://arb1.arbitrum.io/rpc",
             "https://rpc.ankr.com/arbitrum",
-            "https://arbitrum.blockpi.network/v1/rpc/public",
             "https://arbitrum.publicnode.com"
         ]
     },
@@ -56,6 +55,7 @@ let provider: Provider | null = null;
 let network: Network | null = null;
 let PhysicalActivityOracle: EnhancedContract | null = null;
 let FitnessUnbreakableVow: EnhancedContract | null = null;
+let TimeLordContract: EnhancedContract | null = null;
 let MulticallContract: Contract | null = null;
 let fromBlock: number | null = null;
 
@@ -66,7 +66,9 @@ export default async function loadContract() {
     provider ||= makeProviderWithFallback(network);
     PhysicalActivityOracle ||= await getContract('PhysicalActivityOracle', network, provider) as EnhancedContract;
     FitnessUnbreakableVow ||= await getContract('FitnessUnbreakableVow', network, provider) as EnhancedContract;
-    
+    TimeLordContract ||= await getContract('TheDoctor', network, provider, await FitnessUnbreakableVow.TIME_LORD()) as EnhancedContract;    
+    MulticallContract ||= await getContract('Multicall3', network, provider, MULTICALL_ADDRESS);
+
     FitnessUnbreakableVow.network = network;
     FitnessUnbreakableVow.contractAddress = addresses[`${network}.FitnessUnbreakableVow`];
     FitnessUnbreakableVow.getEvents = (<T extends ParsedEventBase>(eventName: string, indexes: string[], data: string[], fromBlock1 = fromBlock!, toBlock1?: number) => {
@@ -82,6 +84,7 @@ export default async function loadContract() {
     return {
         PhysicalActivityOracle,
         FitnessUnbreakableVow,
+        TimeLordContract,
         getBalance: (target: Contract) => getBalance(target, provider!),
         executeMulticall: (contract: Contract, functions: string[]) => executeMulticall(contract, functions, network!, provider!)
     }
@@ -109,8 +112,6 @@ async function getContract(name: string, network: string, provider: Provider, ta
 
 async function executeMulticall(contract: Contract, functions: string[], network: Network, provider: Provider) {
     if (network === 'localhost') return await localhostMultiCall(contract, functions);
-
-    MulticallContract ||= await getContract('Multicall3', network, provider, MULTICALL_ADDRESS);
 
     const contractInterface = contract.interface;
     const calls = functions.map(functionName => ({ target: contract, callData: contractInterface.encodeFunctionData(functionName) }));
@@ -154,8 +155,6 @@ function makeProviderWithFallback(networkName: Network): Provider {
 }
 
 async function getEvents<T>(contract: Contract, eventName: string, indexes: string[], data: string[], fromBlock: number, toBlock?: number) {
-    console.log(eventName);
-    console.log(contract.filters);
     const filter = contract.filters[eventName](...indexes)!;
 
     const events = (await contract.queryFilter(filter, fromBlock, toBlock) as EmittedEvent[]) || [];

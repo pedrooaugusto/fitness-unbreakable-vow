@@ -4,11 +4,14 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.august.fitnessvowsync.contract.PhysicalActivityOracleService
+import com.august.fitnessvowsync.contract.TimeLordService
 import com.august.fitnessvowsync.geofencing.GymGeofenceCreator
 import com.august.fitnessvowsync.helpers.SettingsService
 import com.august.fitnessvowsync.physicalactivity.collection.PhysicalActivityEventCollector
 import com.august.fitnessvowsync.physicalactivity.collection.PhysicalActivityEventPublisher
+import com.august.fitnessvowsync.physicalactivity.data.GymVisitTracker
 import com.august.fitnessvowsync.physicalactivity.data.PhysicalActivityEventRepository
+import com.august.fitnessvowsync.physicalactivity.mapper.GymVisitValidatorMapper
 import com.august.fitnessvowsync.security.PermissionService
 import com.august.fitnessvowsync.ui.viewmodel.DefaultMainScreenViewModel
 import com.august.fitnessvowsync.ui.viewmodel.DefaultPermissionsScreenViewModel
@@ -48,20 +51,24 @@ class MainActivityModule {
     @Named("MAIN_VIEW_MODEL")
     fun provideMainViewModelFactory(
         oracleService: PhysicalActivityOracleService,
+        timeLordService: TimeLordService,
         gymGeofenceCreator: GymGeofenceCreator,
         physicalActivityCollector: PhysicalActivityEventCollector,
         physicalActivityRepository: PhysicalActivityEventRepository,
         physicalActivityPublisher: PhysicalActivityEventPublisher,
-        settingsService: SettingsService,
+        gymVisitTracker: GymVisitTracker,
+        gymVisitValidatorMapper: GymVisitValidatorMapper
     ): ViewModelProvider.Factory {
         return GenericViewModelFactory({
             DefaultMainScreenViewModel(
                 oracleService,
+                timeLordService,
                 physicalActivityCollector,
                 physicalActivityRepository,
                 physicalActivityPublisher,
                 gymGeofenceCreator,
-                settingsService,
+                gymVisitTracker,
+                gymVisitValidatorMapper
             )
         })
     }

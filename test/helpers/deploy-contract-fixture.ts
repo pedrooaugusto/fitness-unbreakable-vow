@@ -1,6 +1,6 @@
 import hre from 'hardhat';
 import { getRawPublicKey } from '../../scripts/keys';
-import { FitnessUnbreakableVow } from '../../typechain-types';
+import { FitnessUnbreakableVow, TimeLord } from '../../typechain-types';
 
 export const STAKED_AMOUNT = hre.ethers.parseEther("36");
 export const SEVEN_DAYS_IN_SECONDS = 60 * 60 * 24 * 7;
@@ -14,21 +14,20 @@ export async function deployContractFixture() {
 
     const PhysicalActivityOracle = await hre.ethers.getContractFactory("PhysicalActivityOracle");
     const FitnessUnbreakableVow = await hre.ethers.getContractFactory("FitnessUnbreakableVow");
+    const TheDoctor = await hre.ethers.getContractFactory("TheDoctor");
 
-    const physicalActivityOracle = await PhysicalActivityOracle.deploy(CREATION_DATE, EXPIRATION_DATE, SEVEN_DAYS_IN_SECONDS);
-    
+    const timeLord = await TheDoctor.deploy(CREATION_DATE, EXPIRATION_DATE, SEVEN_DAYS_IN_SECONDS);
+    await timeLord.waitForDeployment();
+
+    const physicalActivityOracle = await PhysicalActivityOracle.deploy(await timeLord.getAddress());    
     await physicalActivityOracle.waitForDeployment();
 
     console.log('[DeployContract] Set expiration date: ' + EXPIRATION_DATE);
-    console.log('[DeployContract] Actual expiration date: ' + await physicalActivityOracle.EXPIRATION_DATE());
+    console.log('[DeployContract] Actual expiration date: ' + await timeLord.EXPIRATION_DATE());
 
     const oracleAddress = await physicalActivityOracle.getAddress();
     const fitnessUnbreakableVow = await FitnessUnbreakableVow.deploy(
         oracleAddress,
-        otherAccount2,
-        await physicalActivityOracle.CREATION_DATE(),
-        await physicalActivityOracle.EXPIRATION_DATE(),
-        SEVEN_DAYS_IN_SECONDS,
         { value: STAKED_AMOUNT }
     );
 
@@ -41,9 +40,9 @@ export async function deployContractFixture() {
 }
 
 
-export async function calculatePenaltyAmount(contract: FitnessUnbreakableVow) {
-    const creationDate = await contract.CREATION_DATE();
-    const expirationDate = await contract.EXPIRATION_DATE();
+export async function calculatePenaltyAmount(contract: FitnessUnbreakableVow, timeLord: TimeLord) {
+    const creationDate = await timeLord.CREATION_DATE();
+    const expirationDate = await timeLord.EXPIRATION_DATE();
     const stakedAmount = await contract.STAKED_AMOUNT();
 
     return stakedAmount / ((expirationDate - creationDate) / BigInt(SEVEN_DAYS_IN_SECONDS));

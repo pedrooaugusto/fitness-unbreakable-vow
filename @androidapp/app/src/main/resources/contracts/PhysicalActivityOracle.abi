@@ -2,19 +2,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "creationDate",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "expirationDate",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "secondsInOneWeek",
-        "type": "uint256"
+        "internalType": "contract TimeLord",
+        "name": "timeLordAddress",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -241,58 +231,6 @@
   },
   {
     "inputs": [],
-    "name": "CREATION_DATE",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "EXPIRATION_DATE",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "GRACE_PERIOD",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "NUMBER_OF_WEEKS",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "ORACLE_UPDATE_LISTENER",
     "outputs": [
       {
@@ -347,12 +285,12 @@
   },
   {
     "inputs": [],
-    "name": "SECONDS_IN_ONE_WEEK",
+    "name": "TIME_LORD",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "contract TimeLord",
         "name": "",
-        "type": "uint256"
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -366,32 +304,6 @@
         "internalType": "string",
         "name": "",
         "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getContractPhase",
-    "outputs": [
-      {
-        "internalType": "enum ContractPhase",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getCurrentWeekIndex",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
       }
     ],
     "stateMutability": "view",
@@ -515,9 +427,14 @@
                 "internalType": "int64",
                 "name": "longitudeNanoDegree",
                 "type": "int64"
+              },
+              {
+                "internalType": "uint16",
+                "name": "radiusInMeters",
+                "type": "uint16"
               }
             ],
-            "internalType": "struct Location",
+            "internalType": "struct Geofence",
             "name": "gym1Location",
             "type": "tuple"
           },
@@ -532,10 +449,37 @@
                 "internalType": "int64",
                 "name": "longitudeNanoDegree",
                 "type": "int64"
+              },
+              {
+                "internalType": "uint16",
+                "name": "radiusInMeters",
+                "type": "uint16"
               }
             ],
-            "internalType": "struct Location",
+            "internalType": "struct Geofence",
             "name": "gym2Location",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "int64",
+                "name": "latitudeNanoDegree",
+                "type": "int64"
+              },
+              {
+                "internalType": "int64",
+                "name": "longitudeNanoDegree",
+                "type": "int64"
+              },
+              {
+                "internalType": "uint16",
+                "name": "radiusInMeters",
+                "type": "uint16"
+              }
+            ],
+            "internalType": "struct Geofence",
+            "name": "gym3Location",
             "type": "tuple"
           },
           {

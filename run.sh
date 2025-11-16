@@ -6,6 +6,10 @@ copyContractAbiToFrontend() {
     echo "Copying contract ABI files to frontend."
     cp artifacts/contracts/FitnessUnbreakableVow.sol/FitnessUnbreakableVow.json @website/public/abi/FitnessUnbreakableVow.json
     cp artifacts/contracts/PhysicalActivityOracle.sol/PhysicalActivityOracle.json @website/public/abi/PhysicalActivityOracle.json
+    cp artifacts/contracts/TheDoctor.sol/TheDoctor.json @website/public/abi/TheDoctor.json
+    echo "Copying contract ABI files to event store."
+    cp artifacts/contracts/PhysicalActivityOracle.sol/PhysicalActivityOracle.json @contract-event-store/src/abi/PhysicalActivityOracle.json
+    cp artifacts/contracts/TheDoctor.sol/TheDoctor.json @contract-event-store/src/abi/TheDoctor.json
     echo -e "\n\n\n"
 }
 
@@ -46,7 +50,9 @@ case "$1" in
             ARGS+=("--d" "${5}")
         fi
 
-        verifyOracle=$(npx hardhat DeployPhysicalActivityOracle "${ARGS[@]}" | tail -n 1)
+        deploy_oracle_output=$(npx hardhat DeployPhysicalActivityOracle "${ARGS[@]}" 2>&1)
+        echo "$deploy_oracle_output"
+        verifyOracle=$(printf "%s\n" "$deploy_oracle_output" | tail -n 1)
 
         if [ "$2" != "localhost" ]; then
             echo "Veryfing DeployPhysicalActivityOracle..."
@@ -57,7 +63,9 @@ case "$1" in
         echo "Deploying DeployFitnessUnbreakableVow Contract..."
 
         stakedAmount="${6+--a $6}"
-        verifyVow=$(npx hardhat --network $2 DeployFitnessUnbreakableVow $stakedAmount | tail -n 1)
+        deploy_vow_output=$(npx hardhat --network $2 DeployFitnessUnbreakableVow $stakedAmount 2>&1)
+        echo "$deploy_vow_output"
+        verifyVow=$(printf "%s\n" "$deploy_vow_output" | tail -n 1)
 
         if [ "$2" != "localhost" ]; then
             echo "Veryfing DeployFitnessUnbreakableVow..."

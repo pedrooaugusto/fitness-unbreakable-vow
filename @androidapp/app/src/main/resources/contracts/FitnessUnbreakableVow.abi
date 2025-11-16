@@ -2,29 +2,9 @@
   {
     "inputs": [
       {
-        "internalType": "address",
+        "internalType": "contract OracleInterface",
         "name": "physicalActivityOracleAddress",
         "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "upkeepAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "creationDate",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "expirationDate",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "secondsInOneWeek",
-        "type": "uint256"
       }
     ],
     "stateMutability": "payable",
@@ -76,10 +56,10 @@
   },
   {
     "inputs": [],
-    "name": "CHAINLINK_UPKEEP_ADDRESS",
+    "name": "CHAINLINK_UPKEEPER_ADDRESS",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "contract Upkeeper",
         "name": "",
         "type": "address"
       }
@@ -89,20 +69,7 @@
   },
   {
     "inputs": [],
-    "name": "CREATION_DATE",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "EXPIRATION_DATE",
+    "name": "CHAINLINK_UPKEEPER_ID",
     "outputs": [
       {
         "internalType": "uint256",
@@ -121,19 +88,6 @@
         "internalType": "address",
         "name": "",
         "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "GRACE_PERIOD",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -167,19 +121,6 @@
   },
   {
     "inputs": [],
-    "name": "NUMBER_OF_WEEKS",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "PENALTY_AMOUNT",
     "outputs": [
       {
@@ -196,7 +137,7 @@
     "name": "PHYSICAL_ACTIVITY_ORACLE",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "contract OracleInterface",
         "name": "",
         "type": "address"
       }
@@ -222,22 +163,9 @@
     "name": "RUNNING_SESSIONS_GOAL",
     "outputs": [
       {
-        "internalType": "uint16",
+        "internalType": "uint8",
         "name": "",
-        "type": "uint16"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "SECONDS_IN_ONE_WEEK",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
+        "type": "uint8"
       }
     ],
     "stateMutability": "view",
@@ -258,6 +186,19 @@
   },
   {
     "inputs": [],
+    "name": "TIME_LORD",
+    "outputs": [
+      {
+        "internalType": "contract TimeLord",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "VERSION",
     "outputs": [
       {
@@ -267,6 +208,42 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "upkeeper",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "linkFunding",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "cronInternalSpec",
+        "type": "string"
+      }
+    ],
+    "name": "configureUpkeeper",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "cronInternalSpec",
+        "type": "string"
+      }
+    ],
+    "name": "createUpkeeper",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -311,32 +288,6 @@
         "internalType": "struct WeeklyGoal[]",
         "name": "",
         "type": "tuple[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getContractPhase",
-    "outputs": [
-      {
-        "internalType": "enum ContractPhase",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getCurrentWeekIndex",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
       }
     ],
     "stateMutability": "view",
@@ -513,6 +464,13 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "withdrawUpkeeperFunds",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

@@ -1,26 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { WeeklyGoalStatus, WeeklyGoalFunctions, WeeklyGoal, PhysicalActivityStats } from "./Types.sol";
-import { Expirable, ContractPhase } from "./Expirable.sol";
+import { WeeklyGoalStatus, WeeklyGoalFunctions, WeeklyGoal, PhysicalActivityStats, TimeLord, ContractPhase } from "./Types.sol";
 
-abstract contract WeeklyGoalListable is Expirable {
+abstract contract WeeklyGoalListable {
     using WeeklyGoalFunctions for WeeklyGoal;
 
     uint8 public constant GYM_VISITS_GOAL = 2;
     uint8 public constant HEALTHY_SLEEP_NIGHTS_GOAL = 2;
-    uint16 public constant RUNNING_SESSIONS_GOAL = 2;
+    uint8 public constant RUNNING_SESSIONS_GOAL = 2;
     uint8 public constant REQUIRED_NUMBER_OF_COMPLETED_GOALS = 2;
+
+    TimeLord private immutable TIME_LORD;
 
     uint8 private lastSettledWeek = 255; // [255 + 1 == -1 + 1] :-)
     uint8 public weeklyGoalsRecordsLastEntryKey;
     mapping(uint8 => WeeklyGoal) public weeklyGoalsRecords;
 
-    constructor(
-        uint256 creationDate,
-        uint256 expirationDate,
-        uint256 secondsInOneWeek
-    ) Expirable(creationDate, expirationDate, secondsInOneWeek) {}
+    constructor(TimeLord timeLordAddress) {
+        TIME_LORD = timeLordAddress;
+    }
 
     /**
      * The function below is written the way it
@@ -38,7 +37,7 @@ abstract contract WeeklyGoalListable is Expirable {
      *      in gas.
      */
     function findFirstFailedWeek() internal returns (int8) {
-        uint8 currentWeekIndex = getCurrentWeekIndex();
+        uint8 currentWeekIndex = TIME_LORD.getCurrentWeekIndex();
 
         // 1. Does not run for the current week, only past
         //    weeks*. Starts at the last week that has not
@@ -48,7 +47,7 @@ abstract contract WeeklyGoalListable is Expirable {
 
         // 1. If the contract is not active anymore we also include
         //    the current week.
-        uint8 includeCurrentWeek = !isContractActive() ? 1 : 0;
+        uint8 includeCurrentWeek = !TIME_LORD.isContractActive() ? 1 : 0;
 
         for (
             weekIndex;
@@ -98,7 +97,7 @@ abstract contract WeeklyGoalListable is Expirable {
     }
 
     function putWeek(uint8 recordWeekIndex, WeeklyGoal memory record) internal {
-        if (getCurrentWeekIndex() == recordWeekIndex) {
+        if (TIME_LORD.getCurrentWeekIndex() == recordWeekIndex) {
             weeklyGoalsRecords[recordWeekIndex] = record;
             weeklyGoalsRecordsLastEntryKey = recordWeekIndex;
         } else {
@@ -107,8 +106,8 @@ abstract contract WeeklyGoalListable is Expirable {
     }
 
     function listAllWeeks() internal view returns (WeeklyGoal[] memory) {
-        uint8 currentWeekIndex = getCurrentWeekIndex();
-        ContractPhase phase = getContractPhase();
+        uint8 currentWeekIndex = TIME_LORD.getCurrentWeekIndex();
+        ContractPhase phase = TIME_LORD.getContractPhase();
         WeeklyGoal[] memory records = new WeeklyGoal[](currentWeekIndex + 1);
 
         for (uint8 i = 0; i < currentWeekIndex; i++) {

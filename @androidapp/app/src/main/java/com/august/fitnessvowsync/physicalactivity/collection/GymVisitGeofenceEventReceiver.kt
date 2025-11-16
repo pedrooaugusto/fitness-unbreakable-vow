@@ -5,9 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.august.fitnessvowsync.MyApplication
-import com.august.fitnessvowsync.geofencing.GymConfig
 import com.august.fitnessvowsync.helpers.NotificationService
 import com.august.fitnessvowsync.physicalactivity.data.GymVisitTracker
+import com.august.fitnessvowsync.physicalactivity.model.TrackedGymConfig
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingEvent
 import java.time.Duration
@@ -52,7 +52,7 @@ class GymVisitGeofenceEventReceiver : BroadcastReceiver() {
         Log.i("FitVow - Sync", "Geofence event transition type: ${geofencingEvent.geofenceTransition}")
 
         val timestamp = Instant.ofEpochMilli(triggeringLocation.time)
-        val gym = GymConfig.entries.find { it.id == triggeringGeofences[0].requestId }!!
+        val gym = gymVisitTracker.getTrackedGyms().find { it.id == triggeringGeofences[0].requestId }!!
 
         when(geofencingEvent.geofenceTransition) {
             Geofence.GEOFENCE_TRANSITION_ENTER -> {
@@ -69,13 +69,13 @@ class GymVisitGeofenceEventReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun processOnEnter(gym: GymConfig, timestamp: Instant) {
+    private fun processOnEnter(gym: TrackedGymConfig, timestamp: Instant) {
         Log.i("FitVow - Sync", "User entered the ${gym.id} gym.")
 
         gymVisitTracker.startVisit(timestamp, gym)
     }
 
-    private fun processOnDwell(gym: GymConfig, context: Context) {
+    private fun processOnDwell(gym: TrackedGymConfig, context: Context) {
         Log.i("FitVow - Sync", "User stayed in the ${gym.id} gym long enough to be a valid visit.")
 
         try {
@@ -86,7 +86,7 @@ class GymVisitGeofenceEventReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun processOnExit(gym: GymConfig, timestamp: Instant, context: Context) {
+    private fun processOnExit(gym: TrackedGymConfig, timestamp: Instant, context: Context) {
         Log.i("FitVow - Sync", "User exited the ${gym.id} gym.")
 
         try {

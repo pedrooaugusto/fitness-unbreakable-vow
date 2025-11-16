@@ -17,8 +17,6 @@ interface SettingsService {
     fun getAppFormattedPublicKey(): String?
     fun getPinataApiToken(): String?
     fun savePinataApiToken(token: String)
-    fun gymGeofenceCreated(): Boolean
-    fun setGymGeofenceCreated(created: Boolean)
 
     class SettingsServiceImpl @Inject constructor(
         private val encryptedPreferences: SharedPreferences,
@@ -89,17 +87,6 @@ interface SettingsService {
             }
         }
 
-        override fun gymGeofenceCreated(): Boolean {
-            return encryptedPreferences.getBoolean("GYM_GEOFENCE_CREATED", false)
-        }
-
-        override fun setGymGeofenceCreated(created: Boolean) {
-            with(encryptedPreferences.edit()) {
-                putBoolean("GYM_GEOFENCE_CREATED", created)
-                apply()
-            }
-        }
-
         private fun ByteArray.toHexString(): String {
             return this.joinToString("") { "%02x".format(it) }
         }
@@ -131,14 +118,6 @@ interface SettingsService {
         }
 
         override fun savePinataApiToken(token: String) {
-            error("mock")
-        }
-
-        override fun gymGeofenceCreated(): Boolean {
-            return false
-        }
-
-        override fun setGymGeofenceCreated(created: Boolean) {
             error("mock")
         }
 

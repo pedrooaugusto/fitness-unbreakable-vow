@@ -124,7 +124,7 @@ async function assertEndOfWeek(
     const finalWeekStats = getFinalStats(contractInteractions);
     const weeklyGoalsStatus = getWeeklyGoalsStatus(finalWeekStats);
 
-    expect((await physicalActivityOracle.getCurrentWeekPhysicalActivityStats())[1]).to.be.equalsRecord(finalWeekStats);
+    expect((await physicalActivityOracle.getCurrentWeekPhysicalActivityStats())[1]).to.be.equalsStats(finalWeekStats);
 
     await assertNoPenaltyWhenEnforceAgreement(fitnessUnbreakableVow);
 

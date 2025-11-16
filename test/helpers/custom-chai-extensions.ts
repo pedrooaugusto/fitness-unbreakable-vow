@@ -1,5 +1,5 @@
 import Chai from 'chai'
-import { PhysicalActivityRecordStruct } from '../../typechain-types/contracts/PhysicalActivityOracle';
+import { PhysicalActivityStatsStruct } from '../../typechain-types/contracts/PhysicalActivityOracle';
 
 type ChaiStatic = typeof Chai;
 type ChaiUtils = typeof Chai.util;
@@ -7,14 +7,14 @@ type ChaiUtils = typeof Chai.util;
 export function recordEq(chai: ChaiStatic, utils: ChaiUtils) {
     const Assertion = chai.Assertion;
 
-    Assertion.addMethod('equalsRecord', function (expectedStruct: PhysicalActivityRecordStruct) {
-        const actual = normalizeRecord(this._obj as PhysicalActivityRecordStruct);
+    Assertion.addMethod('equalsStats', function (expectedStruct: PhysicalActivityStatsStruct) {
+        const actual = normalizeRecord(this._obj as PhysicalActivityStatsStruct);
         const expected = normalizeRecord(expectedStruct);
 
-        new Assertion(actual).to.include.keys('healthySleepNights', 'runDistanceMeters', 'gymVisits');
-        new Assertion(expected).to.include.keys('healthySleepNights', 'runDistanceMeters', 'gymVisits');
+        new Assertion(actual).to.include.keys('running', 'gym', 'sleep');
+        new Assertion(expected).to.include.keys('running', 'gym', 'sleep');
 
-        const sanitize = (obj: PhysicalActivityRecordStruct) => {
+        const sanitize = (obj: PhysicalActivityStatsStruct) => {
             const { timestamp, ...rest } = obj;
             return rest;
         };
@@ -23,7 +23,7 @@ export function recordEq(chai: ChaiStatic, utils: ChaiUtils) {
     });
 
     Assertion.addMethod('emptyRecord', function () {
-        const actual = normalizeRecord(this._obj as PhysicalActivityRecordStruct);
+        const actual = normalizeRecord(this._obj as PhysicalActivityStatsStruct);
 
         new Assertion(actual).to.include.keys('timestamp', 'healthySleepNights', 'runDistanceMeters', 'gymVisits');
 
@@ -31,19 +31,33 @@ export function recordEq(chai: ChaiStatic, utils: ChaiUtils) {
     });
 };
 
-export function normalizeRecord(record: PhysicalActivityRecordStruct): PhysicalActivityRecordStruct {
+export function normalizeRecord(record: PhysicalActivityStatsStruct): PhysicalActivityStatsStruct {
     return {
         timestamp: record.timestamp,
-        healthySleepNights: record.healthySleepNights,
-        runDistanceMeters: record.runDistanceMeters,
-        gymVisits: record.gymVisits,
-    };
+        running: {
+            count: record.running.count,
+            totalDistanceInMeters: record.running.totalDistanceInMeters,
+            maxAvgBpm: record.running.maxAvgBpm,
+            bestPaceInSecondsPerKm: record.running.bestPaceInSecondsPerKm,
+            longestDistanceInMeters: record.running.longestDistanceInMeters,
+        } as any,
+        gym: {
+            count: record.gym.count,
+            avgBpm: record.gym.avgBpm,
+            totalMinutes: record.gym.totalMinutes,
+        } as any,
+        sleep: {
+            count: record.sleep.count,
+            longestSleepInMinutes: record.sleep.longestSleepInMinutes,
+            totalSleepInMinutes: record.sleep.totalSleepInMinutes,
+        } as any,
+    } as any;
 }
 
 declare global {
     namespace Chai {
         interface Assertion {
-            equalsRecord(expected: PhysicalActivityRecordStruct): void;
+            equalsStats(expected: PhysicalActivityStatsStruct): void;
             emptyRecord(): void;
         }
     }

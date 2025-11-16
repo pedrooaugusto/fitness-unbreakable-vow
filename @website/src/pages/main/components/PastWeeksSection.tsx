@@ -5,7 +5,10 @@ import {
     type Currency,
     type GetContractOverviewResponse,
     type GetWeekDetailsResponse,
+    type GymVisitEventValidator,
     type Network,
+    type RunningEventValidator,
+    type SleepEventValidator,
     type WeeklyGoal,
     type WeeklyGoalStatusType,
 } from "../types";
@@ -17,6 +20,7 @@ import DonateIcon from "../../../assets/donate-icon";
 import {
     formatCurrency,
     formatDate,
+    formatTime,
     getAddressBlockExplorerUrl,
     getTransactionBlockExplorerUrl,
     GIVETH_PAGE_URL,
@@ -83,6 +87,9 @@ export const PastWeeksSection: React.FC<PastWeeksSectionProps> = ({
                                         gymVisitsGoal={overview.gymVisitsGoal}
                                         runningSessionsGoal={overview.runningSessionsGoal}
                                         healthySleepNightsGoal={overview.healthySleepNightsGoal}
+                                        runningEventValidator={overview.runningValidator}
+                                        sleepEventValidator={overview.sleepValidator}
+                                        gymVisitEventValidator={overview.gymVisitValidator}
                                     />
                                 );
                             })
@@ -100,6 +107,9 @@ function PastWeekCard({
     gymVisitsGoal,
     runningSessionsGoal,
     healthySleepNightsGoal,
+    runningEventValidator,
+    gymVisitEventValidator,
+    sleepEventValidator,
     openModal,
     network,
     upkeeperAddress,
@@ -118,6 +128,9 @@ function PastWeekCard({
     gymVisitsGoal: number,
     runningSessionsGoal: number,
     healthySleepNightsGoal: number,
+    runningEventValidator: RunningEventValidator,
+    gymVisitEventValidator: GymVisitEventValidator,
+    sleepEventValidator: SleepEventValidator,
     upkeeperAddress: string
 } & WithModalProps) {
     const { goals, status } = week;
@@ -160,6 +173,9 @@ function PastWeekCard({
             gymVisitsGoal={gymVisitsGoal}
             runningSessionsGoal={runningSessionsGoal}
             healthySleepNightsGoal={healthySleepNightsGoal}
+            runningEventValidator={runningEventValidator}
+            sleepEventValidator={sleepEventValidator}
+            gymVisitEventValidator={gymVisitEventValidator}
         />
     );
 
@@ -206,6 +222,9 @@ interface PastWeekDetailsModalProps {
     gymVisitsGoal: number,
     runningSessionsGoal: number,
     healthySleepNightsGoal: number,
+    runningEventValidator: RunningEventValidator,
+    gymVisitEventValidator: GymVisitEventValidator,
+    sleepEventValidator: SleepEventValidator,
     penaltyAmount: number;
     upkeeperAddress: string;
     closeModal: () => void;
@@ -234,21 +253,31 @@ function PastWeekDetailsModal(props: Omit<PastWeekDetailsModalProps, 'weekDetail
     }
 }
 
-function TargetGoalsList(props: { weekDetails: GetWeekDetailsResponse; gymVisitsGoal: number; runningSessionsGoal: number; healthySleepNightsGoal: number }) {
+function TargetGoalsList(props: {
+    weekDetails: GetWeekDetailsResponse;
+    gymVisitsGoal: number;
+    runningSessionsGoal: number;
+    healthySleepNightsGoal: number;
+    gymVisitEventValidator: GymVisitEventValidator,
+    runningEventValidator: RunningEventValidator,
+    sleepEventValidator: SleepEventValidator,
+}) {
     const { weekDetails, gymVisitsGoal, runningSessionsGoal, healthySleepNightsGoal } = props;
+    const metersToKms = (distance: number) => ((distance / 1000).toFixed(1) + ' km').replaceAll('.', ',');
+    const minimumDistance = metersToKms(Number(props.runningEventValidator.minimumDistanceInMeters));
+    const sleepMinimumTime = formatTime(Number(props.sleepEventValidator.minimumDurationInMinutes) * 60, '');
+    const gymVisitMinimumDuration = formatTime(Number(props.gymVisitEventValidator.minimumVisitTimeInMinutes) * 60, '');
 
     return (
-        <ul>
+        <ul className="goalsList">
             <li>
-                {weekDetails.goals.run2KmGoalMet ? "✔️" : "❌"}🏃 Go running at least {runningSessionsGoal} times. (<small>{weekDetails.goals.runningSessions} / {runningSessionsGoal} running sessions</small>).
+                <span>{weekDetails.goals.run2KmGoalMet ? "✔️" : "❌"}</span><b>Run ≥ {minimumDistance}</b>: Complete at least {runningSessionsGoal} running sessions, each covering at least {minimumDistance}. <small>({weekDetails.goals.runningSessions} / {runningSessionsGoal} sessions).</small>
             </li>
             <li>
-                {weekDetails.goals.sleptWellGoalMet ? "✔️" : "❌"}🛏️ Sleeping 7h+
-                hours on at least {healthySleepNightsGoal} nights. (<small>{weekDetails.goals.healthySleepNights} / {healthySleepNightsGoal} nights</small>).
+                <span>{weekDetails.goals.sleptWellGoalMet ? "✔️" : "❌"}</span><b>Sleep ≥ {sleepMinimumTime}</b>: Achieve at least {healthySleepNightsGoal} nights of sleep lasting {sleepMinimumTime} or more. <small>({weekDetails.goals.healthySleepNights} / {healthySleepNightsGoal} nights).</small>
             </li>
             <li>
-                {weekDetails.goals.gymVisitsGoalMet ? "✔️" : "❌"}💪 Going to the
-                gym at least {gymVisitsGoal} times. (<small>{weekDetails.goals.gymVisits} / {gymVisitsGoal} visits</small>).
+                <span>{weekDetails.goals.gymVisitsGoalMet ? "✔️" : "❌"}</span><b>Workout ≥ {gymVisitMinimumDuration}</b>: Complete at least {gymVisitsGoal} gym visits lasting {gymVisitMinimumDuration.replace('m', ' minutes')} or more. <small>({weekDetails.goals.gymVisits} / {gymVisitsGoal} visits).</small>
             </li>
         </ul>
     );
@@ -303,12 +332,18 @@ function PastWeekFailedDetailsModal({
     return (
         <div className="main">
             <div className="past-week-details-modal">
-                <h4>❌ Missed Weekly Goals</h4>
+                <h4>🎯 Missed Weekly Goals</h4>
                 <p>
                     This week was marked as failed because not enough goals were
                     met:
                 </p>
-                <TargetGoalsList {...props} weekDetails={weekDetails} />
+                <TargetGoalsList
+                    {...props}
+                    weekDetails={weekDetails}
+                    runningEventValidator={props.runningEventValidator}
+                    gymVisitEventValidator={props.gymVisitEventValidator}
+                    sleepEventValidator={props.sleepEventValidator}
+                />
                 <h4>💸 Fine Applied</h4>
                 <p>
                     A fine of {totalPenaltyAmount} was deducted from the
@@ -362,7 +397,7 @@ function PastWeekSucceedDetailsModal({
     return (
         <div className="main">
             <div className="past-week-details-modal">
-                <h4>✔️ Weekly Goals Completed</h4>
+                <h4>🎯 Weekly Goals Completed</h4>
                 <p>
                     This week was marked as success because enough goals were
                     met:
@@ -524,7 +559,7 @@ function PastWeekFailedClaimRewardDetailsModal({
     return (
         <div className="main">
             <div className="past-week-details-modal">
-                <h4>❌ Missed Weekly Goals</h4>
+                <h4>🎯 Missed Weekly Goals</h4>
                 <p>Not enough goals were met this week:</p>
                 <TargetGoalsList {...props} weekDetails={weekDetails} />
                 <h4>💰 Collect the fine</h4>

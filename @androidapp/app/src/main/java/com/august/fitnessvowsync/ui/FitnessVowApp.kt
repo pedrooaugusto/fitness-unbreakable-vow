@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.august.fitnessvowsync.contract.PhysicalActivityOracleService
+import com.august.fitnessvowsync.contract.TimeLordService
 import com.august.fitnessvowsync.helpers.TimeHelpers
 import com.august.fitnessvowsync.helpers.TimeHelpers.Companion.formatMinutes
 import com.august.fitnessvowsync.physicalactivity.model.PhysicalActivityEvents
@@ -135,7 +136,7 @@ fun CurrentWeekPhysicalActivitiesSection(
 ) {
     if (physicalActivities == null || contractOverview == null) return
 
-    val isExpired = contractOverview.phase != PhysicalActivityOracleService.ContractPhase.Active
+    val isExpired = contractOverview.phase != TimeLordService.ContractPhase.Active
     val currentWeek = contractOverview.currentWeek
     val timeRemaining = TimeHelpers.formatTimeRemaining(currentWeek.end)
 

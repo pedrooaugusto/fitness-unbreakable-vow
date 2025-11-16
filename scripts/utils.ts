@@ -1,36 +1,8 @@
-import { RunningEventStruct } from "../typechain-types/contracts/PhysicalActivityOracle";
-import { sign, verify } from "./keys";
-import { HardhatRuntimeEnvironment } from "hardhat/types/runtime";
-
-export async function signPhysicalActivityRecord(record: Omit<RunningEventStruct, 'signature'>) {
-    const buffer = Buffer.alloc(20);
-
-    buffer.writeUInt32BE(5 >> 0, 0);
-    buffer.writeUInt32BE(record.timestamp.valueOf() as number >>> 0, 4);
-    buffer.writeUInt32BE(record.distanceInMeters.valueOf() as number >>> 0, 8);
-    buffer.writeUInt32BE(record.paceInSecondsPerKm.valueOf() as number >>> 0, 12);
-    buffer.writeUInt32BE(record.avgBpm.valueOf() as number >>> 0, 16);
-
-    const signature = await sign(buffer);
-
-    return { signature, data: buffer, signedRecord: { ...record, signature: signature } };
-}
-
-export async function test() {
-    const { signature, data } = await signPhysicalActivityRecord({ 
-        timestamp: 1000,
-        runDistanceMeters: 1200,
-        healthySleepNights: 0,
-        gymVisits: 0,
-    });
-
-    const sig = Buffer.from(signature, 'base64')
-    const rawKeyArrayBuffer = sig.buffer.slice(sig.byteOffset, sig.byteOffset + sig.byteLength);
-
-    const result = await verify(rawKeyArrayBuffer, data);
-
-    console.log(result);
-}
+import * as Contracts from '../typechain-types';
+import { HardhatRuntimeEnvironment, } from 'hardhat/types';
+import { ContractTransactionReceipt, ethers } from 'ethers';
+import { getContractAddress, saveContractAddress } from './addresses';
+import { FitnessUnbreakableVow } from '../typechain-types';
 
 export async function connectOrDeploy(address: string, name: string, hre: HardhatRuntimeEnvironment) {
     const deployedBytecode = await hre.ethers.provider.getCode(address);
@@ -84,3 +56,110 @@ export function bytesToBigInt(arr: Uint8Array): bigint {
     return res;
 }
 
+export function getTransactionEvent(eventId: string, eventDefinition: string, transaction: ContractTransactionReceipt | null) {
+    if (transaction == null) return null;
+
+    try {
+        const iface = new ethers.Interface([eventDefinition]);
+        const topic = ethers.id(eventId);
+        for (const log of transaction.logs) {
+            if (log.topics && log.topics[0] === topic) {
+                return iface.decodeEventLog(eventId.slice(0, eventId.indexOf('(')), log.data, log.topics);
+            }
+        }
+    } catch(err) {
+        console.error('Unable to parse events', err);
+    }
+
+    return null;
+}
+
+export interface LocalContractsMap {
+    TheDoctor: [Contracts.TheDoctor__factory, Contracts.TheDoctor];
+    PhysicalActivityOracle: [Contracts.PhysicalActivityOracle__factory, Contracts.PhysicalActivityOracle];
+    FitnessUnbreakableVow: [Contracts.FitnessUnbreakableVow__factory, Contracts.FitnessUnbreakableVow];
+}
+
+export type LocalContracts = keyof LocalContractsMap;
+
+export async function deployContract<ContractName extends LocalContracts>(
+    hre: HardhatRuntimeEnvironment,
+    name: ContractName,
+    deployer: (factory: LocalContractsMap[ContractName][0]) => Promise<LocalContractsMap[ContractName][1]>
+) {
+    const contractFactory = await hre.ethers.getContractFactory(name) as LocalContractsMap[ContractName][0];
+    const contract = await deployer(contractFactory);
+
+    await contract.waitForDeployment();
+    const contractAddress = await contract.getAddress();
+
+    console.log(`${name} contract deployed to: ${contractAddress}`);
+
+    saveContractAddress(name, contractAddress, hre.network.name);
+
+    return {
+        contract,
+        contractAddress
+    }
+}
+
+export async function getContract<ContractName extends LocalContracts>(
+    hre: HardhatRuntimeEnvironment,
+    name: ContractName,
+): Promise<LocalContractsMap[ContractName][1]> {
+    const contractAddress = getContractAddress(name, hre.network.name);
+
+    return await hre.ethers.getContractAt(name, contractAddress) as any as LocalContractsMap[ContractName][1];
+}
+
+async function LINK(hre: HardhatRuntimeEnvironment) {
+    const abi = [
+        'function transfer(address,uint256) returns (bool)',
+        'function approve(address,uint256) returns (bool)',
+    ];
+    const signers = await hre.ethers.getSigners();
+    const address = hre.network.name === 'arbiSep' ? '0xb1D4538B4571d411F07960EF2838Ce337FE1E80E' : '0xf97f4df75117a78c1A5a0DBb814Af92458539FB4';
+
+    return new hre.ethers.Contract(address, abi, signers[0]);
+}
+
+export class FitnessUnbreakableVowUpkeeper {
+    private static cronCreatedEventId = 'NewCronUpkeepCreated(address,address)';
+    private static cronCreatedEventDefinition = 'event NewCronUpkeepCreated(address upkeep, address owner)';
+
+    static async create(contract: FitnessUnbreakableVow, theDoctor: Contracts.TheDoctor, hre: HardhatRuntimeEnvironment) {
+        const minutesInOneWeek = Math.floor(Number(await theDoctor.SECONDS_IN_ONE_WEEK()) / 60);
+        const cronInterval = Math.max(Math.ceil(minutesInOneWeek * 1.02), 3);
+        const cronSpec = `*/${cronInterval} * * * *`;
+        const initialFunding = hre.ethers.parseUnits('0.5', 18);
+
+        console.log(cronSpec);
+
+        const createTransaction = await contract.createUpkeeper(cronSpec);
+        const upkeepAddress = FitnessUnbreakableVowUpkeeper.getUpkeepAddress(await createTransaction.wait());
+
+        await FitnessUnbreakableVowUpkeeper.fundUpkeepWithLink(contract, initialFunding, hre);
+
+        const configTransaction = await contract.configureUpkeeper(upkeepAddress, initialFunding, cronSpec);
+        await configTransaction.wait();
+    }
+
+    private static getUpkeepAddress(transaction: ContractTransactionReceipt | null) {
+        const upkeepCreated = getTransactionEvent(
+            FitnessUnbreakableVowUpkeeper.cronCreatedEventId,
+            FitnessUnbreakableVowUpkeeper.cronCreatedEventDefinition,
+            transaction
+        ) as any;
+
+        if (!upkeepCreated?.upkeep) throw Error('Unable to retrieve created upkeeper address.');
+
+        return upkeepCreated.upkeep
+    }
+
+    private static async fundUpkeepWithLink(contract: FitnessUnbreakableVow, funds: BigInt, hre: HardhatRuntimeEnvironment) {
+        const linkContract = await LINK(hre);
+
+        //await linkContract.transferFrom(await contract.getAddress(), hre.ethers.parseUnits('0.5', 18));
+        await linkContract.approve(await contract.getAddress(), funds);
+    }
+}

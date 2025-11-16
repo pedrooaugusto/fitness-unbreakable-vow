@@ -87,6 +87,15 @@ const MainPage = WithModal(function(props) {
                 overview={convertedOverview}
                 currency={currency}
             />
+            <footer>
+                <span>
+                    <a href="https://github.com/pedrooaugusto/fitness-unbreakable-vow/commit/322dcb1622dd45f874ec2ca76a23812470ec3c12">
+                        v0.0.1 (Copacabana)
+                    </a>
+                </span>
+                <span>1 por amor, 2 por <b>dinheiro ♬</b></span>
+                <span><a href="https://github.com/pedrooaugusto/fitness-unbreakable-vow">Github</a></span>
+            </footer>
         </div>
     );
 });

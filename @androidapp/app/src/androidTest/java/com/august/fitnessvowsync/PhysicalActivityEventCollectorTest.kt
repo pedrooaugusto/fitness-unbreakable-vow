@@ -1,6 +1,5 @@
 package com.august.fitnessvowsync
 
-import android.content.Intent
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -13,6 +12,7 @@ import com.august.fitnessvowsync.physicalactivity.data.GymVisitTracker
 import com.august.fitnessvowsync.physicalactivity.mapper.PhysicalActivityEventMapper
 import com.august.fitnessvowsync.physicalactivity.model.GymVisitEvent
 import com.august.fitnessvowsync.physicalactivity.model.PhysicalActivityEvents
+import com.august.fitnessvowsync.physicalactivity.model.TrackedGymConfig
 import com.august.fitnessvowsync.testing.HealthConnectTestHelper
 import com.august.fitnessvowsync.testing.PeriodSpec
 import com.august.fitnessvowsync.testing.RandomPhysicalActivityGenerator
@@ -32,6 +32,10 @@ class PhysicalActivityEventCollectorTest {
     private lateinit var healthConnectTestHelper: HealthConnectTestHelper
     private lateinit var collector: PhysicalActivityEventCollector
     private lateinit var randomEvents: List<PeriodSpec>
+    private var trackedGyms: List<TrackedGymConfig> = listOf(
+            TrackedGymConfig("main", -22.5466, 44.54546, Duration.ofMinutes(10), 150.0),
+            TrackedGymConfig("support", -22.2466, 44.14546, Duration.ofMinutes(10), 400.0),
+    )
 
     companion object {
         @BeforeClass
@@ -115,7 +119,7 @@ class PhysicalActivityEventCollectorTest {
         val healthConnectClient = HealthConnectModule().provideHealthConnectClient(context)
         val gymVisitTracker = GymVisitTracker(EncryptedSharedPreferencesModule().let { it.provideEncryptedSharedPreferences(context, it.provideMainKeyAlias()) })
 
-        randomEvents = RandomPhysicalActivityGenerator.generate(Instant.ofEpochMilli(Instant.now().toEpochMilli()).minusSeconds(60 * 60), count = 4, seed = 42L)
+        randomEvents = RandomPhysicalActivityGenerator.generate(Instant.ofEpochMilli(Instant.now().toEpochMilli()).minusSeconds(60 * 60), count = 4, trackedGyms, seed = 42L)
         healthConnectTestHelper = HealthConnectTestHelper(healthConnectClient, gymVisitTracker)
         collector = PhysicalActivityEventCollector(
             HealthConnectAggregator(com.august.fitnessvowsync.health.HealthConnectClient(healthConnectClient), Duration.ZERO),

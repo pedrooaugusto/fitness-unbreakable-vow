@@ -11,6 +11,7 @@ import org.web3j.protocol.http.HttpService
 import javax.inject.Named
 import javax.inject.Singleton
 import com.august.fitnessvowsync.BuildConfig
+import com.august.fitnessvowsync.contract.TheDoctor
 import com.august.fitnessvowsync.helpers.SettingsService
 import org.web3j.tx.gas.StaticGasProvider
 import java.math.BigInteger
@@ -40,6 +41,19 @@ class Web3jModule {
             val contractGasProvider = createGasProvider(web3j)
 
             PhysicalActivityOracle.load(contractAddress, web3j, credentials, contractGasProvider)
+        }
+    }
+
+    @Provides
+    @Singleton
+    fun provideTimeLord(contractSettings: SettingsService, oracle: ContractProvider<PhysicalActivityOracle>): ContractProvider<TheDoctor> {
+        return ContractProvider(contractSettings) { walletKey, rpcEndpoint ->
+            val web3j = provideWeb3j(rpcEndpoint)
+            val contractAddress = oracle.get().TIME_LORD().send()!!
+            val credentials = Credentials.create(walletKey)
+            val contractGasProvider = createGasProvider(web3j)
+
+            TheDoctor.load(contractAddress, web3j, credentials, contractGasProvider)
         }
     }
 

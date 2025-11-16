@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { WeeklyGoalStatus, WeeklyGoal, PhysicalActivityStats, Listener, Observable } from './lib/Types.sol';
-import { SignatureVerifier } from './lib/signature/Types.sol';
+import { WeeklyGoalStatus, WeeklyGoal, PhysicalActivityStats, Listener, TimeLord, TimeBound, OracleInterface, Environment } from './lib/Types.sol';
 import { Ownable } from './lib/Ownable.sol';
-import { IExpirable } from './lib/Expirable.sol';
 import { Versioned } from './lib/Versioned.sol';
+import { UpkeeperManager } from './lib/UpkeeperManager.sol';
 import { console } from './lib/variants/console.sol';
 import { WeeklyGoalListable } from './lib/WeeklyGoalListable.sol';
 
@@ -13,20 +12,18 @@ event NoPenaltyApplied();
 event PenaltyApplied(uint8 weekIndex, address enforcer);
 event VowTeminated(uint256 releasedFunds, address receiver);
 
+interface ArbSys { function arbBlockNumber() external view returns (uint256); }
+
 /**
  * @title FitnessUnbreakableVow: Penalizes Physical Inactivity with Fund Deduction.
  * @notice This contract enforces physical activity goals by deducting funds if activity cannot be verified.
  */
-contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Versioned {
+contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, Listener, Versioned, TimeBound {
     /**
      * @dev Oracle responsinble for storing physical activity records.
      */
-    address public immutable PHYSICAL_ACTIVITY_ORACLE;
-
-    /**
-     * @dev Chainlink Upkeep address. Upkeep is responsible for calling this contract at least once a day.
-     */
-    address public immutable CHAINLINK_UPKEEP_ADDRESS;
+    OracleInterface public immutable PHYSICAL_ACTIVITY_ORACLE;
+    TimeLord public immutable TIME_LORD;
 
     /**
      * @dev Giveth Charity Wallet.
@@ -48,18 +45,14 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Version
     uint256 public immutable PENALTY_AMOUNT;
 
     constructor(
-        address physicalActivityOracleAddress,
-        address upkeepAddress,
-        uint256 creationDate,
-        uint256 expirationDate,
-        uint256 secondsInOneWeek
-    ) payable WeeklyGoalListable(creationDate, expirationDate, secondsInOneWeek) {
-        STAKED_AMOUNT = msg.value;
-        CHAINLINK_UPKEEP_ADDRESS = upkeepAddress;
+        OracleInterface physicalActivityOracleAddress
+    ) payable WeeklyGoalListable(physicalActivityOracleAddress.TIME_LORD()) {
         PHYSICAL_ACTIVITY_ORACLE = physicalActivityOracleAddress;
-        PENALTY_AMOUNT = STAKED_AMOUNT / ((EXPIRATION_DATE - CREATION_DATE) / SECONDS_IN_ONE_WEEK);
+        TIME_LORD = PHYSICAL_ACTIVITY_ORACLE.TIME_LORD();
+        STAKED_AMOUNT = msg.value;
+        PENALTY_AMOUNT = STAKED_AMOUNT / ((TIME_LORD.EXPIRATION_DATE() - TIME_LORD.CREATION_DATE()) / TIME_LORD.SECONDS_IN_ONE_WEEK());
 
-        syncWithOracle(physicalActivityOracleAddress, creationDate, expirationDate, secondsInOneWeek);
+        PHYSICAL_ACTIVITY_ORACLE.registerPhysicalActivityStatsUpdateListener(address(this));
     }
 
     /**
@@ -84,7 +77,7 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Version
      */
     function terminateVow() external onlyOwner {
         // Allow vow termination if public keys weren't registered.
-        require(isPublicKeyNotSet() || isContractFullyExpired(), "Contract has not expired yet.");
+        require(isPublicKeyNotSet() || TIME_LORD.isContractFullyExpired(), "Contract has not expired yet.");
 
         // Allow if pub key was not set yet.
         console.log("[FitnessUnbreakableVow] Terminating vow");
@@ -95,11 +88,32 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Version
 
         payable(owner).transfer(balance);
 
+        _cancelUpkeeper();
+
         emit VowTeminated(balance, msg.sender);
     }
 
     function onPhysicalActivityStatsUpdate(uint8 weekIndex, PhysicalActivityStats calldata stats) external onlyOracle {
         putWeek(weekIndex, buildWeeklyGoalFrom(stats));
+    }
+
+    function createUpkeeper(string calldata cronInternalSpec) external onlyOwner {
+        require(address(CHAINLINK_UPKEEPER_ADDRESS) == address(0), "Upkeeper already set.");
+
+        _createUpkeeper(cronInternalSpec);
+    }
+
+    function configureUpkeeper(address upkeeper, uint256 linkFunding, string calldata cronInternalSpec) external onlyOwner {
+        require(address(CHAINLINK_UPKEEPER_ADDRESS) == address(0), "Upkeeper already set.");
+
+        _configureUpkeeper(upkeeper, linkFunding, cronInternalSpec);
+    }
+
+    function withdrawUpkeeperFunds() external onlyOwner {
+        // Allow vow termination if public keys weren't registered.
+        require(isPublicKeyNotSet() || TIME_LORD.isContractFullyExpired(), "Contract has not expired yet.");
+
+        _withdrawUpkeeperFunds();
     }
 
     /** 
@@ -113,14 +127,14 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Version
     receive() external payable {}
 
     function applyPenaltyForWeek(uint8 weekIndex) private {
-        weeklyGoalsRecords[weekIndex].penaltyBlock = block.number;
+        weeklyGoalsRecords[weekIndex].penaltyBlock = getCurrentBlockNumber();
 
         uint256 penaltyAmount = calculatePenaltyAmount();
 
         if(isBeingCalledByUpkeep()) {
             weeklyGoalsRecords[weekIndex].status = WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UPKEEPER;
 
-            payable(msg.sender).transfer(penaltyAmount);
+            payable(GIVETH_WALLET_ADDRESS).transfer(penaltyAmount);
         } else {
             weeklyGoalsRecords[weekIndex].status = WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UNKOWN;
 
@@ -138,23 +152,26 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, Ownable, Listener, Version
     }
 
     function isBeingCalledByUpkeep() private view returns (bool) {
-        return msg.sender == CHAINLINK_UPKEEP_ADDRESS;
+        return msg.sender == address(CHAINLINK_UPKEEPER_ADDRESS);
     }
 
     function isPublicKeyNotSet() private view returns (bool) {
-        return !SignatureVerifier(PHYSICAL_ACTIVITY_ORACLE).isPublicKeySet();
+        return !PHYSICAL_ACTIVITY_ORACLE.isPublicKeySet();
     }
 
-    function syncWithOracle(address oracle, uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek) private {
-        require(IExpirable(oracle).CREATION_DATE() == creationDate, "Oracle and Vow creation dates diverge.");
-        require(IExpirable(oracle).EXPIRATION_DATE() == expirationDate, "Oracle and Vow expiration dates diverge.");
-        require(IExpirable(oracle).SECONDS_IN_ONE_WEEK() == secondsInOneWeek, "Oracle and Vow seconds in one week diverge.");
+    function getCurrentBlockNumber() private view returns (uint256) {
+        if (Environment.isLocalhost()) return block.number;
 
-        Observable(oracle).registerPhysicalActivityStatsUpdateListener(address(this));
+        return ArbSys(address(100)).arbBlockNumber();
     }
 
     modifier onlyOracle() {
-        require(PHYSICAL_ACTIVITY_ORACLE == msg.sender, "Callable only by the oracle.");
+        require(address(PHYSICAL_ACTIVITY_ORACLE) == msg.sender, "Callable only by the oracle.");
+        _;
+    }
+
+    modifier onlyBeforeFullExpiry() {
+        require(!TIME_LORD.isContractFullyExpired(), "Contract has expired.");
         _;
     }
 }
