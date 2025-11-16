@@ -189,7 +189,7 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
         }
     })
 
-task('config-upkeeper', "Config upkeeper")
+task('CancelUpkeeper', "Withdraw upkeeper links")
     .setAction(async (taskArgs, hre) => {
         try {
             const contractAddress = getContractAddress('FitnessUnbreakableVow', hre.network.name);

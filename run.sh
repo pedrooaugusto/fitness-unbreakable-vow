@@ -82,6 +82,8 @@ case "$1" in
     terminate)
         echo "Terminating vow"
         npx hardhat --network $2 TerminateVow
+        sleep 10
+        npx hardhat --network $2 CancelUpkeeper
         echo "Done."
         ;;
     deploy-webapp)

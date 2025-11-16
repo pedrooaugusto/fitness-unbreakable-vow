@@ -86,7 +86,7 @@ export default async function loadContract() {
         FitnessUnbreakableVow,
         TimeLordContract,
         getBalance: (target: Contract) => getBalance(target, provider!),
-        executeMulticall: (contract: Contract, functions: string[]) => executeMulticall(contract, functions, network!, provider!)
+        executeMulticall: (contract: Contract, functions: string[]) => executeMulticall(contract, functions, network!)
     }
 }
 
@@ -110,13 +110,13 @@ async function getContract(name: string, network: string, provider: Provider, ta
     return new ethers.Contract(address, abi, provider);
 }
 
-async function executeMulticall(contract: Contract, functions: string[], network: Network, provider: Provider) {
+async function executeMulticall(contract: Contract, functions: string[], network: Network) {
     if (network === 'localhost') return await localhostMultiCall(contract, functions);
 
     const contractInterface = contract.interface;
     const calls = functions.map(functionName => ({ target: contract, callData: contractInterface.encodeFunctionData(functionName) }));
 
-    const [, returnData]: unknown[][] = await MulticallContract.aggregate!(calls);
+    const [, returnData]: unknown[][] = await MulticallContract!.aggregate!(calls);
 
     return functions.map((functionName, index) => {
         const decodedResult = contractInterface.decodeFunctionResult(functionName, returnData[index] as BytesLike);
