@@ -133,8 +133,6 @@ export class FitnessUnbreakableVowUpkeeper {
         const cronSpec = `*/${cronInterval} * * * *`;
         const initialFunding = hre.ethers.parseUnits('0.5', 18);
 
-        console.log(cronSpec);
-
         const createTransaction = await contract.createUpkeeper(cronSpec);
         const upkeepAddress = FitnessUnbreakableVowUpkeeper.getUpkeepAddress(await createTransaction.wait());
 

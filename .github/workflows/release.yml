@@ -138,7 +138,7 @@ jobs:
 
             const contractAddress = fs.readFileSync(addressesFile, "utf8")
               .split("\n")
-              .find(a => a.startsWith(network + ".FitnessUnbreakableVow"))
+              .find(a => a.startsWith(network + ".PhysicalActivityOracle"))
               .split("=")[1]
 
             console.log("RATE=\"rate("+ parseInt(secondsInOneWeek / 60) +" minutes)\"")
