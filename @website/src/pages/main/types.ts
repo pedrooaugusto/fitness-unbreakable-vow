@@ -132,7 +132,10 @@ export interface GetContractOverviewResponse {
     contractAddress: string;
     oracleAddress: string;
     upkeeperAddress: string;
+    upkeeperId: string;
+    upkeeperCronSpec: string;
 
+    version: string,
     startDate: number;
     expirationDate: number;
     gracePeriod: number;

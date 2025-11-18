@@ -98,16 +98,16 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
         putWeek(weekIndex, buildWeeklyGoalFrom(stats));
     }
 
-    function createUpkeeper(string calldata cronInternalSpec) external onlyOwner {
+    function createUpkeeper() external onlyOwner {
         require(address(CHAINLINK_UPKEEPER_ADDRESS) == address(0), "Upkeeper already set.");
 
-        _createUpkeeper(cronInternalSpec);
+        _createUpkeeper(TIME_LORD.END_OF_WEEK_CRON());
     }
 
-    function configureUpkeeper(address upkeeper, uint256 linkFunding, string calldata cronInternalSpec) external onlyOwner {
+    function configureUpkeeper(address upkeeper, uint256 linkFunding) external onlyOwner {
         require(address(CHAINLINK_UPKEEPER_ADDRESS) == address(0), "Upkeeper already set.");
 
-        _configureUpkeeper(upkeeper, linkFunding, cronInternalSpec);
+        _configureUpkeeper(upkeeper, linkFunding, TIME_LORD.END_OF_WEEK_CRON());
     }
 
     function withdrawUpkeeperFunds() external onlyOwner {

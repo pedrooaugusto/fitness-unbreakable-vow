@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.august.fitnessvowsync.donotuse.FakeDataProducerDoNotUse
 import com.august.fitnessvowsync.helpers.SettingsService
 
 import com.august.fitnessvowsync.ui.FitnessVowApp
@@ -39,8 +40,8 @@ class MainActivity : ComponentActivity() {
     lateinit var permissionsViewModelFactory: ViewModelProvider.Factory
 
     //TODO: Remove support fake data during development
-    /*@Inject
-    lateinit var doNotUse: FakeDataProducerDoNotUse
+    @Inject
+    /*lateinit var doNotUse: FakeDataProducerDoNotUse
     suspend fun __debug_PleaseRemove__randomValueFor(goal: String): Unit {
         when (goal) {
             "run" -> doNotUse.addFakeRunningSession(500)

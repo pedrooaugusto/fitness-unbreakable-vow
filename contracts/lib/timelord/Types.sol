@@ -18,6 +18,9 @@ interface TimeLord {
     /// @notice Length of the grace period (in seconds) after
     /// `EXPIRATION_DATE` before the contract is fully expired.
     function GRACE_PERIOD() external view returns(uint256);
+    /// @notice If you need to call this contract at the end
+    /// every weekly term use this cron expression.
+    function END_OF_WEEK_CRON() external view returns(string memory);
 
     function isContractActive() external view returns (bool);
     function isContractInGracePeriod() external view returns (bool);

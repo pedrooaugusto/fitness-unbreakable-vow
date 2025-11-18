@@ -1,6 +1,7 @@
 import hre from 'hardhat';
 import { getRawPublicKey } from '../../scripts/keys';
 import { FitnessUnbreakableVow, TimeLord } from '../../typechain-types';
+import { to96BytesString } from '../../scripts/utils';
 
 export const STAKED_AMOUNT = hre.ethers.parseEther("36");
 export const SEVEN_DAYS_IN_SECONDS = 60 * 60 * 24 * 7;
@@ -16,7 +17,7 @@ export async function deployContractFixture() {
     const FitnessUnbreakableVow = await hre.ethers.getContractFactory("FitnessUnbreakableVow");
     const TheDoctor = await hre.ethers.getContractFactory("TheDoctor");
 
-    const timeLord = await TheDoctor.deploy(CREATION_DATE, EXPIRATION_DATE, SEVEN_DAYS_IN_SECONDS);
+    const timeLord = await TheDoctor.deploy(CREATION_DATE, EXPIRATION_DATE, SEVEN_DAYS_IN_SECONDS, ...to96BytesString(hre, '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'));
     await timeLord.waitForDeployment();
 
     const physicalActivityOracle = await PhysicalActivityOracle.deploy(await timeLord.getAddress());    

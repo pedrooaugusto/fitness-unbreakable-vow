@@ -15,7 +15,7 @@ class PhysicalActivityEventMapper @Inject constructor(private val signatureMappe
         val location = GymVisitEvent.Location(gymVisitSession.gym.latitude, gymVisitSession.gym.longitude)
         val timestamp = gymVisitSession.startTime
         val endTime = gymVisitSession.endTime
-        val durationInMinutes = Duration.between(timestamp, endTime).toMinutes().toInt()
+        val durationInMinutes = Duration.between(timestamp, endTime).toMinutes().toInt().coerceAtMost(255)
 
         return GymVisitEvent(
             location,

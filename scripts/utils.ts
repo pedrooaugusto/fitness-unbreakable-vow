@@ -1,6 +1,6 @@
 import * as Contracts from '../typechain-types';
 import { HardhatRuntimeEnvironment, } from 'hardhat/types';
-import { ContractTransactionReceipt, ethers } from 'ethers';
+import { BytesLike, ContractTransactionReceipt, ethers } from 'ethers';
 import { getContractAddress, saveContractAddress } from './addresses';
 import { FitnessUnbreakableVow } from '../typechain-types';
 
@@ -95,7 +95,7 @@ export async function deployContract<ContractName extends LocalContracts>(
 
     console.log(`${name} contract deployed to: ${contractAddress}`);
 
-    saveContractAddress(name, contractAddress, hre.network.name);
+    saveContractAddress(name, contractAddress, hre.network.name, contract.deploymentTransaction()?.hash || '');
 
     return {
         contract,
@@ -110,6 +110,23 @@ export async function getContract<ContractName extends LocalContracts>(
     const contractAddress = getContractAddress(name, hre.network.name);
 
     return await hre.ethers.getContractAt(name, contractAddress) as any as LocalContractsMap[ContractName][1];
+}
+
+export function to96BytesString(hre: HardhatRuntimeEnvironment, value: string): [BytesLike, BytesLike, BytesLike] {
+    const valueBytes = hre.ethers.toUtf8Bytes(value);
+    
+    if (valueBytes.length > 96) {
+        throw new Error(`value is too long (${valueBytes.length} bytes). Maximum supported is 96 bytes.`);
+    }
+
+    const paddedValue = new Uint8Array(96);
+    paddedValue.set(valueBytes);
+
+    return [
+        hre.ethers.hexlify(paddedValue.slice(0, 32)) as BytesLike,
+        hre.ethers.hexlify(paddedValue.slice(32, 64)) as BytesLike,
+        hre.ethers.hexlify(paddedValue.slice(64, 96)) as BytesLike,
+    ];
 }
 
 async function LINK(hre: HardhatRuntimeEnvironment) {
@@ -128,18 +145,22 @@ export class FitnessUnbreakableVowUpkeeper {
     private static cronCreatedEventDefinition = 'event NewCronUpkeepCreated(address upkeep, address owner)';
 
     static async create(contract: FitnessUnbreakableVow, theDoctor: Contracts.TheDoctor, hre: HardhatRuntimeEnvironment) {
-        const minutesInOneWeek = Math.floor(Number(await theDoctor.SECONDS_IN_ONE_WEEK()) / 60);
-        const cronInterval = Math.max(Math.ceil(minutesInOneWeek * 1.02), 3);
-        const cronSpec = `*/${cronInterval} * * * *`;
-        const initialFunding = hre.ethers.parseUnits('0.5', 18);
+        if (hre.network.name === 'localhost') {
+            saveContractAddress('Upkeeper', await contract.getAddress(), hre.network.name, contract.deploymentTransaction()?.hash!!);
 
-        const createTransaction = await contract.createUpkeeper(cronSpec);
+            return;
+        }
+
+        const createTransaction = await contract.createUpkeeper();
         const upkeepAddress = FitnessUnbreakableVowUpkeeper.getUpkeepAddress(await createTransaction.wait());
 
+        const initialFunding = hre.ethers.parseUnits('0.15', 18);
         await FitnessUnbreakableVowUpkeeper.fundUpkeepWithLink(contract, initialFunding, hre);
 
-        const configTransaction = await contract.configureUpkeeper(upkeepAddress, initialFunding, cronSpec);
+        const configTransaction = await contract.configureUpkeeper(upkeepAddress, initialFunding);
         await configTransaction.wait();
+
+        saveContractAddress('Upkeeper', upkeepAddress, hre.network.name, configTransaction.hash);
     }
 
     private static getUpkeepAddress(transaction: ContractTransactionReceipt | null) {
@@ -157,7 +178,6 @@ export class FitnessUnbreakableVowUpkeeper {
     private static async fundUpkeepWithLink(contract: FitnessUnbreakableVow, funds: BigInt, hre: HardhatRuntimeEnvironment) {
         const linkContract = await LINK(hre);
 
-        //await linkContract.transferFrom(await contract.getAddress(), hre.ethers.parseUnits('0.5', 18));
         await linkContract.approve(await contract.getAddress(), funds);
     }
 }

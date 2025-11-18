@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
+import { Environment } from './Types.sol';
 
 struct RegistrationParams {
     string name;
@@ -65,19 +66,27 @@ abstract contract UpkeeperManager {
     UpkeeperRegistry private immutable upkeeperRegistry;
 
     constructor() {
-        linkToken = LinkTokenManager(0xb1D4538B4571d411F07960EF2838Ce337FE1E80E);
-        upkeeperFactory = CronUpkeeperFactory(0xf155d88C61F59c7472C3f48D5b2805b7EdEd43DB);
-        upkeeperRegistrar = UpkeeperRegistrar(0x881918E24290084409DaA91979A30e6f0dB52eBe);
-        upkeeperRegistry = UpkeeperRegistry(0x8194399B3f11fcA2E8cCEfc4c9A658c61B8Bf412);
+        if (Environment.isArbitrum()) {
+            linkToken = LinkTokenManager(0xf97f4df75117a78c1A5a0DBb814Af92458539FB4);
+            upkeeperFactory = CronUpkeeperFactory(0x96CbA89D87199F021DA22313c8b1f6B71A541f52);
+            upkeeperRegistrar = UpkeeperRegistrar(0x86EFBD0b6736Bed994962f9797049422A3A8E8Ad);
+            upkeeperRegistry = UpkeeperRegistry(0x37D9dC70bfcd8BC77Ec2858836B923c560E891D1);
+        } else {
+            // asume arbitrum sepolia
+            linkToken = LinkTokenManager(0xb1D4538B4571d411F07960EF2838Ce337FE1E80E);
+            upkeeperFactory = CronUpkeeperFactory(0xf155d88C61F59c7472C3f48D5b2805b7EdEd43DB);
+            upkeeperRegistrar = UpkeeperRegistrar(0x881918E24290084409DaA91979A30e6f0dB52eBe);
+            upkeeperRegistry = UpkeeperRegistry(0x8194399B3f11fcA2E8cCEfc4c9A658c61B8Bf412);
+        }
     }
 
-    function _createUpkeeper(string calldata cronInternalSpec) internal {
+    function _createUpkeeper(string memory cronInternalSpec) internal {
         bytes memory encodedJob = upkeeperFactory.encodeCronJob(address(this), hex"3d3131f3", cronInternalSpec);
 
         upkeeperFactory.newCronUpkeepWithJob(encodedJob);
     }
 
-    function _configureUpkeeper(address upkeeper, uint256 linkFunding, string calldata cronInternalSpec) internal {
+    function _configureUpkeeper(address upkeeper, uint256 linkFunding, string memory cronInternalSpec) internal {
         CHAINLINK_UPKEEPER_ADDRESS = Upkeeper(upkeeper);
 
         linkToken.transferFrom(msg.sender, address(this), linkFunding);

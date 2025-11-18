@@ -34,8 +34,8 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
 
     function gymVisitValidator() public pure returns (GymVisitEventValidator memory) {
         return GymVisitEventValidator({
-            // int(-22.896957745611775 * 1e7),  int(-43.27265899080379 * 1e7)
-            gym1Location: Geofence({ latitudeNanoDegree: -228969577, longitudeNanoDegree: -432726589, radiusInMeters: 150 }),
+            // int(-22.897596695112696 * 1e7), int(-43.2729018641947 * 1e7)
+            gym1Location: Geofence({ latitudeNanoDegree: -228975966, longitudeNanoDegree: -432729018, radiusInMeters: 150 }),
             gym2Location: Geofence({ latitudeNanoDegree: -228934446, longitudeNanoDegree: -432925724, radiusInMeters: 400 }),
             // waka waka https://www.youtube.com/watch?v=pRpeEdMmmQ0&t=55s
             gym3Location: Geofence({ latitudeNanoDegree: -260758108, longitudeNanoDegree:  280636459, radiusInMeters: 150 }),

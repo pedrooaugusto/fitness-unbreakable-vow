@@ -337,7 +337,7 @@ function GymVisitsGoalModal(props: GoalModalProps) {
     const requiredVisitDuration = formatTime(Number(validator.minimumVisitTimeInMinutes * 60n));
     const gymLocations = [validator.gym1Location, validator.gym2Location, validator.gym3Location]
         .map(item => [Number(item.latitudeNanoDegree) / 1e7, Number(item.longitudeNanoDegree) / 1e7])
-        .map(([lat, lon], index, arr) => <><code>({lat}°, {lon}°)</code>{index === arr.length - 1 ? '' : ' or '}</>)
+        .map(([lat, lon], index, arr) => <><a href={`https://www.google.com/maps/?q=${lat},${lon}`} target="_blank"><code>({lat}°, {lon}°)</code></a>{index === arr.length - 1 ? '' : ' or '}</>)
 
     return (
         <div className="main">

@@ -1,10 +1,12 @@
 import { spawn } from 'child_process';
+import { BytesLike } from 'ethers';
+
 
 export default async function verify(
     network: string,
     label: string,
     address: string,
-    constructorArguments: Array<string | number | bigint>,
+    constructorArguments: Array<string | number | bigint | BytesLike>,
     timeoutMs = 45_000,
 ) {
     const args = [

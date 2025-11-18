@@ -11,17 +11,22 @@ on:
         description: "Contract start date:"
         required: true
         type: string
-        default: "2025-11-16 09:30:00-03:00"
+        default: "2025-11-17 09:30:00-03:00"
       seconds_in_one_week:
-        description: "Seconds in one week:"
+        description: "Week length:"
         required: true
-        type: number
-        default: 120
+        type: choice
+        options:
+          - 3-minutes
+          - 5-minutes
+          - 2-days
+          - 7-days
+        default: "5-minutes"
       number_of_weeks:
         description: "Number of weeks:"
         required: true
         type: string
-        default: "5.2"
+        default: "5"
       network:
         description: "Network to deploy:"
         required: true
@@ -31,7 +36,7 @@ on:
           - arbitrum
         default: "arbiSep"
       stake:
-        description: "Staked ether:"
+        description: "Staked amount (ether):"
         required: true
         type: string
         default: "0.001"
@@ -123,30 +128,6 @@ jobs:
             --durationinweeks "${{ inputs.number_of_weeks }}" \
             --stakedamount "${{ inputs.stake }}"
 
-      - name: Create event saver scheduler args
-        run: |
-          node -e '
-            const path = require("path")
-            const fs = require("fs")
-
-            const startDate = parseInt(+new Date("${{ inputs.start_date }}") / 1000)
-            const secondsInOneWeek = Number("${{ inputs.seconds_in_one_week }}")
-            const numberOfWeeks = Number("${{ inputs.number_of_weeks }}")
-            const network = "${{ inputs.network }}"
-            const endDate = 60 + startDate + secondsInOneWeek * numberOfWeeks
-            const addressesFile = path.join(__dirname, "contracts", ".addresses")
-
-            const contractAddress = fs.readFileSync(addressesFile, "utf8")
-              .split("\n")
-              .find(a => a.startsWith(network + ".PhysicalActivityOracle"))
-              .split("=")[1]
-
-            console.log("RATE=\"rate("+ parseInt(secondsInOneWeek / 60) +" minutes)\"")
-            console.log("START_DATE=\"" + new Date(1000*(startDate + secondsInOneWeek + 2)).toISOString() + "\"")
-            console.log("END_DATE=\"" + new Date(1000 * endDate).toISOString() + "\"")
-            console.log("CONTRACT_ADDRESS=\"" + contractAddress + "\"")
-          ' >> scheduler-args.txt
-
       - name: Upload contract addresses artifact
         uses: actions/upload-artifact@v4
         with:
@@ -158,7 +139,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: scheduler-args
-          path: scheduler-args.txt
+          path: artifacts/scheduler-args.txt
 
   update-scheduler:
     name: Update Scheduler

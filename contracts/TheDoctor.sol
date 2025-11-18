@@ -24,13 +24,27 @@ contract TheDoctor is TimeLord {
     /// @notice Total number of whole weeks in the active phase
     /// (from creation until `EXPIRATION_DATE`).
     uint8 public immutable NUMBER_OF_WEEKS;
+    /// @dev Avoiding storage
+    bytes32 immutable private END_OF_WEEK_CRON_P1;
+    bytes32 immutable private END_OF_WEEK_CRON_P2;
+    bytes32 immutable private END_OF_WEEK_CRON_P3;
 
-    constructor(uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek) {
+    constructor(
+        uint256 creationDate,
+        uint256 expirationDate,
+        uint256 secondsInOneWeek,
+        bytes32 endOfWeekCron1,
+        bytes32 endOfWeekCron2,
+        bytes32 endOfWeekCron3
+    ) {
         SECONDS_IN_ONE_WEEK = secondsInOneWeek;
         GRACE_PERIOD = min256(uint256(secondsInOneWeek / 5), 3600);
         NUMBER_OF_WEEKS = uint8((expirationDate - creationDate) / SECONDS_IN_ONE_WEEK);
         CREATION_DATE = creationDate;
         EXPIRATION_DATE = creationDate + NUMBER_OF_WEEKS * SECONDS_IN_ONE_WEEK; // Force multiple of
+        END_OF_WEEK_CRON_P1 = endOfWeekCron1;
+        END_OF_WEEK_CRON_P2 = endOfWeekCron2;
+        END_OF_WEEK_CRON_P3 = endOfWeekCron3;
     }
 
     function isContractActive() public view returns (bool) {
@@ -43,6 +57,18 @@ contract TheDoctor is TimeLord {
 
     function isContractFullyExpired() public view returns (bool) {
         return block.timestamp >= EXPIRATION_DATE + GRACE_PERIOD;
+    }
+
+    /// @notice If you need to call this contract at the end
+    /// every weekly term use this cron expression.
+    /// @return A cron expression that runs roughly at end of
+    /// the week.
+    function END_OF_WEEK_CRON() external view returns(string memory) {
+        string memory p1 = bytes32ToCronSpec(END_OF_WEEK_CRON_P1);
+        string memory p2 = bytes32ToCronSpec(END_OF_WEEK_CRON_P2);
+        string memory p3 = bytes32ToCronSpec(END_OF_WEEK_CRON_P3);
+
+        return string.concat(p1, p2, p3);
     }
 
     /// @notice Returns the current phase of the contract
@@ -73,4 +99,20 @@ contract TheDoctor is TimeLord {
 
         return weekIndex;
     }
+}
+
+function bytes32ToCronSpec(bytes32 value) pure returns (string memory) {
+    uint256 len = 0;
+
+    // Find first zero byte = end of string
+    while (len < 32 && value[len] != 0) {
+        len++;
+    }
+
+    bytes memory out = new bytes(len);
+    for (uint256 i = 0; i < len; i++) {
+        out[i] = value[i];
+    }
+
+    return string(out);
 }

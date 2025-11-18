@@ -53,16 +53,15 @@ const MULTICALL_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
 let addresses: Record<string, string> | null = null;
 let provider: Provider | null = null;
 let network: Network | null = null;
+let UpkeeperContract: { address: string; deployment: string, network: string, creationDate: number } | null = null;
 let PhysicalActivityOracle: EnhancedContract | null = null;
 let FitnessUnbreakableVow: EnhancedContract | null = null;
 let TimeLordContract: EnhancedContract | null = null;
 let MulticallContract: Contract | null = null;
-let fromBlock: number | null = null;
 
 export default async function loadContract() {
     addresses ||= await fetchAdresses();
-    network = addresses.LastUsedNetwork as Network;    
-    fromBlock = Number(addresses[`${network}.blockNumber`]);
+    network = addresses.LastUsedNetwork as Network;
     provider ||= makeProviderWithFallback(network);
     PhysicalActivityOracle ||= await getContract('PhysicalActivityOracle', network, provider) as EnhancedContract;
     FitnessUnbreakableVow ||= await getContract('FitnessUnbreakableVow', network, provider) as EnhancedContract;
@@ -71,20 +70,28 @@ export default async function loadContract() {
 
     FitnessUnbreakableVow.network = network;
     FitnessUnbreakableVow.contractAddress = addresses[`${network}.FitnessUnbreakableVow`];
-    FitnessUnbreakableVow.getEvents = (<T extends ParsedEventBase>(eventName: string, indexes: string[], data: string[], fromBlock1 = fromBlock!, toBlock1?: number) => {
+    FitnessUnbreakableVow.getEvents = (<T extends ParsedEventBase>(eventName: string, indexes: string[], data: string[], fromBlock1?: number, toBlock1?: number) => {
         return getEvents<T>(FitnessUnbreakableVow as Contract, eventName, indexes, data, fromBlock1, toBlock1);
     }) as any;
 
     PhysicalActivityOracle.network = network;
     PhysicalActivityOracle.contractAddress = addresses[`${network}.PhysicalActivityOracle`];
-    PhysicalActivityOracle.getEvents = (<T extends ParsedEventBase>(eventName: string, indexes: string[], data: string[], fromBlock1 = fromBlock!, toBlock1?: number) => {
+    PhysicalActivityOracle.getEvents = (<T extends ParsedEventBase>(eventName: string, indexes: string[], data: string[], fromBlock1?: number, toBlock1?: number) => {
         return getEvents<T>(PhysicalActivityOracle as Contract, eventName, indexes, data, fromBlock1, toBlock1);
     }) as any;
+
+    UpkeeperContract = {
+        address: addresses[`${network}.Upkeeper`],
+        deployment: addresses[`${network}.deployment.Upkeeper`],
+        network: network,
+        creationDate: await getTransactionDate(addresses[`${network}.deployment.Upkeeper`], provider)
+    };
 
     return {
         PhysicalActivityOracle,
         FitnessUnbreakableVow,
         TimeLordContract,
+        UpkeeperContract,
         getBalance: (target: Contract) => getBalance(target, provider!),
         executeMulticall: (contract: Contract, functions: string[]) => executeMulticall(contract, functions, network!)
     }
@@ -141,6 +148,18 @@ async function getBalance(target: Contract, provider: Provider) {
     return await provider.getBalance(await target.getAddress());
 }
 
+async function getTransactionDate(tx: string, provider: Provider) {
+    const receipt = await provider.getTransactionReceipt(tx);
+
+    if (receipt == null) throw new Error('Invalid Upkeeper Transaction Hash');
+
+    const block = await provider.getBlock(receipt.blockNumber);
+
+    if (block == null) throw new Error('Invalid Upkeeper Transaction Block');
+
+    return block.timestamp;
+}
+
 function makeProviderWithFallback(networkName: Network): Provider {
     const network = RPC_URL_MAP[networkName];
 
@@ -154,7 +173,7 @@ function makeProviderWithFallback(networkName: Network): Provider {
     return new ethers.FallbackProvider(providers, network, { quorum: 1 });
 }
 
-async function getEvents<T>(contract: Contract, eventName: string, indexes: string[], data: string[], fromBlock: number, toBlock?: number) {
+async function getEvents<T>(contract: Contract, eventName: string, indexes: string[], data: string[], fromBlock?: number, toBlock?: number) {
     const filter = contract.filters[eventName](...indexes)!;
 
     const events = (await contract.queryFilter(filter, fromBlock, toBlock) as EmittedEvent[]) || [];

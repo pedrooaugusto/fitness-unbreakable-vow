@@ -211,7 +211,7 @@ section.overview {
         }
 
         & > .subtext {
-            color: #ff4b4e;
+            color: #e1e1e1;
             font-family: Oxygen;
             font-size: 12px;
             font-style: normal;
@@ -507,6 +507,15 @@ footer {
     }
     p + p {
         margin-top: 5px;
+    }
+}
+
+.modal-wrapper .modal .main > .upkeeper-info-modal {
+    h4 {
+        margin: 10px 0px;
+    }
+    p + p {
+        margin-top: 10px;
     }
 }
 

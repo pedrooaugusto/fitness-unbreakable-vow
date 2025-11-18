@@ -8,14 +8,15 @@ import path from 'path';
 import fs from 'fs';
 import { GymVisitEventStruct, RunningEventStruct, SleepEventStruct } from './typechain-types/contracts/PhysicalActivityOracle';
 import { signGymVisitEvent, signRunningEvent, signSleepEvent } from './test/helpers/Stats';
-import { deployContract, FitnessUnbreakableVowUpkeeper, getContract } from './scripts/utils';
+import { deployContract, FitnessUnbreakableVowUpkeeper, getContract, to96BytesString } from './scripts/utils';
 import verify from './scripts/verify-contract';
+import { getTimeSettings, WeekDurations } from './scripts/timing';
 
 // Defaults
-const STAKED_AMOUNT = "0.0001";
+const STAKED_AMOUNT = "0.001";
 const CREATION_DATE = new Date().toISOString();
-const NUMBER_OF_CYLES = "3.2";
-const SECONDS_IN_WEEK = (5 * 60).toString(); // 95min to run android test
+const NUMBER_OF_CYLES = "5";
+const SECONDS_IN_WEEK: WeekDurations = '3-minutes'; // 95min to run android test
 
 dotenv.config();
 
@@ -27,7 +28,6 @@ const ARBITRUM_WALLET_PRIVATE_KEY = process.env['arbitrum.WALLET_PRIVATE_KEY'];
 const ARBITRUM_SEPOLIA_WALLET_PRIVATE_KEY = process.env['arbiSep.WALLET_PRIVATE_KEY'];
 const ETHERSCAN_API_KEY = process.env['ETHERSCAN_API_KEY'];
 const COINMARKETCAP_API_KEY = process.env['GAS_REPORTER.COIN_MARKET_API_KEY'];
-
 
 task('pre:compile')
     .setAction(async(_, { network: { name: networkName } }) => {
@@ -52,15 +52,18 @@ task("compile")
 
 task('TerminateVow', "Terminates the FitnessUnbreakableVow.")
     .setAction(async (taskArgs, hre) => {
-        try {
-            const contract = await getContract(hre, 'FitnessUnbreakableVow');
+        const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+        const contract = await getContract(hre, 'FitnessUnbreakableVow');
 
-            const result = await contract.terminateVow();
+        console.log('Terminating contract.');
+        const terminateTx = await contract.terminateVow();
+        await terminateTx.wait();
 
-            await result.wait();
-        } catch (err) {
-            console.error(err);
-        }
+        console.log('Withdrawing upkeeper link.');
+        await sleep(15_000);
+
+        const withdrawTx = await contract.withdrawUpkeeperFunds();
+        await withdrawTx.wait();
     })
 
 task('PushPhysicalActivityRecord', "Calls contract pushPhysicalActivityRecord function.")
@@ -119,15 +122,11 @@ task('PushPhysicalActivityRecord', "Calls contract pushPhysicalActivityRecord fu
 
 task('EnforceVow', "Enforces the FitnessUnbreakableVow.")
     .setAction(async (taskArgs, hre) => {
-        try {
-            const contract = await getContract(hre, 'FitnessUnbreakableVow');
+        const contract = await getContract(hre, 'FitnessUnbreakableVow');
 
-            const result = await contract.enforceAgreement();
+        const result = await contract.enforceAgreement();
 
-            await result.wait();
-        } catch (err) {
-            console.error(err);
-        }
+        await result.wait();
     })
 
 task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
@@ -135,15 +134,16 @@ task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
     .addParam('secondsinweek', 'Seconds in one week', SECONDS_IN_WEEK)
     .addParam('durationinweeks', 'Agreement duration in weeks', NUMBER_OF_CYLES)
     .setAction(async (taskArgs, hre) => {
-        const creationDate = Math.floor(+new Date(taskArgs['startdate']) / 1000);
-        const secondsInOneWeek = parseInt(taskArgs['secondsinweek']);
-        const numberOfCycles = parseFloat(taskArgs['durationinweeks']);
-        const expirationDate = creationDate + secondsInOneWeek * numberOfCycles;
+        const { startDate, secondsInOneWeek, cronUpkeeperSpec } = getTimeSettings(taskArgs['startdate'], taskArgs['secondsinweek']);
+        const numberOfCycles = parseInt(taskArgs['durationinweeks']);
+        const expirationDate = startDate + secondsInOneWeek * numberOfCycles;
 
-        const { contractAddress: timeLordAddess } = await deployContract(
+        const cronSpec96String = to96BytesString(hre, cronUpkeeperSpec);
+
+        const { contractAddress: timeLordAddess, contract } = await deployContract(
             hre,
             'TheDoctor',
-            async (factory) => await factory.deploy(creationDate, expirationDate, secondsInOneWeek)
+            async (factory) => await factory.deploy(startDate, expirationDate, secondsInOneWeek, ...cronSpec96String)
         );
 
         const { contractAddress } = await deployContract(
@@ -158,7 +158,7 @@ task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
 
         try {
             await verify(network, 'PhysicalActivityOracle', contractAddress, [timeLordAddess]);
-            await verify(network, 'TheDoctor', timeLordAddess, [creationDate, expirationDate, secondsInOneWeek]);
+            await verify(network, 'TheDoctor', timeLordAddess, [startDate, expirationDate, secondsInOneWeek, ...cronSpec96String]);
         } catch (err) {
             console.error('Etherscan verification failed:', err);
         }
@@ -178,9 +178,9 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
 
         const network = hre.network.name;
 
-        if (network === 'localhost') return console.log('Skipping Etherscan verification for local network.');
-
         await FitnessUnbreakableVowUpkeeper.create(contract, await getContract(hre, 'TheDoctor'), hre);
+
+        if (network === 'localhost') return console.log('Skipping Etherscan verification for local network.');
 
         try {
             await verify(network, 'FitnessUnbreakableVow', contractAddress, [oracleAddress]);
@@ -189,19 +189,23 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
         }
     })
 
-task('CancelUpkeeper', "Withdraw upkeeper links")
+task('BuildSchedulerParams', "Gather the necessary params to run a scheduler to save events emitted by the contract.")
     .setAction(async (taskArgs, hre) => {
-        try {
-            const contractAddress = getContractAddress('FitnessUnbreakableVow', hre.network.name);
+        const theDoctor = await getContract(hre, 'TheDoctor');
+        const oracle = await getContract(hre, 'PhysicalActivityOracle');
 
-            const contract = await hre.ethers.getContractAt("FitnessUnbreakableVow", contractAddress);
-            const result2 = await contract.withdrawUpkeeperFunds();
+        const startDate = Number(await theDoctor.CREATION_DATE());
+        const endDate = Number(await theDoctor.EXPIRATION_DATE() + await theDoctor.GRACE_PERIOD());
+        const secondsInOneWeek = Number(await theDoctor.SECONDS_IN_ONE_WEEK()) + 5;
+        const oracleAddress = await oracle.getAddress();
 
-            await result2.wait();
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
+        fs.writeFileSync(
+            path.join(__dirname, 'artifacts', 'scheduler-args.txt'),
+            `RATE="rate(${Math.ceil(secondsInOneWeek / 60)} minutes)"\n` +
+            `START_DATE="${new Date(1000 * (startDate + secondsInOneWeek)).toISOString()}"\n` +
+            `END_DATE="${new Date(1000 * endDate).toISOString()}"\n` +
+            `CONTRACT_ADDRESS="${oracleAddress}"\n`
+        );
     })
 
 const config: HardhatUserConfig = {

@@ -137,7 +137,7 @@ async function createGymVisitEvents(currentTime: number) {
         const eventP = {
             timestamp: currentTime + i * 10,
             avgBpm: randomBetween(100, 160),
-            location: { latitudeNanoDegree: -228969577n, longitudeNanoDegree: -432726589n },
+            location: { latitudeNanoDegree: -260758108n, longitudeNanoDegree: -280636459n },
             maxBpm: randomBetween(86, 190),
             durationInMinutes: randomBetween(30, 80),
             signature: null as any,

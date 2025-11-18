@@ -15,6 +15,21 @@
         "internalType": "uint256",
         "name": "secondsInOneWeek",
         "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "endOfWeekCron1",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "endOfWeekCron2",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "endOfWeekCron3",
+        "type": "bytes32"
       }
     ],
     "stateMutability": "nonpayable",
@@ -28,6 +43,19 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "END_OF_WEEK_CRON",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
       }
     ],
     "stateMutability": "view",

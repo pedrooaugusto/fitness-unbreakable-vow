@@ -221,11 +221,6 @@
         "internalType": "uint256",
         "name": "linkFunding",
         "type": "uint256"
-      },
-      {
-        "internalType": "string",
-        "name": "cronInternalSpec",
-        "type": "string"
       }
     ],
     "name": "configureUpkeeper",
@@ -234,13 +229,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "cronInternalSpec",
-        "type": "string"
-      }
-    ],
+    "inputs": [],
     "name": "createUpkeeper",
     "outputs": [],
     "stateMutability": "nonpayable",

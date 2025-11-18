@@ -8,11 +8,12 @@ export function getContractAddress(contractName: string, network: string) {
     return dotenv.parse(fs.readFileSync(addressesFile, "utf8"))[`${network}.${contractName}`];
 }
 
-export function saveContractAddress(contractName: string, contractAddress: string, network: string) {
+export function saveContractAddress(contractName: string, contractAddress: string, network: string, deploymentTransaction: string) {
     const addressesFile = path.join(__dirname, '..', "contracts", ".addresses");
     const deployedAddresses = dotenv.parse(fs.readFileSync(addressesFile, "utf8"));
 
     deployedAddresses[`${network}.${contractName}`] = contractAddress;
+    deployedAddresses[`${network}.deployment.${contractName}`] = deploymentTransaction;
 
     deployedAddresses['LastUsedNetwork'] = network;
 

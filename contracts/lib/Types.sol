@@ -75,6 +75,14 @@ library Environment {
     function isLocalhost() internal view returns (bool) {
         return block.chainid == 31337;
     }
+
+    function isArbitrumSepolia() internal view returns (bool) {
+        return block.chainid == 421614;
+    }
+
+    function isArbitrum() internal view returns (bool) {
+        return block.chainid == 42161;
+    }
 }
 
 interface Observable {

@@ -1,11 +1,12 @@
 import React from "react";
 import type { ReactElement } from "react";
+import cronParser from "cron-parser";
 import CashIcon from "../../../assets/cash-icon";
 import InfoIcon from "../../../assets/info-icon";
 import CalendarIcon from "../../../assets/calendar-icon";
 import ArticleIcon from "../../../assets/article-icon";
 import LinkIcon from "../../../assets/link-icon";
-import { formatCurrency, formatDate, getAddressBlockExplorerUrl, GIVETH_PAGE_URL, timeRemaining } from "../../utils";
+import { formatCurrency, formatDate, formatTime, getAddressBlockExplorerUrl, GIVETH_PAGE_URL, timeRemaining } from "../../utils";
 import { ContractPhase, WeeklyGoalStatus, type Currency, type GetContractOverviewResponse, type Network, type WeeklyGoal } from "../types";
 import { SectionTitle } from "../../components/SectionTitle";
 import type { WithModalProps } from "../../components/modal";
@@ -16,6 +17,14 @@ interface ContractOverviewSectionProps extends WithModalProps {
     overview: GetContractOverviewResponse;
     currency: Currency;
     changeCurrency: (currency: Currency) => void;
+};
+
+type WeekDurations = '180' | '300' | '172800' | '604800';
+const CronInterval: Record<WeekDurations, number> = {
+    '180':    1 * 60    + 180,
+    '300':    3 * 60    + 300,
+    '172800': 3 * 3600  + 172800,
+    '604800': 4 * 3600  + 604800,
 };
 
 const penaltyWasApplied = (week: WeeklyGoal) =>
@@ -30,6 +39,9 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
     const totalWeeks = Math.floor((overview.expirationDate - overview.startDate) / overview.secondsInAWeek) - 1;
     const enforceFunctionUrl = getAddressBlockExplorerUrl(overview.contractAddress, overview.network) + "#writeContract#F1";
 
+    const upkeepExecutionInterval = CronInterval[String(overview.secondsInAWeek) as unknown as WeekDurations];
+    const nextUpkeeperExecTime = new Date(cronParser.parse(overview.upkeeperCronSpec, { tz: 'UTC' }).next().getTime());
+
     return (
         <section className="overview">
             <div className="content">
@@ -37,7 +49,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                     className="certified"
                     onClick={() => 
                         openModal(
-                            <SecurityModel
+                            <SecurityModelModal
                                 closeModal={closeModal}
                                 publicKey={overview.publicKeyInfo}
                                 network={overview.network}
@@ -167,6 +179,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             />
                             <StatInfoCard
                                 title="Time Until Expiration"
+                                subtext={`Week ${overview.currentWeekNumber} out of ${totalWeeks}`}
                                 value={
                                     overview.contractPhase === ContractPhase.GRACE ? 
                                         <>
@@ -179,9 +192,36 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                                 }
                             />
                             <StatInfoCard
-                                title="Week Info"
-                                value={`Week #${overview.currentWeekNumber}`}
-                                subtext={`Out of ${totalWeeks}`}
+                                title="Automatic Enforcement"
+                                openModal={() => 
+                                    openModal(
+                                        <UpkeeperInfoModal
+                                            closeModal={closeModal}
+                                            network={overview.network}
+                                            secondsInAWeek={overview.secondsInAWeek}
+                                            creationDate={overview.startDate}
+                                            intervalInSeconds={upkeepExecutionInterval}
+                                            upkeeperAddress={overview.upkeeperAddress}
+                                            upkeeperId={overview.upkeeperId}
+                                            upkeeperCronSpec={overview.upkeeperCronSpec}
+                                            enforceVowFunctionUrl={enforceFunctionUrl}
+                                        />,
+                                        'Automatic Enforcement'
+                                    )
+                                }
+                                value={
+                                    overview.contractPhase === ContractPhase.FULLY_EXPIRED ?
+                                        <>
+                                            <span>EXPIRED</span>
+                                        </>
+                                        : nextUpkeeperExecTime == null ?
+                                            <>
+                                                <span>Off</span>
+                                            </> :
+                                            <>
+                                                <LiveTimeCountdown endDate={nextUpkeeperExecTime} />
+                                            </>
+                                }
                             />
                         </div>
                     </div>
@@ -341,7 +381,7 @@ function DonatedToCharityInfoModal(props: ForfeitedInfoModalProps) {
                 <p>
                     This amount reflects the share of fines allocated to the registered beneficiary, <a href={GIVETH_PAGE_URL} target="_blank">Giveth Charity</a>, as a result of enforcement actions under the Agreement.
                     <br /><br />
-                    Whenever the contract is in breach and the <a href={props.enforceVowFunctionUrl} target="_blank">#enforceAgreement</a> function is invoked, a fine of {props.penaltyAmount} is imposed, half of the fine is donated directly to Giveth Charity, with the other half transferred to the enforcing party.
+                    Whenever the contract is in breach and the <a href={props.enforceVowFunctionUrl} target="_blank">#enforceAgreement</a> function is invoked, a fine of <b>{props.penaltyAmount}</b> is imposed, half of the fine is donated directly to Giveth Charity, with the other half transferred to the enforcing party.
                     <br /><br />
                     If enforcement is carried out by the designated <b>Upkeeper</b> — an automated process that executes weekly — the entire fine is donated to Giveth Charity, ensuring full beneficiary allocation in the absence of a manual enforcer.
                 </p>
@@ -399,7 +439,7 @@ type KeyAttestationModalProps = {
     network: Network;
 }
 
-function SecurityModel(props: KeyAttestationModalProps) {
+function SecurityModelModal(props: KeyAttestationModalProps) {
     const ipfsLink = `https://${props.publicKey.attestation.cidFile}.ipfs.w3s.link`;
     const attestationInspector = `https://pedrooaugusto.github.io/android-key-attestation-inspector?attestationFileUrl=${ipfsLink}`;
     const appGithub = 'https://github.com/pedrooaugusto/fitness-unbreakable-vow/tree/main/%40androidapp';
@@ -491,6 +531,79 @@ function SecurityModel(props: KeyAttestationModalProps) {
             </div>
         </div>
     );
+}
+
+type UpkeeperInfoModalProps = {
+    upkeeperId: string;
+    upkeeperAddress: string;
+    upkeeperCronSpec: string;
+    enforceVowFunctionUrl: string;
+    creationDate: number;
+    intervalInSeconds: number;
+    secondsInAWeek: number;
+    network: Network;
+    closeModal: () => void;
+}
+
+function UpkeeperInfoModal(props: UpkeeperInfoModalProps) {
+    const upkeeperChainlink = `https://automation.chain.link/arbitrum${props.network === 'arbiSep' ? '-sepolia' : ''}/${props.upkeeperId}`;
+    const approximatedCronCadence = formatTime(props.intervalInSeconds, ' and ', 'long');
+    const endOfWeekBuffer = formatTime(props.intervalInSeconds - props.secondsInAWeek, ' and ', 'long');
+    const blockExplorerUrl = getAddressBlockExplorerUrl(props.upkeeperAddress, props.network);
+
+    return (
+        <div className="main">
+            <div className="upkeeper-info-modal">
+                <p>
+                    The <b>Automatic Enforcement</b> system is powered by a Chainlink Automation Upkeep
+                    fully owned and configured by the <b>Fitness Unbreakable Vow</b> contract itself.
+                    Once registered, the pledger cannot pause, modify, or disable it.
+                </p>
+
+                <p>
+                    The Upkeeper exists primarily as a <b>final safeguard</b>. In normal circumstances, any
+                    missed Weekly Goal is enforced by external callers who receive a reward for doing so.
+                    However, in the unlikely event that <i>no one</i> triggers enforcement, the Upkeeper ensures
+                    the Agreement cannot be bypassed by simply remaining inactive.
+                </p>
+
+                <p>
+                    <b>Roughly every {approximatedCronCadence}</b>, the Upkeeper autonomously calls the{' '}
+                    <a href={props.enforceVowFunctionUrl} target="_blank">#enforceAgreement</a> function. This call 
+                    is intentionally scheduled to occur <b> about {endOfWeekBuffer} after each Weekly Cycle ends</b>, 
+                    giving anyone ample time to manually enforce the agreement and claim the enforcement reward before automation takes over.
+                </p>
+
+                <p>
+                    When enforcement is executed by the Upkeeper (i.e., before any external address calls it),
+                    <b> 100% of any resulting fine is sent directly to Giveth Charity</b>. Because automation
+                    does not have a “caller,” no share of the fine is distributed — the Upkeeper’s only role
+                    is to uphold the Agreement in edge cases and protect the integrity of the vow.
+                </p>
+
+                <p>
+                    <b>Upkeeper Address:</b>{' '}
+                    <a href={blockExplorerUrl} target="_blank" rel="noopener noreferrer">
+                        {props.upkeeperAddress}
+                    </a>
+                    <br />
+
+                    <b>Upkeeper Chainlink ID:</b>{' '}
+                    <a href={upkeeperChainlink} target="_blank" rel="noopener noreferrer">
+                        View on Chainlink Automation
+                    </a>
+                    <br />
+
+                    <b>Upkeeper Cron Expression (UTC):</b> {props.upkeeperCronSpec}
+                </p>
+            </div>
+            <div className="actions">
+                <button className="close-button" onClick={props.closeModal}>
+                    Close
+                </button>
+            </div>
+        </div>
+    );    
 }
 
 function calculatePenalties(allWeeks: GetContractOverviewResponse["allWeeks"], penaltyAmount: number) {

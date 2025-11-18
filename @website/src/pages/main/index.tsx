@@ -59,6 +59,8 @@ const MainPage = WithModal(function(props) {
 
     if (!convertedOverview) return <Loading />;
 
+    const version = convertedOverview.version.split('/').at(-1) as string;
+
     return (
         <div className="page main-page">
             <header className="main-header">
@@ -89,8 +91,8 @@ const MainPage = WithModal(function(props) {
             />
             <footer>
                 <span>
-                    <a href="https://github.com/pedrooaugusto/fitness-unbreakable-vow/commit/322dcb1622dd45f874ec2ca76a23812470ec3c12">
-                        v0.0.1 (Copacabana)
+                    <a href={convertedOverview.version}>
+                        {version.startsWith('v') ? version : version.substring(0, 7)} (Copacabana)
                     </a>
                 </span>
                 <span>1 por amor, 2 por <b>dinheiro ♬</b></span>

@@ -20,6 +20,7 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         contractPhase,
         gracePeriod,
         secondsInAWeek,
+        upkeeperCronSpec,
     ] = await executeMulticall(TimeLordContract, [
         'CREATION_DATE',
         'EXPIRATION_DATE',
@@ -27,6 +28,7 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         'getContractPhase',
         'GRACE_PERIOD',
         'SECONDS_IN_ONE_WEEK',
+        'END_OF_WEEK_CRON'
     ])
 
     const [
@@ -35,20 +37,24 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         penaltyAmount,
         allWeeksRaw,
         upkeeperAddress,
+        upkeeperId,
         gymVisitsGoal,
         healthySleepNightsGoal,
         runningSessionsGoal,
         requiredNumberOfCompletedGoals,
+        version,
     ] = await executeMulticall(FitnessUnbreakableVow, [
         "PHYSICAL_ACTIVITY_ORACLE",
         "STAKED_AMOUNT",
         "PENALTY_AMOUNT",
         "getAllWeeklyGoalsRecords",
         "CHAINLINK_UPKEEPER_ADDRESS",
+        "CHAINLINK_UPKEEPER_ID",
         "GYM_VISITS_GOAL",
         "HEALTHY_SLEEP_NIGHTS_GOAL",
         "RUNNING_SESSIONS_GOAL",
         "REQUIRED_NUMBER_OF_COMPLETED_GOALS",
+        "VERSION"
     ]);
 
     const [
@@ -82,6 +88,8 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         currentWeekPhysicalActivityStats,
         allWeeks,
         upkeeperAddress,
+        upkeeperCronSpec: upkeeperCronSpec,
+        upkeeperId: upkeeperId,
         isContractExpired: Number(contractPhase) != 0,
         contractPhase: Number(contractPhase) as ContractPhaseType,
         gracePeriod: Number(gracePeriod),
@@ -93,6 +101,7 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         requiredNumberOfCompletedGoals: Number(requiredNumberOfCompletedGoals),
         sleepValidator,
         runningValidator,
+        version,
         gymVisitValidator,
         publicKeyInfo: {
             x: publicKey.x,

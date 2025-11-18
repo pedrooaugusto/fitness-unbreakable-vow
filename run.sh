@@ -68,6 +68,10 @@ case "$1" in
         echo "Copying new addresses to webapp and android app"
         cp contracts/.addresses @website/public/addresses
         cp contracts/.addresses @androidapp/app/.addresses
+
+        echo "Generating event saver scheduler args"
+        npx hardhat BuildSchedulerParams --network "$network"
+
         echo "Done."
         ;;
     enforce)
@@ -82,8 +86,6 @@ case "$1" in
     terminate)
         echo "Terminating vow"
         npx hardhat --network $2 TerminateVow
-        sleep 10
-        npx hardhat --network $2 CancelUpkeeper
         echo "Done."
         ;;
     deploy-webapp)

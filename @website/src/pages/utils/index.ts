@@ -22,17 +22,22 @@ export function timeRemaining(secondsToExpire: number) {
     return formatTime(secondsToExpire, " ");
 }
 
-export function formatTime(secondsToExpire: number, separator = " ") {
+export function formatTime(secondsToExpire: number, separator = " ", mode: 'short' | 'long' = 'short') {
     const days = Math.floor(secondsToExpire / (60 * 60 * 24));
     const hours = Math.floor((secondsToExpire % (60 * 60 * 24)) / (60 * 60));
     const minutes = Math.floor((secondsToExpire % (60 * 60)) / 60);
     const seconds = Math.floor(secondsToExpire % 60);
 
+    const units = {
+        long: [' days', ' hours', ' minutes', ' seconds'],
+        short: ['d', 'h', 'm', 's']
+    };
+
     const result = [];
-    if (days > 0) result.push(`${days}d`);
-    if (hours > 0) result.push(`${hours}h`);
-    if (minutes > 0) result.push(`${minutes}m`);
-    if (seconds > 0) result.push(`${seconds}s`);
+    if (days > 0) result.push(`${days}${units[mode][0]}`);
+    if (hours > 0) result.push(`${hours}${units[mode][1]}`);
+    if (minutes > 0) result.push(`${minutes}${units[mode][2]}`);
+    if (seconds > 0) result.push(`${seconds}${units[mode][3]}`);
 
     if (result.length === 0) return '0 minutes';
 
@@ -83,5 +88,3 @@ export function getWeekStardAndEndDate(contractStartDate: number, currentWeekNum
 }
 
 export const GIVETH_PAGE_URL = 'https://giveth.io/project/Giveth-Matching-Pool-0?tab=donations'
-
-export const API_HOST = `${location.protocol}//${location.hostname}:3000/api`;
