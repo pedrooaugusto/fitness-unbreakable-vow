@@ -46,6 +46,7 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
 
     TimeLord public immutable TIME_LORD;
     Listener public ORACLE_UPDATE_LISTENER;
+    uint8 private lastEntryWeekNumber;
 
     constructor(TimeLord timeLordAddress) {
         TIME_LORD = timeLordAddress;
@@ -61,6 +62,11 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
         ORACLE_UPDATE_LISTENER.onPhysicalActivityStatsUpdate(currentWeekIndex, physicalActivityStats[currentWeekIndex]);
 
         emit PhysicalActivityStatsUpdate(currentWeekIndex, physicalActivityStats[currentWeekIndex]);
+    }
+
+    function reset() external onlyTxOriginIsOwner {
+        clear(lastEntryWeekNumber);
+        lastEntryWeekNumber = 0;
     }
 
     function registerPhysicalActivityStatsUpdateListener(address listener) external {
@@ -92,6 +98,7 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
 
             if(insertRunningEvent(eventos[i], eventHash, eventWeekIndex)) {
                 RunningEventFunctions.emitProcessedEvent(eventos[i], eventWeekIndex);
+                lastEntryWeekNumber = eventWeekIndex;
             }
         }
     }
@@ -108,6 +115,7 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
 
             if(insertSleepEvent(eventos[i], eventHash, eventWeekIndex)) {
                 SleepEventFunctions.emitProcessedEvent(eventos[i], eventWeekIndex);
+                lastEntryWeekNumber = eventWeekIndex;
             }
         }
     }
@@ -124,6 +132,7 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
 
             if(insertGymVisitEvent(eventos[i], eventHash, eventWeekIndex)) {
                 GymVisitEventFunctions.emitProcessedEvent(eventos[i], eventWeekIndex);
+                lastEntryWeekNumber = eventWeekIndex;
             }
         }
     }

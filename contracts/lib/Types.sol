@@ -93,4 +93,8 @@ interface Listener {
     function onPhysicalActivityStatsUpdate(uint8 weekIndex, PhysicalActivityStats calldata record) external;
 }
 
-interface OracleInterface is TimeBound, Observable, SignatureVerifier {}
+interface Resetable {
+    function reset() external;
+}
+
+interface OracleInterface is TimeBound, Observable, SignatureVerifier, Resetable {}

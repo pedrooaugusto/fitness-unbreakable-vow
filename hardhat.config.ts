@@ -13,10 +13,10 @@ import verify from './scripts/verify-contract';
 import { getTimeSettings, WeekDurations } from './scripts/timing';
 
 // Defaults
-const STAKED_AMOUNT = "0.0001";
+const STAKED_AMOUNT = "0.01";
 const CREATION_DATE = new Date().toISOString();
-const NUMBER_OF_CYLES = "8";
-const SECONDS_IN_WEEK: WeekDurations = '2-days'; // 95min to run android test
+const NUMBER_OF_CYLES = "10";
+const SECONDS_IN_WEEK: WeekDurations = '5-minutes'; // 95min to run android test
 
 dotenv.config();
 
@@ -208,11 +208,31 @@ task('BuildSchedulerParams', "Gather the necessary params to run a scheduler to 
         );
     })
 
+
+task('ResetSandbox', "Used to reset the sandbox deployed in arbitrum sepolia.")
+    .addParam('startdate', 'Agreement start date', CREATION_DATE)
+    .addParam('secondsinweek', 'Seconds in one week', SECONDS_IN_WEEK)
+    .addParam('durationinweeks', 'Agreement duration in weeks', NUMBER_OF_CYLES)
+    .setAction(async (taskArgs, hre) => {
+        const { startDate, secondsInOneWeek, cronUpkeeperSpec } = getTimeSettings(taskArgs['startdate'], taskArgs['secondsinweek']);
+        const numberOfCycles = parseInt(taskArgs['durationinweeks']);
+        const expirationDate = startDate + secondsInOneWeek * numberOfCycles;
+
+        const contract = await getContract(hre, 'FitnessUnbreakableVow');
+
+        const tx = await contract.reset(startDate, expirationDate);
+        await tx.wait();
+    })
+
 const config: HardhatUserConfig = {
     solidity: {
         version: "0.8.28",
         settings: {
             viaIR: true,
+            /*optimizer: {
+                enabled: true,
+                runs: 1, // <--- Set this to 1 (or a low number like 10 or 50)
+            },*/
         }
     },
     defaultNetwork: "hardhat",

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { TimeLord, ContractPhase } from './lib/timelord/Types.sol';
+import { Ownable } from './lib/Ownable.sol';
 
 function min256(uint256 a, uint256 b) pure returns (uint256) { return a > b ? b : a; }
 
@@ -9,21 +10,21 @@ function min256(uint256 a, uint256 b) pure returns (uint256) { return a > b ? b 
 /// @author A TV Company.
 /// @notice The laws of time are his to make it!
 /// @dev https://www.youtube.com/watch?v=wXrqtC81ztA
-contract TheDoctor is TimeLord {
+contract TheDoctor is TimeLord, Ownable {
     /// @notice Number of seconds that define one week for the schedule.
     uint256 public immutable SECONDS_IN_ONE_WEEK;
     /// @notice Unix timestamp (seconds) when the contract was created
     /// and the schedule starts.
-    uint256 public immutable CREATION_DATE;
+    uint256 public CREATION_DATE;
     /// @notice Unix timestamp (seconds) when the active phase ends
     /// and the grace period begins.
-    uint256 public immutable EXPIRATION_DATE;
+    uint256 public EXPIRATION_DATE;
+    /// @notice Total number of whole weeks in the active phase
+    /// (from creation until `EXPIRATION_DATE`).
+    uint8 public NUMBER_OF_WEEKS;
     /// @notice Length of the grace period (in seconds) after
     /// `EXPIRATION_DATE` before the contract is fully expired.
     uint256 public immutable GRACE_PERIOD;
-    /// @notice Total number of whole weeks in the active phase
-    /// (from creation until `EXPIRATION_DATE`).
-    uint8 public immutable NUMBER_OF_WEEKS;
     /// @dev Avoiding storage
     bytes32 immutable private END_OF_WEEK_CRON_P1;
     bytes32 immutable private END_OF_WEEK_CRON_P2;
@@ -45,6 +46,12 @@ contract TheDoctor is TimeLord {
         END_OF_WEEK_CRON_P1 = endOfWeekCronP1;
         END_OF_WEEK_CRON_P2 = endOfWeekCronP2;
         END_OF_WEEK_CRON_P3 = endOfWeekCronP3;
+    }
+
+    function reset(uint256 creationDate, uint256 expirationDate) external onlyTxOriginIsOwner {
+        NUMBER_OF_WEEKS = uint8((expirationDate - creationDate) / SECONDS_IN_ONE_WEEK);
+        CREATION_DATE = creationDate;
+        EXPIRATION_DATE = creationDate + NUMBER_OF_WEEKS * SECONDS_IN_ONE_WEEK;
     }
 
     function isContractActive() public view returns (bool) {

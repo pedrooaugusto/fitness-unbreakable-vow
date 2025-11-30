@@ -14,7 +14,6 @@ abstract contract PhysicalActivityListable {
     mapping(uint8 => PhysicalActivityStats) public physicalActivityStats;
     mapping(bytes32 => bool) public processedEvents;
 
-
     function insertRunningEvent(RunningEvent calldata evento, bytes32 eventId, uint8 weekNumber) internal returns (bool) {
         if (processedEvents[eventId]) return false;
 
@@ -35,6 +34,12 @@ abstract contract PhysicalActivityListable {
         physicalActivityStats[weekNumber].timestamp = evento.timestamp;
 
         return true;
+    }
+
+    function clear(uint8 lastEntry) internal {
+        for (uint8 weekNumber = 0; weekNumber <= lastEntry; weekNumber++) {
+            delete physicalActivityStats[weekNumber];
+        }
     }
 
     function insertGymVisitEvent(GymVisitEvent calldata evento, bytes32 eventId, uint8 weekNumber) internal returns (bool) {

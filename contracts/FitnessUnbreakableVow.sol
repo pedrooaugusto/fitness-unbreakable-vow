@@ -30,26 +30,27 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
      * @dev Giveth Charity Wallet.
      * @dev https://giveth.io/project/Giveth-Matching-Pool-0
      */
-    address public constant GIVETH_WALLET_ADDRESS = 0x6e8873085530406995170Da467010565968C7C62;
+    address public GIVETH_WALLET_ADDRESS;
 
     /**
      * @notice The total amount of funds staked in this contract at deployment.
      * @dev This value is set during contract construction and represents the initial funds received.
      */
-    uint256 public immutable STAKED_AMOUNT;
+    uint256 public STAKED_AMOUNT;
 
     /**
      * @notice The penalty amount deducted for each failed week.
      * @dev Calculated at contract deployment based on the total staked amount and contract duration.
      * This value remains constant throughout the contract's lifetime.
      */
-    uint256 public immutable PENALTY_AMOUNT;
+    uint256 public PENALTY_AMOUNT;
 
     constructor(
         OracleInterface physicalActivityOracleAddress
     ) payable WeeklyGoalListable(physicalActivityOracleAddress.TIME_LORD()) {
         PHYSICAL_ACTIVITY_ORACLE = physicalActivityOracleAddress;
         TIME_LORD = PHYSICAL_ACTIVITY_ORACLE.TIME_LORD();
+        GIVETH_WALLET_ADDRESS = msg.sender;
         STAKED_AMOUNT = msg.value;
         PENALTY_AMOUNT = STAKED_AMOUNT / ((TIME_LORD.EXPIRATION_DATE() - TIME_LORD.CREATION_DATE()) / TIME_LORD.SECONDS_IN_ONE_WEEK());
 
@@ -82,7 +83,8 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
      */
     function terminateAgreement(bool withdrawUpkeeperFunds2) external onlyOwner {
         // Allow vow termination if public keys weren't registered.
-        require(isPublicKeyNotSet() || TIME_LORD.isContractFullyExpired(), "Contract has not expired yet.");
+        // can be terminated at any time in sandbox
+        // require(isPublicKeyNotSet() || TIME_LORD.isContractFullyExpired(), "Contract has not expired yet.");
 
         if (withdrawUpkeeperFunds2) {
             _withdrawUpkeeperFunds();
@@ -109,6 +111,16 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
         require(address(CHAINLINK_UPKEEPER_ADDRESS) == address(0), "Upkeeper already set.");
 
         _configureUpkeeper(upkeeper, linkFunding, TIME_LORD.END_OF_WEEK_CRON());
+    }
+
+    function reset(uint256 creationDate, uint256 expirationDate) external onlyOwner {
+        require(address(this).balance > 0.00001 ether, "No enough funds to reset.");
+
+        TIME_LORD.reset(creationDate, expirationDate);
+        PHYSICAL_ACTIVITY_ORACLE.reset();
+
+        STAKED_AMOUNT = address(this).balance;
+        PENALTY_AMOUNT = STAKED_AMOUNT / ((TIME_LORD.EXPIRATION_DATE() - TIME_LORD.CREATION_DATE()) / TIME_LORD.SECONDS_IN_ONE_WEEK());        
     }
 
     /** 

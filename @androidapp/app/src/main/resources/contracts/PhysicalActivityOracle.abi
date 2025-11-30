@@ -911,6 +911,13 @@
   },
   {
     "inputs": [],
+    "name": "reset",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "runningValidator",
     "outputs": [
       {

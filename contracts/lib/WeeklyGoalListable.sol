@@ -106,6 +106,14 @@ abstract contract WeeklyGoalListable {
         }
     }
 
+    function clearWeeks() internal {
+        for (uint8 i = 0; i <= weeklyGoalsRecordsLastEntryKey; i++) {
+            delete weeklyGoalsRecords[i];
+        }
+
+        weeklyGoalsRecordsLastEntryKey = 0;
+    }
+
     function listAllWeeks() internal view returns (WeeklyGoal[] memory) {
         uint8 currentWeekIndex = TIME_LORD.getCurrentWeekIndex();
         ContractPhase phase = TIME_LORD.getContractPhase();

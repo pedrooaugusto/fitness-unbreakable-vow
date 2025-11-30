@@ -16,4 +16,9 @@ abstract contract Ownable {
         require(msg.sender == owner, "Ownable: caller is not the owner");
         _;
     }
+
+    modifier onlyTxOriginIsOwner() {
+        require(tx.origin == owner, "Ownable: tx origin is not the owner");
+        _;
+    }
 }

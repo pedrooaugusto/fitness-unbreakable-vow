@@ -22,6 +22,7 @@ interface TimeLord {
     /// every weekly term use this cron expression.
     function END_OF_WEEK_CRON() external view returns(string memory);
 
+    function reset(uint256 creationDate, uint256 expirationDate) external;
     function isContractActive() external view returns (bool);
     function isContractInGracePeriod() external view returns (bool);
     function isContractFullyExpired() external view returns (bool);

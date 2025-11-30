@@ -79,6 +79,11 @@ case "$1" in
         npx hardhat --network $2 EnforceVow
         echo "Done."
         ;;
+    reset)
+        echo "Reseting sandbox vow..."
+        npx hardhat --network $2 ResetSandbox
+        echo "Done."
+        ;;
     push-record)
         echo "Adding Physical Activity Record"
         npx hardhat --network "$2" PushPhysicalActivityRecord "${@:3}"
