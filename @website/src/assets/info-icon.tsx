@@ -1,7 +1,7 @@
-export default function InfoIcon(props: { width?: string; height?: string; color?: string }) {
+export default function InfoIcon(props: { width?: string; height?: string; color?: string; pulsating?: boolean }) {
     const { width = "14", height = "14" } = props;
 
-    return (
+    const icon = (
         <svg
             xmlns="http://www.w3.org/2000/svg"
             width="14"
@@ -14,5 +14,13 @@ export default function InfoIcon(props: { width?: string; height?: string; color
                 fill={props.color || "#F06543"}
             />
         </svg>
+    );
+
+    if (!props.pulsating) return icon;
+
+    return (
+        <span className="grab-attention small" style={{ display: 'block',  width: props.width || 14 + 'px', height: props.height || 14 + 'px' }}>
+            {icon}
+        </span>
     );
 }

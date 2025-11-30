@@ -26,10 +26,10 @@ export type EtherscanResponse<T> = {
     result: T;
 };
 
-export async function getEvents(contractAddress: string, previousWeekIndex: number, fromBlock: number, toBlock: number): Promise<LogEntry[]> {
+export async function getEvents(contractAddress: string, network: string, previousWeekIndex: number, fromBlock: number, toBlock: number): Promise<LogEntry[]> {
     const base = requireEnv('ETHERSCAN_URL');
     const apiKey = requireEnv('ETHERSCAN_API_KEY');
-    const chainId = NetworkChainIdMap[(requireEnv('NETWORK'))].toString();
+    const chainId = NetworkChainIdMap[network].toString();
 
     const url = new URL(base);
     url.searchParams.set('module', 'logs');
@@ -56,10 +56,10 @@ export async function getEvents(contractAddress: string, previousWeekIndex: numb
     return payload.result;
 }
 
-export async function getBlockNumber(timestampSeconds: number): Promise<number> {
+export async function getBlockNumber(timestampSeconds: number, network: string): Promise<number> {
     const base = requireEnv('ETHERSCAN_URL');
     const apiKey = requireEnv('ETHERSCAN_API_KEY');
-    const chainId = NetworkChainIdMap[(requireEnv('NETWORK'))].toString();
+    const chainId = NetworkChainIdMap[network].toString();
 
     const url = new URL(base);
     url.searchParams.set('module', 'block');

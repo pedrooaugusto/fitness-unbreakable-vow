@@ -144,23 +144,15 @@ export class FitnessUnbreakableVowUpkeeper {
     private static cronCreatedEventId = 'NewCronUpkeepCreated(address,address)';
     private static cronCreatedEventDefinition = 'event NewCronUpkeepCreated(address upkeep, address owner)';
 
-    static async create(contract: FitnessUnbreakableVow, theDoctor: Contracts.TheDoctor, hre: HardhatRuntimeEnvironment) {
-        if (hre.network.name === 'localhost') {
-            saveContractAddress('Upkeeper', await contract.getAddress(), hre.network.name, contract.deploymentTransaction()?.hash!!);
-
-            return;
-        }
-
-        const createTransaction = await contract.createUpkeeper();
-        const upkeepAddress = FitnessUnbreakableVowUpkeeper.getUpkeepAddress(await createTransaction.wait());
+    static async create(contract: FitnessUnbreakableVow, hre: HardhatRuntimeEnvironment) {
+        const deployTransaction = await contract.deploymentTransaction()?.wait()!!;
+        const upkeepAddress = FitnessUnbreakableVowUpkeeper.getUpkeepAddress(deployTransaction);
 
         const initialFunding = hre.ethers.parseUnits('0.15', 18);
         await FitnessUnbreakableVowUpkeeper.fundUpkeepWithLink(contract, initialFunding, hre);
 
         const configTransaction = await contract.configureUpkeeper(upkeepAddress, initialFunding);
         await configTransaction.wait();
-
-        saveContractAddress('Upkeeper', upkeepAddress, hre.network.name, configTransaction.hash);
     }
 
     private static getUpkeepAddress(transaction: ContractTransactionReceipt | null) {

@@ -91,6 +91,9 @@ class GymVisitGeofenceEventReceiver : BroadcastReceiver() {
 
         try {
             val visit = gymVisitTracker.finishVisit(timestamp)
+
+            if (!visit.isValid) return
+
             val duration = Duration.between(visit.startTime, visit.endTime)
 
             notificationService.showGeofenceNotification("${gym.id} gym visit ended. Visit duration time: ${duration.toMinutes()}min", context)

@@ -1,0 +1,64 @@
+import { formatCurrency, getAddressBlockExplorerUrl, GIVETH_PAGE_URL } from "../../utils";
+import type { Currency, GetContractOverviewResponse } from "../types";
+
+type IntroModalProps = {
+    contractOverview: GetContractOverviewResponse;
+    currency: Currency;
+    closeModal: () => void;
+}
+
+export function IntroModal(props: IntroModalProps) {
+    const ov = props.contractOverview;
+
+    const stake = formatCurrency(ov.initialStakedAmount, props.currency);
+    const fine = formatCurrency(ov.penaltyAmount, props.currency);
+    const weeks = Math.round((ov.expirationDate - ov.startDate) / ov.secondsInAWeek);
+    const contractUrl = getAddressBlockExplorerUrl(ov.contractAddress, ov.network);
+    const oracleUrl = getAddressBlockExplorerUrl(ov.oracleAddress, ov.network);
+    const enforceFunctionUrl = getAddressBlockExplorerUrl(ov.contractAddress, ov.network) + "#writeContract#F1";
+    const appGithub = 'https://github.com/pedrooaugusto/fitness-unbreakable-vow/tree/main/%40androidapp';
+    const EL = ({ l, c }: {l: string, c: string }) => <a href={l} target="_blank">{c}</a>;
+
+    return (
+        <div className="main">
+            <div className="upkeeper-info-modal">
+                <p>
+                    FitVow is a {weeks}-week fitness commitment enforced by a smart contract on the
+                    Arbitrum network (Ethereum L2). At the start, the pledger locked <b>{stake}</b>{' '}
+                    on-chain as a stake, which is held in escrow by the contract until the challenge ends <EL l={contractUrl} c="[1]" />.
+                </p>
+
+                <p>
+                    On the pledger&apos;s Android phone, the <EL l={appGithub} c="FitVow-Sync app" /> collects physical activity data
+                    (runs, sleep, and gym visits) published by a SmartWatch, signs it using hardware-backed keys, and sends it on-chain
+                    to the <EL l={oracleUrl} c="Physical Activity Oracle" /> smart contract. The Oracle validates these signed
+                    records and forwards the verified results to the <EL l={contractUrl} c="Fitness Unbreakable Vow" /> smart contract.
+                </p>
+
+                <p>
+                    When enforcement is triggered for a given week, the Vow contract checks whether that
+                    week&apos;s fitness goals were met. If not, it automatically deducts a <b>{fine}</b> fine from
+                    the stake and splits it between whoever called the{' '}
+                    <EL l={enforceFunctionUrl} c="#enforceAgreement()" /> function and a registered charity wallet <EL l={GIVETH_PAGE_URL} c="(Giveth)" />. If this
+                    dashboard shows a week marked as failed but not yet enforced, anyone can call this
+                    function on-chain — either directly from this page with a connected wallet (e.g. MetaMask)
+                    or using any other compatible Arbitrum tool — to claim the enforcer share.
+                </p>
+                
+                <p>
+                    This page is a public dashboard for this agreement. It shows how much is still staked, 
+                    which weeks passed or failed, how much has already been donated or forfeited, and any 
+                    failed weeks that are still open for enforcement. Everything here comes 
+                    directly from the blockchain, so the entire challenge remains transparent, verifiable, and 
+                    tamper-resistant.
+                </p>
+            </div>
+
+            <div className="actions">
+                <button className="close-button" onClick={props.closeModal}>
+                    Close
+                </button>
+            </div>
+        </div>
+    );
+}

@@ -54,6 +54,10 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
         PENALTY_AMOUNT = STAKED_AMOUNT / ((TIME_LORD.EXPIRATION_DATE() - TIME_LORD.CREATION_DATE()) / TIME_LORD.SECONDS_IN_ONE_WEEK());
 
         PHYSICAL_ACTIVITY_ORACLE.registerPhysicalActivityStatsUpdateListener(address(this));
+
+        if (Environment.isLocalhost()) return;
+
+        _createUpkeeper(TIME_LORD.END_OF_WEEK_CRON());
     }
 
     /**
@@ -76,12 +80,15 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
      * @notice Transfers all remaining contract funds to the owner after contract (vow) has expired.
      * Can only be called after the contract has expired and by the contract's owner.
      */
-    function terminateVow() external onlyOwner {
+    function terminateAgreement(bool withdrawUpkeeperFunds2) external onlyOwner {
         // Allow vow termination if public keys weren't registered.
         require(isPublicKeyNotSet() || TIME_LORD.isContractFullyExpired(), "Contract has not expired yet.");
 
-        // Allow if pub key was not set yet.
-        console.log("[FitnessUnbreakableVow] Terminating vow");
+        if (withdrawUpkeeperFunds2) {
+            _withdrawUpkeeperFunds();
+
+            return;
+        }
 
         uint256 balance = address(this).balance;
 
@@ -98,23 +105,10 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
         putWeek(weekIndex, buildWeeklyGoalFrom(stats));
     }
 
-    function createUpkeeper() external onlyOwner {
-        require(address(CHAINLINK_UPKEEPER_ADDRESS) == address(0), "Upkeeper already set.");
-
-        _createUpkeeper(TIME_LORD.END_OF_WEEK_CRON());
-    }
-
     function configureUpkeeper(address upkeeper, uint256 linkFunding) external onlyOwner {
         require(address(CHAINLINK_UPKEEPER_ADDRESS) == address(0), "Upkeeper already set.");
 
         _configureUpkeeper(upkeeper, linkFunding, TIME_LORD.END_OF_WEEK_CRON());
-    }
-
-    function withdrawUpkeeperFunds() external onlyOwner {
-        // Allow vow termination if public keys weren't registered.
-        require(isPublicKeyNotSet() || TIME_LORD.isContractFullyExpired(), "Contract has not expired yet.");
-
-        _withdrawUpkeeperFunds();
     }
 
     /** 
@@ -128,7 +122,7 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
     receive() external payable {}
 
     function applyPenaltyForWeek(uint8 weekIndex) private {
-        weeklyGoalsRecords[weekIndex].penaltyBlock = getCurrentBlockNumber();
+        weeklyGoalsRecords[weekIndex].penaltyBlock = getTransactionBlock();
 
         uint256 penaltyAmount = calculatePenaltyAmount();
 
@@ -160,7 +154,7 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
         return !PHYSICAL_ACTIVITY_ORACLE.isPublicKeySet();
     }
 
-    function getCurrentBlockNumber() private view returns (uint256) {
+    function getTransactionBlock() private view returns (uint256) {
         if (Environment.isLocalhost()) return block.number;
 
         return ArbSys(address(100)).arbBlockNumber();

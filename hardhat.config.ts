@@ -13,10 +13,10 @@ import verify from './scripts/verify-contract';
 import { getTimeSettings, WeekDurations } from './scripts/timing';
 
 // Defaults
-const STAKED_AMOUNT = "0.001";
+const STAKED_AMOUNT = "0.0001";
 const CREATION_DATE = new Date().toISOString();
-const NUMBER_OF_CYLES = "5";
-const SECONDS_IN_WEEK: WeekDurations = '3-minutes'; // 95min to run android test
+const NUMBER_OF_CYLES = "8";
+const SECONDS_IN_WEEK: WeekDurations = '2-days'; // 95min to run android test
 
 dotenv.config();
 
@@ -56,13 +56,13 @@ task('TerminateVow', "Terminates the FitnessUnbreakableVow.")
         const contract = await getContract(hre, 'FitnessUnbreakableVow');
 
         console.log('Terminating contract.');
-        const terminateTx = await contract.terminateVow();
+        const terminateTx = await contract.terminateAgreement(false);
         await terminateTx.wait();
 
         console.log('Withdrawing upkeeper link.');
         await sleep(15_000);
 
-        const withdrawTx = await contract.withdrawUpkeeperFunds();
+        const withdrawTx = await contract.terminateAgreement(true);
         await withdrawTx.wait();
     })
 
@@ -178,9 +178,9 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
 
         const network = hre.network.name;
 
-        await FitnessUnbreakableVowUpkeeper.create(contract, await getContract(hre, 'TheDoctor'), hre);
-
         if (network === 'localhost') return console.log('Skipping Etherscan verification for local network.');
+
+        await FitnessUnbreakableVowUpkeeper.create(contract, hre);
 
         try {
             await verify(network, 'FitnessUnbreakableVow', contractAddress, [oracleAddress]);

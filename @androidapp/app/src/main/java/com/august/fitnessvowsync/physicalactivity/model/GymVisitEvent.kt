@@ -10,6 +10,7 @@ data class GymVisitEvent(
     val durationInMinutes: Int,
     val avgBpm: Int,
     val maxBpm: Int,
+    val gymLocationId: String,
     override var syncDetails: SyncDetails? = null,
 ): PhysicalActivityEvent(timestamp, syncDetails) {
     data class Location(val latitudeNanoDegree: Long, val longitudeNanoDegree: Long) {

@@ -15,6 +15,6 @@ class MyApplication: Application() {
             .builder()
             .applicationModule(ApplicationModule(this))
             .build()
-        Log.d("FitnessVow - Sync", "App started!")
+        Log.d("FitVow - Sync", "App started!")
     }
 }

@@ -24,6 +24,8 @@ class InterPlanetaryFileSystemService @Inject constructor(private val settings: 
     private fun uploadToPinata(file: ByteArray): String {
         val pinataApiToken = settings.getPinataApiToken() ?: error("Pinata API Token Not Set.")
 
+        if (pinataApiToken == "test") return "cid"
+
         val client = OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)

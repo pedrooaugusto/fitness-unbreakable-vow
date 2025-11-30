@@ -71,6 +71,7 @@ class PhysicalActivityEventRepositoryLoadTest {
                 durationInMinutes = 30 + (i % 45),
                 avgBpm = 105 + (i % 40),
                 maxBpm = 150 + (i % 30),
+                "GYM#1",
                 syncDetails = null
             )
         }

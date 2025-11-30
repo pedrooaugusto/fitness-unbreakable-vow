@@ -27,7 +27,7 @@ export default function LiveTimeCountdown({ endDate, className }: LiveTimeCountd
 
         updateCountdown();
 
-        const intervalId = window.setInterval(updateCountdown, 1000);
+        const intervalId = window.setInterval(updateCountdown, 2000);
 
         return () => window.clearInterval(intervalId);
     }, [endDate]);

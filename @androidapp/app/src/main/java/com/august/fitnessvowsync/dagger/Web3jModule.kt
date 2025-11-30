@@ -21,11 +21,11 @@ class Web3jModule {
     @Provides
     @Singleton
     fun provideFitnessUnbreakableVow(contractSettings: SettingsService): ContractProvider<FitnessUnbreakableVow> {
-        return ContractProvider(contractSettings) { walletKey, rpcEndpoint ->
-            val web3j = provideWeb3j(rpcEndpoint)
+        return ContractProvider(contractSettings) { web3Settings ->
+            val web3j = provideWeb3j(web3Settings.rpcEndpoint)
             val contractAddress = BuildConfig.FITNESS_UNBREAKABLE_VOW_ADDRESS
-            val credentials = Credentials.create(walletKey)
-            val contractGasProvider = createGasProvider(web3j)
+            val credentials = Credentials.create(web3Settings.credentials)
+            val contractGasProvider = createGasProvider(web3j, web3Settings.gasPriceMarkUp, web3Settings.gasLimit)
 
             FitnessUnbreakableVow.load(contractAddress, web3j, credentials, contractGasProvider)
         }
@@ -34,11 +34,11 @@ class Web3jModule {
     @Provides
     @Singleton
     fun providePhysicalActivityOracle(contractSettings: SettingsService): ContractProvider<PhysicalActivityOracle> {
-        return ContractProvider(contractSettings) { walletKey, rpcEndpoint ->
-            val web3j = provideWeb3j(rpcEndpoint)
+        return ContractProvider(contractSettings) { web3Settings ->
+            val web3j = provideWeb3j(web3Settings.rpcEndpoint)
             val contractAddress = contractSettings.getPhysicalActivityRecordOracleAddress()
-            val credentials = Credentials.create(walletKey)
-            val contractGasProvider = createGasProvider(web3j)
+            val credentials = Credentials.create(web3Settings.credentials)
+            val contractGasProvider = createGasProvider(web3j, web3Settings.gasPriceMarkUp, web3Settings.gasLimit)
 
             PhysicalActivityOracle.load(contractAddress, web3j, credentials, contractGasProvider)
         }
@@ -47,11 +47,11 @@ class Web3jModule {
     @Provides
     @Singleton
     fun provideTimeLord(contractSettings: SettingsService, oracle: ContractProvider<PhysicalActivityOracle>): ContractProvider<TheDoctor> {
-        return ContractProvider(contractSettings) { walletKey, rpcEndpoint ->
-            val web3j = provideWeb3j(rpcEndpoint)
+        return ContractProvider(contractSettings) { web3Settings ->
+            val web3j = provideWeb3j(web3Settings.rpcEndpoint)
             val contractAddress = oracle.get().TIME_LORD().send()!!
-            val credentials = Credentials.create(walletKey)
-            val contractGasProvider = createGasProvider(web3j)
+            val credentials = Credentials.create(web3Settings.credentials)
+            val contractGasProvider = createGasProvider(web3j, web3Settings.gasPriceMarkUp, web3Settings.gasLimit)
 
             TheDoctor.load(contractAddress, web3j, credentials, contractGasProvider)
         }
@@ -64,13 +64,12 @@ class Web3jModule {
         return BuildConfig.NETWORK;
     }
 
-    private fun createGasProvider(web3j: Web3j): StaticGasProvider {
-        // +10%
+    private fun createGasProvider(web3j: Web3j, gasPriceMarkup: Long, gasLimit: Long): StaticGasProvider {
         val gasPrice = web3j.ethGasPrice().send().gasPrice
-            .multiply(BigInteger.valueOf(110))
+            .multiply(BigInteger.valueOf(gasPriceMarkup))
             .divide(BigInteger.valueOf(100))
 
-        return StaticGasProvider(gasPrice, BigInteger.valueOf(30_000_000))
+        return StaticGasProvider(gasPrice, BigInteger.valueOf(gasLimit))
     }
 
     private fun provideWeb3j(rpcEndpoint: String): Web3j {

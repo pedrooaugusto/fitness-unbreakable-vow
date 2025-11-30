@@ -33,18 +33,18 @@ contract TheDoctor is TimeLord {
         uint256 creationDate,
         uint256 expirationDate,
         uint256 secondsInOneWeek,
-        bytes32 endOfWeekCron1,
-        bytes32 endOfWeekCron2,
-        bytes32 endOfWeekCron3
+        bytes32 endOfWeekCronP1,
+        bytes32 endOfWeekCronP2,
+        bytes32 endOfWeekCronP3
     ) {
         SECONDS_IN_ONE_WEEK = secondsInOneWeek;
         GRACE_PERIOD = min256(uint256(secondsInOneWeek / 5), 3600);
         NUMBER_OF_WEEKS = uint8((expirationDate - creationDate) / SECONDS_IN_ONE_WEEK);
         CREATION_DATE = creationDate;
         EXPIRATION_DATE = creationDate + NUMBER_OF_WEEKS * SECONDS_IN_ONE_WEEK; // Force multiple of
-        END_OF_WEEK_CRON_P1 = endOfWeekCron1;
-        END_OF_WEEK_CRON_P2 = endOfWeekCron2;
-        END_OF_WEEK_CRON_P3 = endOfWeekCron3;
+        END_OF_WEEK_CRON_P1 = endOfWeekCronP1;
+        END_OF_WEEK_CRON_P2 = endOfWeekCronP2;
+        END_OF_WEEK_CRON_P3 = endOfWeekCronP3;
     }
 
     function isContractActive() public view returns (bool) {

@@ -13,10 +13,14 @@ interface SettingsService {
     fun getPhysicalActivityRecordOracleAddress(): String
     fun getNetwork(): String
     fun getRpcEndpoint(): String?
+    fun getGasLimit(): Long
+    fun getGasPriceMarkUp(): Long
     fun saveRpcEndpoint(rpcEndpoint: String)
     fun getAppFormattedPublicKey(): String?
     fun getPinataApiToken(): String?
     fun savePinataApiToken(token: String)
+    fun saveGasLimit(limit: Long)
+    fun saveGasPriceMarkUp(markup: Long)
 
     class SettingsServiceImpl @Inject constructor(
         private val encryptedPreferences: SharedPreferences,
@@ -27,6 +31,8 @@ interface SettingsService {
             const val WALLET_PRIVATE_KEY_PREF_KEY = "WALLET_PRIVATE_KEY_PREF_KEY"
             const val RPC_ENDPOINT_PREF_KEY = "RPC_ENDPOINT_PREF_KEY"
             const val PINATA_API_TOKEN = "PINATA_API_TOKEN"
+            const val GAS_LIMIT = "GAS_LIMIT"
+            const val GAS_PRICE_MARKUP = "GAS_PRICE_MARKUP"
         }
 
         // Account that will be used to interact with any contracts deployed in the blockchain.
@@ -64,6 +70,14 @@ interface SettingsService {
             return encryptedPreferences.getString(RPC_ENDPOINT_PREF_KEY, null)
         }
 
+        override fun getGasLimit(): Long {
+            return encryptedPreferences.getLong(GAS_LIMIT, 3_000_000)
+        }
+
+        override fun getGasPriceMarkUp(): Long {
+            return encryptedPreferences.getLong(GAS_PRICE_MARKUP, 150)
+        }
+
         override fun getAppFormattedPublicKey(): String? {
             return try {
                 signatureMapper
@@ -83,6 +97,24 @@ interface SettingsService {
 
             with(encryptedPreferences.edit()) {
                 putString(PINATA_API_TOKEN, token)
+                apply()
+            }
+        }
+
+        override fun saveGasLimit(limit: Long) {
+            Log.i("FitVow - Sync", "Saving gas limit: $limit")
+
+            with(encryptedPreferences.edit()) {
+                putLong(GAS_LIMIT, limit)
+                apply()
+            }
+        }
+
+        override fun saveGasPriceMarkUp(markup: Long) {
+            Log.i("FitVow - Sync", "Saving gas price markup: $markup")
+
+            with(encryptedPreferences.edit()) {
+                putLong(GAS_PRICE_MARKUP, markup)
                 apply()
             }
         }
@@ -121,8 +153,24 @@ interface SettingsService {
             error("mock")
         }
 
+        override fun saveGasLimit(limit: Long) {
+            error("mock")
+        }
+
+        override fun saveGasPriceMarkUp(markup: Long) {
+            error("mock")
+        }
+
         override fun getRpcEndpoint(): String? {
             return "https://arb1.io"
+        }
+
+        override fun getGasLimit(): Long {
+            return 3_000_000
+        }
+
+        override fun getGasPriceMarkUp(): Long {
+            return 150
         }
 
         override fun saveRpcEndpoint(rpcEndpoint: String) {}

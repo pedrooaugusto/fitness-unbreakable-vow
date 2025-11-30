@@ -8,7 +8,7 @@ import { requireEnv } from './helpers';
 dotenv.config();
 
 export const handler: ScheduledHandler = async (event: any, context) => {
-    const { timeLord, physicalActivityOracleAddress } = await loadContracts(event?.contractAddress);
+    const { timeLord, physicalActivityOracleAddress, network } = await loadContracts(event?.contractAddress, event?.network);
 
     const currentWeekIndex = event?.currentWeekIndex || Number(await timeLord.getCurrentWeekIndex());
     const previousWeek = currentWeekIndex - 1;
@@ -28,12 +28,12 @@ export const handler: ScheduledHandler = async (event: any, context) => {
 
     console.log(`[INFO] Retrieving block numbers for timestamps: ${weekStart} and ${weekEnd}`);
 
-    const weekStartBlockNumber = await getBlockNumber(weekStart);
-    const weekEndBlockNumber = await getBlockNumber(weekEnd);
+    const weekStartBlockNumber = await getBlockNumber(weekStart, network);
+    const weekEndBlockNumber = await getBlockNumber(weekEnd, network);
 
     console.log(`[INFO] Querying events between blocks ${weekStartBlockNumber} and ${weekEndBlockNumber}`);
 
-    const events = await getEvents(physicalActivityOracleAddress, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
+    const events = await getEvents(physicalActivityOracleAddress, network, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
 
     console.log('[INFO] Trying to parse '+ events.length +' events returned by Etherscan.' );
 
@@ -61,6 +61,3 @@ async function saveToS3(body: string, key: string) {
 
     await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: 'application/json' }));
 }
-
-
-handler({ contractAddress: '0xe57bA78A124638a436D55B87aAc2F3318f9d360C' } as any, {} as any, () => {});

@@ -120,8 +120,8 @@ class PhysicalActivityEventPublisherTest {
         val runEnd = runStart.plusSeconds(600)
         healthConnectTestHelper.insertRunningSession(runStart, runEnd, distanceMeters = 3000.0, avgBpm = 120)
 
-        val sleepStart = base.plusSeconds(1200)
-        val sleepEnd = sleepStart.plusSeconds(1800)
+        val sleepStart = base.plusSeconds(3600 * 3)
+        val sleepEnd = sleepStart.plusSeconds(3600 * 8)
         healthConnectTestHelper.insertSleepSession(sleepStart, sleepEnd, avgBpm = 60)
 
         val gymStart = base.plusSeconds(3600)
@@ -140,6 +140,10 @@ class PhysicalActivityEventPublisherTest {
         val run = repository.getRunningSessions().firstOrNull { it.timestamp.epochSecond == ts.runStart.epochSecond }
         val sleep = repository.getSleepSessions().firstOrNull { it.timestamp.epochSecond == ts.sleepStart.epochSecond }
         val gym = repository.getGymVisitSessions().firstOrNull { it.timestamp.epochSecond == ts.gymStart.epochSecond }
+
+        println("Repository events, sleep: ${repository.getSleepSessions()}")
+        println("Repository events, running: ${repository.getRunningSessions()}")
+        println("Repository events, gym: ${repository.getGymVisitSessions()}")
 
         org.junit.Assert.assertNotNull("Running event not found", run)
         org.junit.Assert.assertNotNull("Sleep event not found", sleep)
@@ -166,7 +170,7 @@ class PhysicalActivityEventPublisherTest {
 
     private fun initSettings(settings: SettingsService): SettingsService {
         settings.saveRpcEndpoint("http://192.168.0.105:8545")
-        settings.savePinataApiToken("")
+        settings.savePinataApiToken("test")
         // Hardhat development private key, no issues
         settings.saveClientAccountPrivateKey("")
 

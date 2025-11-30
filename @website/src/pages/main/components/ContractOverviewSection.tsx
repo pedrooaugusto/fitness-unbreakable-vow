@@ -12,6 +12,8 @@ import { SectionTitle } from "../../components/SectionTitle";
 import type { WithModalProps } from "../../components/modal";
 import LiveTimeCountdown from "./LiveTimeCountdown";
 import FileCertificateIcon from "../../../assets/file-certificate-icon";
+import QuestionMarkIcon from "../../../assets/question-mark-icon";
+import { IntroModal } from "./IntroModal";
 
 interface ContractOverviewSectionProps extends WithModalProps {
     overview: GetContractOverviewResponse;
@@ -38,16 +40,21 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
     const currentBalancePercentText = `${currentBalancePercent > 0 ? '+' : ''}${currentBalancePercent.toFixed(1)}%`;
     const totalWeeks = Math.floor((overview.expirationDate - overview.startDate) / overview.secondsInAWeek) - 1;
     const enforceFunctionUrl = getAddressBlockExplorerUrl(overview.contractAddress, overview.network) + "#writeContract#F1";
+    const contractBlockExplorerUrl = getAddressBlockExplorerUrl(overview.contractAddress, overview.network);
 
     const upkeepExecutionInterval = CronInterval[String(overview.secondsInAWeek) as unknown as WeekDurations];
     const nextUpkeeperExecTime = new Date(cronParser.parse(overview.upkeeperCronSpec, { tz: 'UTC' }).next().getTime());
+
+    const openSecurityModalCountKey = `${overview.network}.security-modal-open-count`;
+    const openSecurityModalCount = Number(localStorage.getItem(openSecurityModalCountKey) || '0');
 
     return (
         <section className="overview">
             <div className="content">
                 <div
-                    className="certified"
-                    onClick={() => 
+                    className={`detached-fab certified-button ${openSecurityModalCount ? '' : 'grab-attention'}`}
+                    onClick={() => {
+                        localStorage.setItem(openSecurityModalCountKey, (openSecurityModalCount + 1).toString());
                         openModal(
                             <SecurityModelModal
                                 closeModal={closeModal}
@@ -57,7 +64,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             />,
                             'Off-chain Security Model'
                         )
-                    }
+                    }}
                 >
                     <FileCertificateIcon />
                 </div>
@@ -66,10 +73,8 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                     text="Contract Details"
                     subtext={
                         <>
-                            This dashboard reflects the <b>Fitness Unbreakable Vow</b>, a binding three-month commitment to 
-                            well-being and good habits, secured by a financial stake. Breach of Weekly Goals 
-                            results in Fines, deducted from the contract balance and distributed to third parties 
-                            ensuring accountability and incentivizing the Pledger's adherence.
+                            This page tracks the state of the <a href={contractBlockExplorerUrl} target="_blank">FitVow Smart Contract</a>, a {totalWeeks + 1}-week commitment to fitness and wellbeing, 
+                            secured by locked funds, where physical activity data is verified on-chain and missed weekly goals trigger automatic fines.
                         </>
                     }
                 />
@@ -90,6 +95,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             <StatInfoCard
                                 title="Initial Stake"
                                 value={formatCurrency(overview.initialStakedAmount, currency)}
+                                network={overview.network}
                                 openModal={() => 
                                     openModal(
                                         <InitialStakeInfoModal
@@ -104,6 +110,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             <StatInfoCard
                                 title="Funds Remaining"
                                 transaction="gain"
+                                network={overview.network}
                                 value={
                                     <>
                                         {formatCurrency(overview.currentBalance, currency)}{" "}
@@ -120,6 +127,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             <StatInfoCard
                                 title="Forfeited to Enforcers"
                                 value={formatCurrency(givenToStrangers, currency)}
+                                network={overview.network}
                                 transaction="loss"
                                 subtext={`For ${numberOfPenalties} fines`}
                                 openModal={() => 
@@ -136,6 +144,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             <StatInfoCard
                                 title="Donated to Charity"
                                 value={formatCurrency(givenToCharity, currency)}
+                                network={overview.network}
                                 transaction="loss"
                                 subtext={`For ${numberOfPenalties} fines`}
                                 openModal={() => 
@@ -159,6 +168,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                         <div className="stat-info-cards">
                             <StatInfoCard
                                 title="Start Date"
+                                network={overview.network}
                                 value={formatDate(overview.startDate)}
                                 openModal={() => 
                                     openModal(
@@ -169,6 +179,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             />
                             <StatInfoCard
                                 title="End Date"
+                                network={overview.network}
                                 value={formatDate(overview.expirationDate)}
                                 openModal={() => 
                                     openModal(
@@ -179,6 +190,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             />
                             <StatInfoCard
                                 title="Time Until Expiration"
+                                network={overview.network}
                                 subtext={`Week ${overview.currentWeekNumber} out of ${totalWeeks}`}
                                 value={
                                     overview.contractPhase === ContractPhase.GRACE ? 
@@ -192,6 +204,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                                 }
                             />
                             <StatInfoCard
+                                network={overview.network}
                                 title="Automatic Enforcement"
                                 openModal={() => 
                                     openModal(
@@ -227,11 +240,26 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                     </div>
                 </div>
                 <div className="links">
+                    <div
+                        className={`detached-fab intro-button`}
+                        onClick={() => 
+                            openModal(
+                                <IntroModal
+                                    closeModal={closeModal}
+                                    contractOverview={overview}
+                                    currency={currency}
+                                />,
+                                'Welcome to FitVow!'
+                            )
+                        }
+                    >
+                        <QuestionMarkIcon />
+                    </div>
                     <SectionTitle icon={<LinkIcon />} text="Useful Links" />
                     <div className="list">
                         <Link
                             icon={<ArticleIcon />}
-                            title={<>What is this project?</>}
+                            title={<>What is this project? <small>(Article)</small></>}
                             url="#hello"
                         />
                         <Link
@@ -248,7 +276,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             title={
                                 <>
                                     Fitness Unbreakable Vow{" "}
-                                    <small>(contract)</small>
+                                    <small>(smart contract)</small>
                                 </>
                             }
                             url={getAddressBlockExplorerUrl(overview.contractAddress, overview.network)}
@@ -258,7 +286,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             title={
                                 <>
                                     Physical Activity Oracle{" "}
-                                    <small>(contract)</small>
+                                    <small>(smart contract)</small>
                                 </>
                             }
                             url={getAddressBlockExplorerUrl(overview.oracleAddress, overview.network)}
@@ -278,19 +306,35 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
 const StatInfoCard = (props: {
     title: string;
     value: string | ReactElement;
+    network: Network;
     subtext?: string;
     transaction?: "loss" | "gain";
     openModal?: () => void;
-}) => (
-    <div className={`stat-info-card ${props.transaction || ""}`} onClick={props.openModal}>
-        <p className="title">
-            {props.title}
-            {props.openModal && <InfoIcon color="#a3a3a3" />}
-        </p>
-        <p className="value">{props.value}</p>
-        {props.subtext && <p className="subtext">{props.subtext}</p>}
-    </div>
-);
+}) => {
+    const statCardClickCountKey = `${props.network}.stat-card-click-count`;
+    const statCardClickCount = Number(localStorage.getItem(statCardClickCountKey) || '0');
+
+    const openModal = () => {
+        if (props.openModal == null) return;
+
+        const newCount = Number(localStorage.getItem(statCardClickCountKey) || '0') + 1;
+
+        localStorage.setItem(statCardClickCountKey, newCount.toString());
+
+        props.openModal?.();
+    }
+
+    return (
+        <div className={`stat-info-card ${props.transaction || ""}`} onClick={openModal}>
+            <p className="title">
+                {props.title}
+                {props.openModal && <InfoIcon color="#d9d9d9" pulsating={statCardClickCount === 0} />}
+            </p>
+            <p className="value">{props.value}</p>
+            {props.subtext && <p className="subtext">{props.subtext}</p>}
+        </div>
+    )
+};
 
 const Link = (props: { icon: ReactElement; title: ReactElement; url: string }) => (
     <a href={props.url} target="_blank" rel="noopener noreferrer">
@@ -310,7 +354,7 @@ function InitialStakeInfoModal(props: InitialStakeInfoModalProps) {
         <div className="main">
             <div className="weekly-goal-modal">
                 <p>
-                    The Initial Stake is the amount of cryptocurrency locked into the contract by the <b>Pledger (<i>P.S.</i>)</b> at the commencement of the vow. This sum <b>({props.initialStake})</b> is held in escrow on-chain as collateral for the Fitness Unbreakable Vow.
+                    The Initial Stake is the amount of cryptocurrency locked into the contract by the Pledger <b>(P.A)</b> at the commencement of the vow. This sum <b>({props.initialStake})</b> is held in escrow on-chain as collateral for the Fitness Unbreakable Vow.
                     <br /><br />
                     In the event of breach, fines may be imposed and collected by any party through invocation of the <a href={props.enforceVowFunctionUrl} target="_blank">#enforceAgreement</a> function on the smart contract. Such fines reduce the remaining balance, with forfeited amounts distributed in equal measure to the enforcing party (You) and the registered beneficiary (<a href={GIVETH_PAGE_URL} target="_blank">Giveth Charity</a>).
                     <br /><br />
@@ -331,7 +375,7 @@ function FundsRemainingInfoModal(props: { closeModal: () => void; }) {
         <div className="main">
             <div className="weekly-goal-modal">
                 <p>
-                    The Funds Remaining represent the portion of the Initial Stake still held in escrow on-chain on behalf of the <b>Pledger <i>(P.S.)</i></b> This balance reflects the Initial Stake minus any fines imposed for breaches of weekly obligations.
+                    The Funds Remaining represent the portion of the Initial Stake still held in escrow on-chain on behalf of the <b>Pledger</b> This balance reflects the Initial Stake minus any fines imposed for breaches of weekly obligations.
                     <br /><br />
                     At any point during the contract term, this amount serves as collateral, securing the Pledger's ongoing commitment.
                     <br /><br />
@@ -400,7 +444,7 @@ function StartDateInfoModal(props: { closeModal: () => void; }) {
         <div className="main">
             <div className="weekly-goal-modal">
                 <p>
-                    The Start Date marks the formal commencement of the Agreement. From this point onward, the <b>Pledger <i>(P.S.)</i></b> is bound by the obligations set forth in the vow, secured by the Initial Stake held in escrow on-chain.
+                    The Start Date marks the formal commencement of the Agreement. From this point onward, the <b>Pledger</b> is bound by the obligations set forth in the vow, secured by the Initial Stake held in escrow on-chain.
                     <br /><br />
                     All performance and enforcement actions are measured from the Start Date. Weekly obligations are counted forward from this date, and any breaches occurring thereafter may be subject to fines through invocation of the enforceAgreement function.                </p>
             </div>
@@ -420,7 +464,7 @@ function EndDateInfoModal(props: { closeModal: () => void; gracePeriod: string})
                 <p>
                     The End Date marks the formal termination of the Agreement. From this point forward, no new physical activity data may be submitted. However, during the subsequent grace period of <b>{props.gracePeriod}</b>, outstanding breaches may still be enforced through the contract.
                     <br /><br />
-                    Upon expiration of the grace period, the Agreement is considered fully concluded. All remaining funds in escrow are released back to the Pledger (P.S.), after deduction of any fines previously imposed. Once the grace period has elapsed, no further actions or claims may be brought under its terms.
+                    Upon expiration of the grace period, the Agreement is considered fully concluded. All remaining funds in escrow are released back to the Pledger, after deduction of any fines previously imposed. Once the grace period has elapsed, no further actions or claims may be brought under its terms.
                 </p>
             </div>
             <div className="actions">
@@ -583,7 +627,7 @@ function UpkeeperInfoModal(props: UpkeeperInfoModalProps) {
 
                 <p>
                     <b>Upkeeper Address:</b>{' '}
-                    <a href={blockExplorerUrl} target="_blank" rel="noopener noreferrer">
+                    <a href={blockExplorerUrl} target="_blank" rel="noopener noreferrer" style={{ wordBreak: 'break-all' }}>
                         {props.upkeeperAddress}
                     </a>
                     <br />
@@ -594,7 +638,7 @@ function UpkeeperInfoModal(props: UpkeeperInfoModalProps) {
                     </a>
                     <br />
 
-                    <b>Upkeeper Cron Expression (UTC):</b> {props.upkeeperCronSpec}
+                    <b>Upkeeper Cron Expression (UTC):</b> <span style={{ wordBreak: 'break-all' }}>{props.upkeeperCronSpec}</span>
                 </p>
             </div>
             <div className="actions">

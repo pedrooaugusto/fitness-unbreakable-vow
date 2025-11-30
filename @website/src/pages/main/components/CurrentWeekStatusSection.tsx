@@ -10,7 +10,7 @@ import CalendarIcon from "../../../assets/calendar-icon";
 import CheckCircleIcon from "../../../assets/check-circle-icon";
 import XIcon from "../../../assets/x-circle-icon";
 import { SectionTitle } from "../../components/SectionTitle";
-import { ContractPhase, type GetContractOverviewResponse, type GymVisitEventValidator, type RunningEventValidator, type SleepEventValidator } from "../types";
+import { ContractPhase, type GetContractOverviewResponse, type GymVisitEventValidator, type Network, type RunningEventValidator, type SleepEventValidator } from "../types";
 import type { WithModalProps } from "../../components/modal";
 import LiveTimeCountdown from "./LiveTimeCountdown";
 import InfoIcon from "../../../assets/info-icon";
@@ -47,6 +47,8 @@ export default function CurrentWeekStatusSection({
         currentWeekGoals.sleptWellGoalMet,
     ].filter(Boolean).length;
 
+    const completedGoalsReq = overview.requiredNumberOfCompletedGoals;
+
     const totalPenaltyAmount = formatCurrency(overview.penaltyAmount, currency);
     const enforceFunUrl = getAddressBlockExplorerUrl(overview.contractAddress, overview.network) + "#writeContract#F1";
 
@@ -55,22 +57,13 @@ export default function CurrentWeekStatusSection({
             <div className="content">
                 <SectionTitle
                     icon={<CalendarIcon />}
-                    text="Current Week Status"
+                    text="Current Weekly Goals Status"
                     subtext={
                         <>
-                            Failure to satisfy the required number (<b>{overview.requiredNumberOfCompletedGoals}</b>) of Weekly Goals
-                            within the Weekly Term shall render the Pledger liable
-                            for a Fine of {totalPenaltyAmount}, to be deducted from the contract
-                            balance and distributed between the enforcing party (You) and the Giveth Charity. 
-                            Such enforcement may be executed by invoking the{' '}
-                            <a
-                                style={{ color: "#f06543" }}
-                                href={enforceFunUrl}
-                                target="_blank"
-                            >
-                                <code>#enforceAgreement</code>
-                            </a>
-                            {' '}function of the contract.
+                            Each week, at least <b>{completedGoalsReq} of the 3</b> goals below must be satisfied. 
+                            Failure to do so makes the Pledger liable for a <b>{totalPenaltyAmount} fine</b>, deducted from this contract and 
+                            distributed between the enforcer (anyone) and the <a href={GIVETH_PAGE_URL} target="_blank">Giveth Charity</a> via the{' '}
+                            <a href={enforceFunUrl} target="_blank">#enforceAgreement</a>{' '} function on the smart contract.
                         </>
                     }
                 />
@@ -85,6 +78,7 @@ export default function CurrentWeekStatusSection({
                             </>
                         }
                         legend={<>total distance: {totalDistanceRan}km</>}
+                        network={overview.network}
                         onClick={() =>
                             openModal(
                                 <RunningSessionsGoalModal
@@ -101,6 +95,7 @@ export default function CurrentWeekStatusSection({
                         }
                     />
                     <WeeklyGoal
+                        network={overview.network}
                         met={currentWeekGoals.sleptWellGoalMet}
                         mainTitle={
                             <>
@@ -125,6 +120,7 @@ export default function CurrentWeekStatusSection({
                         }
                     />
                     <WeeklyGoal
+                        network={overview.network}
                         met={currentWeekGoals.gymVisitsGoalMet}
                         mainTitle={
                             <>
@@ -149,7 +145,8 @@ export default function CurrentWeekStatusSection({
                     />
                 </div>
                 <div className="week-status">
-                    Overall Status:{" "}{currentWeekGoalsMet >= overview.requiredNumberOfCompletedGoals ? "Success" : "Failed"} (Goals Met: {currentWeekGoalsMet}/{overview.requiredNumberOfCompletedGoals})
+                    {currentWeekGoalsMet >= overview.requiredNumberOfCompletedGoals ? "Success" : "Failed"}{' • '}
+                    {currentWeekGoalsMet} out of {overview.requiredNumberOfCompletedGoals} goals met
                 </div>
             </div>
         </section>
@@ -160,14 +157,28 @@ function WeeklyGoal(props: {
     met: boolean;
     mainTitle: ReactElement;
     legend: ReactElement;
+    network: Network;
     onClick?: () => void;
 }) {
+    const clickCountKey = `${props.network}.weekly-goals-click-count`;
+    const clickCount = Number(localStorage.getItem(clickCountKey) || '0');
+
+    const onClick = () => {
+        if (props.onClick == null) return;
+
+        const newCount = Number(localStorage.getItem(clickCountKey) || '0') + 1;
+
+        localStorage.setItem(clickCountKey, newCount.toString());
+
+        props.onClick?.();
+    }
+
     return (
         <div
             className={`weekly-goal ${props.met ? "met" : "not-met"}`}
-            onClick={props.onClick}
+            onClick={onClick}
         >
-            <span><InfoIcon color="#fff" /></span>
+            <span><InfoIcon color="#fff" pulsating={clickCount === 0}/></span>
             {props.met ? <CheckCircleIcon /> : <XIcon />}
             <div className="main">{props.mainTitle}</div>
             <div className="legend">{props.legend}</div>
@@ -181,6 +192,7 @@ function CurrentWeekInformation({ overview }: { overview: GetContractOverviewRes
         startDate,
         secondsInAWeek,
         contractPhase,
+        requiredNumberOfCompletedGoals: goalsReq,
     } = overview;
 
     const currentWeekStartDate = startDate + currentWeekNumber * secondsInAWeek;
@@ -188,9 +200,9 @@ function CurrentWeekInformation({ overview }: { overview: GetContractOverviewRes
 
     const weekDurationInfo = (
         <>
-            Week #{currentWeekNumber} goes from{" "}
-            {formatDate(currentWeekStartDate, null)} to{" "}
-            {formatDate(currentWeekEndDate, null)}.
+            Week #{currentWeekNumber} • {' '}
+            {formatDate(currentWeekStartDate, null)} ➡ {' '}
+            {formatDate(currentWeekEndDate, null)}: {' '}
         </>
     );
 
@@ -214,9 +226,8 @@ function CurrentWeekInformation({ overview }: { overview: GetContractOverviewRes
 
     return (
         <div className="week-information">
-            {weekDurationInfo} Calling <code>#enforceAgreement</code> in{" "}
-            {timeRemainingFormatted} will result in a penalty if goals are not
-            met until there.
+            {weekDurationInfo} If {goalsReq} of the weekly goals below are not met, calling #enforceAgreement in{' '}
+            {timeRemainingFormatted} will result in fines.
         </div>
     );
 }
@@ -240,7 +251,7 @@ function RunningSessionsGoalModal(props: GoalModalProps) {
             <GoalDetails
                 requirement={
                     <>
-                        Within each seven-day period (“Weekly Term”), the Pledger (<em style={{ fontFamily: "cursive" }}>P.S</em>) shall complete{" "}
+                        Within each seven-day period (“Weekly Term”), the Pledger shall complete{" "}
                         <strong> at least {props.requiredValue} Running Sessions.</strong>
                     </>
                 }
@@ -291,7 +302,7 @@ function SleepGoalModal(props: GoalModalProps) {
             <GoalDetails
                 requirement={
                     <>
-                        Within each seven-day period (“Weekly Term”), the Pledger (<em style={{ fontFamily: "cursive" }}>P.S</em>) shall achieve{" "}
+                        Within each seven-day period (“Weekly Term”), the Pledger shall achieve{" "}
                         <strong>at least {props.requiredValue} separate nights of {requiredSleepDuration} or more hours of sleep</strong>.
                     </>
                 }
@@ -344,7 +355,7 @@ function GymVisitsGoalModal(props: GoalModalProps) {
             <GoalDetails
                 requirement={
                     <>
-                        Within each seven-day period (“Weekly Term”), the Pledger (<em style={{ fontFamily: "cursive" }}>P.S</em>) shall complete{" "}
+                        Within each seven-day period (“Weekly Term”), the Pledger shall complete{" "}
                         <strong>at least {props.requiredValue} verified gym visits</strong>.
                     </>
                 }

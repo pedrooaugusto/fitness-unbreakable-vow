@@ -1,6 +1,6 @@
 import "./style.css";
 import AppLogo from "../../assets/logo-icon.svg";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { getContractOverview } from "./api/contract-overview";
 import { ContractPhase, type Currency, type GetContractOverviewResponse } from "./types";
 import ContractOverviewSection from "./components/ContractOverviewSection";
@@ -9,11 +9,12 @@ import { PastWeeksSection } from "./components/PastWeeksSection";
 import CurrentWeekStatusSection from "./components/CurrentWeekStatusSection";
 import { getWeekStardAndEndDate } from "../utils";
 import { convert } from "./api/convert-currency";
+import { IntroModal } from "./components/IntroModal";
 
 const MainPage = WithModal(function(props) {
     const [overview, setOverview] = useState<GetContractOverviewResponse | null>(null);
     const [convertedOverview, setConvertedOverview] = useState<GetContractOverviewResponse | null>(null);
-    const [currency, setCurrency] = useState<Currency>("usd");
+    const [currency, setCurrency] = useState<Currency>('usd');
     const [fetchDataError, setFetchDataError] = useState<string | null>();
 
     const fetchContractData = useCallback(() => {
@@ -24,7 +25,7 @@ const MainPage = WithModal(function(props) {
             })
             .catch(err => {
                 setFetchDataError((err || '').toString());
-                console.error('Error fetchin data: ', err);
+                console.error('Error fetching contract data: ', err);
             })
     }, []);
 
@@ -53,7 +54,29 @@ const MainPage = WithModal(function(props) {
         const timeoutId = window.setTimeout(fetchContractData, refreshPageTimeout + 4000);
 
         return () => window.clearTimeout(timeoutId);
-    }, [overview, fetchContractData])
+    }, [overview, fetchContractData]);
+
+    useEffect(() => {
+        if (convertedOverview == null) return;
+        
+        const firstVisitKey = `${convertedOverview.network}.firstVisit`;
+        const firstVisit = (localStorage.getItem(firstVisitKey) || 'true') === 'true';
+
+        if (firstVisit) {
+            localStorage.setItem(firstVisitKey, 'false');
+
+            props.openModal(
+                <IntroModal
+                    closeModal={props.closeModal}
+                    contractOverview={convertedOverview}
+                    currency={currency}
+                />,
+                'Welcome to FitVow!'
+            )
+        }
+    }, [convertedOverview]);
+
+    console.log('ui');
 
     if (fetchDataError) return <Loading error={fetchDataError} />;
 

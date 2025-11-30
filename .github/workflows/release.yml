@@ -91,8 +91,8 @@ jobs:
         working-directory: '@website'
         run: npm run build
 
-  deploy-contract-sepolia:
-    name: Deploy Contracts (Sepolia)
+  deploy-contract:
+    name: Deploy Contracts (Arbitrum)
     needs: 
       - test-contract
       - test-frontend
@@ -143,7 +143,7 @@ jobs:
 
   update-scheduler:
     name: Update Scheduler
-    needs: deploy-contract-sepolia
+    needs: deploy-contract
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -166,6 +166,7 @@ jobs:
           SCHEDULER="save-contract-events"
           LAMBDA_ARN="${{ secrets.SAVE_EVENTS_LAMBDA_ARN }}"
           SCHEDULER_ROLE="${{ secrets.SCHEDULER_ROLE }}"
+          NETWORK="${{ inputs.network }}"
 
           aws scheduler update-schedule \
             --name "$SCHEDULER" \
@@ -177,7 +178,7 @@ jobs:
             --target '{
               "Arn": "'"$LAMBDA_ARN"'",
               "RoleArn": "'"$SCHEDULER_ROLE"'",
-              "Input": "{\"contractAddress\":\"'"$CONTRACT_ADDRESS"'\"}"
+              "Input": "{\"contractAddress\":\"'"$CONTRACT_ADDRESS"'\",\"network\":\"'"$NETWORK"'\"}"
             }'
 
   deploy-webapp:

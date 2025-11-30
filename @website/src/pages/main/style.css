@@ -29,6 +29,12 @@ header {
         font-style: italic;
         font-weight: 500;
         text-align: center;
+
+        @media (max-width: 390px) {
+            & {
+                font-size: 16px;
+            }
+        }
     }
 }
 
@@ -65,6 +71,10 @@ section {
                 font-weight: 400;
                 line-height: normal;
                 margin-top: 5px;
+                a {
+                    color: rgb(240, 101, 67);
+                    text-decoration: none;
+                }
             }
         }
     }
@@ -76,14 +86,12 @@ section.overview {
     .content {
         position: relative;
 
-        & .certified {
+        & .detached-fab {
             width: 50px;
             height: 50px;
             border-radius: 50%;
             background-color: #ffffff;
             position: absolute;
-            right: -15px;
-            top: 90px;
             border: solid 2px black;
             box-shadow: 1px 4px 8px 4px #000000;
             display: flex;
@@ -94,24 +102,51 @@ section.overview {
             font-family: sans-serif;
             cursor: pointer;
             transition-duration: 0.2s;
+
             &:hover {
                 border-color: white;
             }
+
             svg {
                 transform: scale(0.65);
             }
-            path {
-                fill: #2E7D32 !important;
-            }
+
             a {
                 text-decoration: none;
                 color: white;
             }
-            
-            @media (max-width: 390px) {
-                & {
-                    top: -25px;
-                    right: 15px;
+
+            &.certified-button {
+                right: -15px;
+                top: 90px;
+                @media (max-width: 820px) {
+                    & {
+                        top: -25px;
+                        right: 10px;
+                    }
+                }
+
+                path {
+                    fill: #2E7D32 !important;
+                }
+            }
+
+            &.intro-button {
+                right: -20px;
+                top: 0px;
+                @media (max-width: 820px) {
+                    & {
+                        top: -25px;
+                        right: 30px;
+                    }
+                }
+
+                svg {
+                    transform: scale(0.5);
+                }
+
+                path {
+                    fill: #1b9aff  !important;
                 }
             }
         }
@@ -224,6 +259,7 @@ section.overview {
         border-radius: 4px;
         border: 1px solid var(--border, #262626);
         padding: 10px;
+        position: relative;
 
         & > .title {
             margin-bottom: 10px;
@@ -307,10 +343,11 @@ section.current-week-results {
             transition: transform 0.2s ease-in-out;
             position: relative;
 
-            & span:first-child {
+            & > span:first-child {
                 position: absolute;
                 top: 10px;
                 right: 10px;
+                & span { border-color: white; color: white; }
             }
 
             &:hover {
@@ -363,21 +400,21 @@ section.current-week-results {
     }
 
     .week-information {
-        color: var(--title, #f06543);
+        color: var(--text, #fafafa);
         font-family: Oxygen;
         font-size: 14px;
         font-style: normal;
-        font-weight: 700;
+        font-weight: 500;
         line-height: normal;
         margin-bottom: 15px;
     }
 
     .week-status {
-        margin-top: 20px;
+        margin-top: 15px;
         color: var(--text, #fafafa);
         text-align: center;
         font-family: Oxygen;
-        font-size: 18px;
+        font-size: 16px;
         font-style: normal;
         font-weight: 700;
         line-height: normal;
@@ -453,6 +490,12 @@ footer {
     justify-content: space-between;
     max-width: 820px;
     margin: auto;
+
+    @media (max-width: 800px) {
+        & {
+            padding: 0px 5px;
+        }
+    }
 }
 
 .modal-wrapper .modal .main > div:first-child {
@@ -502,6 +545,9 @@ footer {
 }
 
 .modal-wrapper .modal .main > .security-model-modal {
+    code {
+        word-break: break-all;
+    }
     h4 {
         margin: 10px 0px;
     }
@@ -570,6 +616,28 @@ footer {
     }
 }
 
+.grab-attention {
+    transform-origin: center;
+    will-change: transform;
+    position: relative;
+
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        opacity: 0;
+        pointer-events: none;
+        animation: RingAnimation 1.5s ease-out infinite;
+    }
+
+    &.small::after {
+        border: 1px solid currentColor;
+        animation: RingAnimation-Small 1.5s ease-out infinite;
+    }
+}
+
 @keyframes shine5 {
     0% {
         background-size: 100%;
@@ -579,15 +647,45 @@ footer {
     }
 }
 
-@keyframes pulse-glow {
+@keyframes RingAnimation {
     0% {
-        box-shadow: 0 0 5px 2px #ffc107; /* Starting shadow */
+        opacity: 1;
+        transform: scale(1);
     }
-    50% {
-        box-shadow: 0 0 15px 8px #ffc107; /* Peak shadow */
+    70% {
+        opacity: 0;
+        transform: scale(1.6);
     }
     100% {
-        box-shadow: 0 0 5px 2px #ffc107; /* Back to start */
+        opacity: 0;
+        transform: scale(1.6);
+    }
+}
+
+@keyframes RingAnimation-Small {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    70% {
+        opacity: 0;
+        transform: scale(1.8);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.8);
+    }
+}
+
+@keyframes fabPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1.08);
+    }
+    60% {
+        transform: scale(1.03);
     }
 }
 

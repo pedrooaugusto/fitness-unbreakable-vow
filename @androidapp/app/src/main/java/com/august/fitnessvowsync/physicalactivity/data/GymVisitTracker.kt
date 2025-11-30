@@ -54,6 +54,8 @@ class GymVisitTracker @Inject constructor (private val encryptedPreferences: Sha
 
         val newSession = session.copy(endTime = endTime)
 
+        if (!newSession.isValid) return newSession
+
         updateGymVisitsList(newSession)
 
         return newSession

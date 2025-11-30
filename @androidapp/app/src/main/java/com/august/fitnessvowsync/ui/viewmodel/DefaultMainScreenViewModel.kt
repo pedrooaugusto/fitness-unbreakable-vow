@@ -154,13 +154,15 @@ class PreviewMainScreenViewModel: MainScreenViewModel {
             sleep = mutableListOf(SleepEvent(Instant.now().minus(Duration.ofMinutes(50)), 20, 50, null)),
             running = mutableListOf(RunningEvent(Instant.now().minus(Duration.ofMinutes(40)), 2100, 400, 110)),
             gymVisits = mutableListOf(
-                GymVisitEvent(GymVisitEvent.Location(-22.43434, 44.34423), Instant.now().minus(Duration.ofMinutes(42)), 123, 110, 120)),
+                GymVisitEvent(GymVisitEvent.Location(-22.43434, 44.34423), Instant.now().minus(Duration.ofMinutes(47)), 113, 117, 110, "GYM#1"),
+                GymVisitEvent(GymVisitEvent.Location(-22.43434, 44.34423), Instant.now().minus(Duration.ofMinutes(42)), 123, 110, 120, "GYM#2")
+            ),
         ),
         syncedPhysicalActivities = PhysicalActivityEvents(
             sleep = mutableListOf(SleepEvent(Instant.now().minus(Duration.ofMinutes(50)), 20, 50, PhysicalActivityEvent.SyncDetails("0x000000000000000000001", Instant.now(), "localhost", 0))),
             running = mutableListOf(RunningEvent(Instant.now().minus(Duration.ofMinutes(40)), 2100, 400, 110, PhysicalActivityEvent.SyncDetails("0x000000000000000000001", Instant.now(), "localhost", 0))),
             gymVisits = mutableListOf(
-                GymVisitEvent(GymVisitEvent.Location(-22.43434, 44.34423), Instant.now().minus(Duration.ofMinutes(42)), 123, 110, 120, PhysicalActivityEvent.SyncDetails("0x000000000000000000001", Instant.now(), "localhost", 0))),
+                GymVisitEvent(GymVisitEvent.Location(-22.43434, 44.34423), Instant.now().minus(Duration.ofMinutes(42)), 123, 110, 120, "GYM#1", PhysicalActivityEvent.SyncDetails("0x000000000000000000001", Instant.now(), "localhost", 0))),
         ),
         isFetchingData = false
     ))

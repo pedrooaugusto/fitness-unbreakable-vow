@@ -18,16 +18,16 @@ export interface PhysicalActivityStatsUpdate {
 
 const PhysicalActivityOracleInterface = new Interface(PhysicalActivityOracleAbi);
 
-export async function loadContracts(physicalActivityOracleAddress?: string) {
-    if (physicalActivityOracleAddress == null) throw new Error('Contract address not provided');
+export async function loadContracts(physicalActivityOracleAddress?: string, network?: string) {
+    if (physicalActivityOracleAddress == null || network == null) throw new Error('Contract address and network must be provided.');
 
-    const rpcUrl = requireEnv('RPC_PROVIDER');
+    const rpcUrl = requireEnv(network + '_RPC_PROVIDER');
     const provider = new ethers.JsonRpcProvider(rpcUrl);
     const physicalActivityOracle = new ethers.Contract(physicalActivityOracleAddress, PhysicalActivityOracleAbi, provider);
     const timeLordAddress = await physicalActivityOracle.TIME_LORD();
     const timeLord = new ethers.Contract(timeLordAddress, TimeLordAbi, provider);
 
-    return { physicalActivityOracle, timeLord, physicalActivityOracleAddress, timeLordAddress  };
+    return { physicalActivityOracle, timeLord, physicalActivityOracleAddress, timeLordAddress, network };
 }
 
 export function parsePhysicalActivityStatsUpdateEvent(etherScanLogs: LogEntry[]) {

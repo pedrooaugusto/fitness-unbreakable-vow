@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.august.fitnessvowsync.contract.PhysicalActivityOracleService
 import com.august.fitnessvowsync.contract.TimeLordService
 import com.august.fitnessvowsync.helpers.TimeHelpers
 import com.august.fitnessvowsync.helpers.TimeHelpers.Companion.formatMinutes
@@ -38,6 +37,8 @@ import com.august.fitnessvowsync.ui.components.DashboardLink
 import com.august.fitnessvowsync.ui.components.ErrorDialog
 import com.august.fitnessvowsync.ui.components.LoadingGuard
 import com.august.fitnessvowsync.ui.components.PhysicalActivityDetailsCard
+import com.august.fitnessvowsync.ui.components.PhysicalActivityDialogType
+import com.august.fitnessvowsync.ui.components.PhysicalActivityDetailsDialogSwitcher
 import com.august.fitnessvowsync.ui.components.SettingsButton
 import com.august.fitnessvowsync.ui.components.SyncNowButton
 import com.august.fitnessvowsync.ui.components.SyncedPhysicalActivityRecordCard
@@ -55,7 +56,7 @@ import kotlinx.coroutines.launch
 fun FitnessVowApp(
     viewModel: MainScreenViewModel,
     navigateToSettings: () -> Unit,
-    __debugPleaseRemove__randomValueFor: (suspend (String) -> Unit)? = null
+    onClickPhysicalActivity: (suspend (PhysicalActivityDialogType) -> Unit)? = null
 ) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
@@ -107,7 +108,7 @@ fun FitnessVowApp(
                     CurrentWeekPhysicalActivitiesSection(
                         physicalActivities = uiState.thisWeekPhysicalActivities,
                         contractOverview = uiState.contractOverview,
-                        onClickGoalCard = __debugPleaseRemove__randomValueFor,
+                        onClickPhysicalActivity = onClickPhysicalActivity,
                     )
                     Spacer(modifier = Modifier.height(21.dp))
                     SyncHistorySection(uiState.syncedPhysicalActivities)
@@ -132,10 +133,11 @@ fun FitnessVowApp(
 fun CurrentWeekPhysicalActivitiesSection(
     physicalActivities: PhysicalActivityEvents?,
     contractOverview: ContractOverview?,
-    onClickGoalCard: (suspend (goal: String) -> Unit)?
+    onClickPhysicalActivity: (suspend (activity: PhysicalActivityDialogType) -> Unit)?
 ) {
     if (physicalActivities == null || contractOverview == null) return
 
+    var selectedActivityDialog by remember { mutableStateOf<PhysicalActivityDialogType?>(null) }
     val isExpired = contractOverview.phase != TimeLordService.ContractPhase.Active
     val currentWeek = contractOverview.currentWeek
     val timeRemaining = TimeHelpers.formatTimeRemaining(currentWeek.end)
@@ -175,7 +177,7 @@ fun CurrentWeekPhysicalActivitiesSection(
                 title = "Run Sessions",
                 count = formattedRunningSessions,
                 metric = formattedTotalDistance,
-                onClick = { onClickGoalCard?.invoke("run") }
+                onClick = { selectedActivityDialog = PhysicalActivityDialogType.RUNNING }
             )
             PhysicalActivityDetailsCard(
                 icon = Icons.Default.Bed,
@@ -183,7 +185,7 @@ fun CurrentWeekPhysicalActivitiesSection(
                 title = "Sleep Sessions",
                 count = formattedSleepSessions,
                 metric = formattedSleepTotalTime,
-                onClick = { onClickGoalCard?.invoke("sleep") }
+                onClick = { selectedActivityDialog = PhysicalActivityDialogType.SLEEP }
             )
             PhysicalActivityDetailsCard(
                 icon = Icons.Default.FitnessCenter,
@@ -191,9 +193,16 @@ fun CurrentWeekPhysicalActivitiesSection(
                 title = "Gym Visits",
                 count = formattedGymVisits,
                 metric = formattedGymVisitTotalTime,
-                onClick = { onClickGoalCard?.invoke("gym") }
+                onClick = { selectedActivityDialog = PhysicalActivityDialogType.GYM }
             )
         }
+
+        PhysicalActivityDetailsDialogSwitcher(
+            selectedDialog = selectedActivityDialog,
+            events = physicalActivities,
+            onDismiss = { selectedActivityDialog = null },
+            onConfirm = onClickPhysicalActivity,
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 

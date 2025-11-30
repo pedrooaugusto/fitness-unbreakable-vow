@@ -28,8 +28,8 @@ const RPC_URL_MAP: Record<Network, Networkish & { rpc: string[] }> = {
         chainId: 42161,
         rpc: [
             "https://arb1.arbitrum.io/rpc",
-            "https://rpc.ankr.com/arbitrum",
-            "https://arbitrum.publicnode.com"
+            //"https://rpc.ankr.com/arbitrum",
+            //"https://arbitrum.publicnode.com"
         ]
     },
     arbiSep: {
@@ -53,7 +53,6 @@ const MULTICALL_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
 let addresses: Record<string, string> | null = null;
 let provider: Provider | null = null;
 let network: Network | null = null;
-let UpkeeperContract: { address: string; deployment: string, network: string, creationDate: number } | null = null;
 let PhysicalActivityOracle: EnhancedContract | null = null;
 let FitnessUnbreakableVow: EnhancedContract | null = null;
 let TimeLordContract: EnhancedContract | null = null;
@@ -80,18 +79,10 @@ export default async function loadContract() {
         return getEvents<T>(PhysicalActivityOracle as Contract, eventName, indexes, data, fromBlock1, toBlock1);
     }) as any;
 
-    UpkeeperContract = {
-        address: addresses[`${network}.Upkeeper`],
-        deployment: addresses[`${network}.deployment.Upkeeper`],
-        network: network,
-        creationDate: await getTransactionDate(addresses[`${network}.deployment.Upkeeper`], provider)
-    };
-
     return {
         PhysicalActivityOracle,
         FitnessUnbreakableVow,
         TimeLordContract,
-        UpkeeperContract,
         getBalance: (target: Contract) => getBalance(target, provider!),
         executeMulticall: (contract: Contract, functions: string[]) => executeMulticall(contract, functions, network!)
     }
@@ -146,18 +137,6 @@ async function localhostMultiCall(contract: Contract, functions: string[]) {
 
 async function getBalance(target: Contract, provider: Provider) {
     return await provider.getBalance(await target.getAddress());
-}
-
-async function getTransactionDate(tx: string, provider: Provider) {
-    const receipt = await provider.getTransactionReceipt(tx);
-
-    if (receipt == null) throw new Error('Invalid Upkeeper Transaction Hash');
-
-    const block = await provider.getBlock(receipt.blockNumber);
-
-    if (block == null) throw new Error('Invalid Upkeeper Transaction Block');
-
-    return block.timestamp;
 }
 
 function makeProviderWithFallback(networkName: Network): Provider {

@@ -230,13 +230,6 @@
   },
   {
     "inputs": [],
-    "name": "createUpkeeper",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "enforceAgreement",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -397,8 +390,14 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "terminateVow",
+    "inputs": [
+      {
+        "internalType": "bool",
+        "name": "withdrawUpkeeperFunds2",
+        "type": "bool"
+      }
+    ],
+    "name": "terminateAgreement",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -453,13 +452,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "withdrawUpkeeperFunds",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

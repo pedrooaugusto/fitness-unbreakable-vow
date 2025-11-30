@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
@@ -54,11 +56,15 @@ fun Settings(
     var walletPrivateKey by remember { mutableStateOf(settingsService.getClientAccountPrivateKey() ?: "") }
     var rpcEndpoint by remember { mutableStateOf(settingsService.getRpcEndpoint() ?: "") }
     var pinataApiToken by remember { mutableStateOf(settingsService.getPinataApiToken() ?: "") }
+    var gasLimit by remember { mutableStateOf(settingsService.getGasLimit().toString()) }
+    var gasPriceMarkup by remember { mutableStateOf(settingsService.getGasPriceMarkUp().toString()) }
 
     val saveSettings = {
         settingsService.saveClientAccountPrivateKey(walletPrivateKey)
         settingsService.saveRpcEndpoint(rpcEndpoint)
         settingsService.savePinataApiToken(pinataApiToken)
+        settingsService.saveGasLimit(gasLimit.toLong())
+        settingsService.saveGasPriceMarkUp(gasPriceMarkup.toLong())
         navigateToPermission()
     }
 
@@ -67,7 +73,8 @@ fun Settings(
             .fillMaxSize()
             .background(Color(0xFF0F0F1A))
             .padding(16.dp)
-            .pointerInput(Unit) { detectTapGestures(onTap = { focusManager.clearFocus() }) },
+            .pointerInput(Unit) { detectTapGestures(onTap = { focusManager.clearFocus() }) }
+            .verticalScroll(rememberScrollState()),
     ) {
         Spacer(modifier = Modifier.height(36.dp))
 
@@ -180,7 +187,36 @@ fun Settings(
             ),
         )
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextField(
+            value = gasLimit,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            onValueChange = { value -> gasLimit = value },
+            label = { Text("Transaction Gas Limit") },
+            supportingText = {
+                Text("Gas limit for publish activity records transactions.", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+            },
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextField(
+            value = gasPriceMarkup,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            onValueChange = { value -> gasPriceMarkup = value },
+            label = { Text("Gas Price Markup") },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number
+            ),
+            supportingText = {
+                Text("How much more we are willing to pay for the current price of gas (eg: 150%).", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+            },
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
 
         Button(
             onClick = saveSettings,

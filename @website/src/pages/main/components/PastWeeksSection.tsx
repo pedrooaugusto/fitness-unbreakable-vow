@@ -235,7 +235,8 @@ function PastWeekDetailsModal(props: Omit<PastWeekDetailsModalProps, 'weekDetail
     const status = props.status;
 
     React.useEffect(() => {
-        getWeekDetails(props.weekIndex.toString()).then((r) => setWeekDetails(r));
+        getWeekDetails(props.weekIndex.toString())
+            .then((r) => setWeekDetails(r));
     }, []);
 
     if (weekDetails == null) {
@@ -573,23 +574,31 @@ function PastWeekFailedClaimRewardDetailsModal({
                     </li>
                     <li>
                         <b>{enforcerReward}</b> →{' '}
-                        <a style={{ fontWeight: 500 }} href={GIVETH_PAGE_URL} target="_blank">Giveth Charity.</a>
+                        <a href={GIVETH_PAGE_URL} target="_blank">Giveth Charity.</a>
                     </li>
                 </ul>
-                <p><small>* Other users may collect the fine before you resulting in no rewards.</small></p>
                 <h4>Option 1: Collect with a Wallet</h4>
                 <p>
-                    To Collect the fine, connect your wallet and confirm the transaction. This option is
-                    only available if you have a Wallet app installed like Metamask on your browser.
+                    To collect the fine, connect your <b>{network}</b> wallet and confirm the transaction to call the <a href={enforceFuncUrl} target="_blank">#enforceAgreement()</a>. This option is
+                    only available if you have a Wallet app installed like Metamask on your browser and will appear as an orange button on this modal.
                 </p>
                 <h4>Option 2: Collect Manually</h4>
                 <p>
                     If you don't want or can't connect your wallet, you'll need to manually call the{' '}
-                    <code>enforceAgreement</code> function on the smart contract.
+                    <a href={enforceFuncUrl} target="_blank">#enforceAgreement()</a> function on the smart contract.
                 </p>
-                <a href={enforceFuncUrl} target="_blank" style={{marginTop: '10px', display: 'block'}}>
-                    🔗 View function on Block Explorer.
-                </a>
+                <h4>Important Notes</h4>
+                <ul>
+                    <li>This contract is deployed only in the <b>{network}</b> blockchain, make sure to target this network when calling <code>#enforceAgreement()</code>.</li>
+                    <li>
+                        Calling <code>#enforceAgreement()</code> does NOT require payment, in fact, the function is marked as non-payable and therefore any attempts to send ether with the transaction will automatically revert.
+                    </li>
+                    <li>
+                        The <code>#enforceAgreement()</code> function is public and callable by anyone. 
+                        Other users may call it and collect the fine before you resulting in no rewards. Refresh the page to see if the week is still up for enforcement.
+                    </li>
+                    <li>The <code>#enforceAgreement()</code> function Solidity source code is public available on Etherscan and Github.</li>
+                </ul>
             </div>
             <div className="actions">
                 <CallContractButton

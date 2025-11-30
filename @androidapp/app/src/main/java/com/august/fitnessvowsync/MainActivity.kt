@@ -22,6 +22,7 @@ import com.august.fitnessvowsync.helpers.SettingsService
 import com.august.fitnessvowsync.ui.FitnessVowApp
 import com.august.fitnessvowsync.ui.RequiredPermissions
 import com.august.fitnessvowsync.ui.Settings
+import com.august.fitnessvowsync.ui.components.PhysicalActivityDialogType
 import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
 import com.august.fitnessvowsync.ui.viewmodel.DefaultMainScreenViewModel
 import com.august.fitnessvowsync.ui.viewmodel.DefaultPermissionsScreenViewModel
@@ -40,13 +41,13 @@ class MainActivity : ComponentActivity() {
     lateinit var permissionsViewModelFactory: ViewModelProvider.Factory
 
     //TODO: Remove support fake data during development
-    @Inject
-    /*lateinit var doNotUse: FakeDataProducerDoNotUse
-    suspend fun __debug_PleaseRemove__randomValueFor(goal: String): Unit {
+    /*@Inject
+    lateinit var doNotUse: FakeDataProducerDoNotUse
+    suspend fun __debug_PleaseRemove__randomValueFor(goal: PhysicalActivityDialogType): Unit {
         when (goal) {
-            "run" -> doNotUse.addFakeRunningSession(500)
-            "sleep" -> doNotUse.addFakeSleepSession((60).toLong())
-            "gym" -> doNotUse.addFakeGymVisit()
+            PhysicalActivityDialogType.RUNNING -> doNotUse.addFakeRunningSession(500)
+            PhysicalActivityDialogType.SLEEP -> doNotUse.addFakeSleepSession((60).toLong())
+            PhysicalActivityDialogType.GYM -> doNotUse.addFakeGymVisit()
         }
     }*/
 
@@ -84,9 +85,9 @@ class MainActivity : ComponentActivity() {
                             viewModel = mainScreenViewModel,
                             navigateToSettings = navigateToSettings,
                             // TODO: Remove support fake data during development
-                            /*__debugPleaseRemove__randomValueFor = { activity ->
+                            /*onClickPhysicalActivity = { activity ->
                                 __debug_PleaseRemove__randomValueFor(activity)
-                                mainScreenViewModel.refreshScreen()
+                                //mainScreenViewModel.refreshScreen()
                             }*/
                         )
                     }

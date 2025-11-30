@@ -3,33 +3,39 @@ package com.august.fitnessvowsync.contract
 import android.util.Log
 import com.august.fitnessvowsync.helpers.SettingsService
 import org.web3j.tx.Contract
-import java.util.function.BiFunction
+import java.util.function.Function
 
 class ContractProvider<T: Contract> constructor(
     private val contractSettings: SettingsService,
-    private val createContract: BiFunction<String, String, T>
+    private val createContract: Function<Web3Settings, T>
 ) {
     private var contract: T? = null
-    private var credentials: String? = null
-    private var rpcEndpoint: String? = null
+    private var web3Settings: Web3Settings? = null
 
     @Synchronized
     fun get(): T {
-        val currentCredentials = getCredentials()
-        val currentRpcEndpoint = getRpcEndpoint()
+        val currentWeb3Settings = getWeb3Settings()
 
-        if (contract == null || currentCredentials != credentials || currentRpcEndpoint != rpcEndpoint) {
-            Log.i("FitVow", "Creating new contract client with rpc: $currentRpcEndpoint")
-            Log.i("FitVow", "Creating new contract client with credentials: ${currentCredentials.substring(0, 10)}***")
+        if (contract == null || currentWeb3Settings != web3Settings) {
+            Log.i("FitVow", "Creating new contract client with rpc: ${currentWeb3Settings.rpcEndpoint} ")
+            Log.i("FitVow", "Creating new contract client with credentials: ${currentWeb3Settings.credentials.substring(0, 10)}***")
 
-            contract = createContract.apply(currentCredentials, currentRpcEndpoint)
-
-            credentials = currentCredentials
-            rpcEndpoint = currentRpcEndpoint
+            contract = createContract.apply(currentWeb3Settings)
+            web3Settings = currentWeb3Settings
         }
 
         return contract!!
     }
+
+    private fun getWeb3Settings(): Web3Settings {
+        return Web3Settings(
+            getCredentials(),
+            getRpcEndpoint(),
+            contractSettings.getGasLimit(),
+            contractSettings.getGasPriceMarkUp()
+        )
+    }
+
     private fun getCredentials(): String {
         val walletKey = contractSettings.getClientAccountPrivateKey()
 
@@ -45,4 +51,11 @@ class ContractProvider<T: Contract> constructor(
 
         return endpoint
     }
+
+    data class Web3Settings(
+        val credentials: String,
+        val rpcEndpoint: String,
+        val gasLimit: Long,
+        val gasPriceMarkUp: Long,
+    )
 }

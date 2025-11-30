@@ -50,7 +50,7 @@ async function getPenaltyAppliedEvent(weeklyGoal: any, weekIndex: string, vowCon
     if (!weeklyGoal.penaltyBlock) return null;
 
     const eventBlock = Number(weeklyGoal.penaltyBlock);
-    const penaltyAppliedEvents = await vowContract.getEvents<PenaltyApplied>('PenaltyApplied', [], ['weekIndex', 'enforcer'], eventBlock - 100, eventBlock + 100);
+    const penaltyAppliedEvents = await vowContract.getEvents<PenaltyApplied>('PenaltyApplied', [], ['weekIndex', 'enforcer'], eventBlock - 10, eventBlock + 10);
 
     return penaltyAppliedEvents.find(item => item.weekIndex == Number(weekIndex)) || null;
 }

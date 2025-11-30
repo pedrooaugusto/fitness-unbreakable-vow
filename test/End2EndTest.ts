@@ -35,7 +35,7 @@ describe("EndToEndTest", function () {
                         break;
 
                         case 'TERMINATE_VOW':
-                            await expect(fitnessUnbreakableVow.terminateVow()).to.be.revertedWith("Contract has not expired yet.");
+                            await expect(fitnessUnbreakableVow.terminateAgreement(false)).to.be.revertedWith("Contract has not expired yet.");
                         break;
 
                         case 'ENFORCE_AGREEMENT':
@@ -98,14 +98,14 @@ async function assertRemaningFunds(
     await time.increase(SEVEN_DAYS_IN_SECONDS);
 
     if (vowBalance > 0n) {
-        const transaction = await fitnessUnbreakableVow.terminateVow();
+        const transaction = await fitnessUnbreakableVow.terminateAgreement(false);
 
         await expect(() => transaction).to.changeEtherBalance(owner, vowBalance);
         await expect(transaction).to.emit(fitnessUnbreakableVow, 'VowTeminated').withArgs(vowBalance, owner.address);
     }
 
     await expect(fitnessUnbreakableVow.enforceAgreement()).to.be.revertedWith("Contract has expired.");
-    await expect(fitnessUnbreakableVow.terminateVow()).to.be.revertedWith("No funds to release");
+    await expect(fitnessUnbreakableVow.terminateAgreement(false)).to.be.revertedWith("No funds to release");
 }
 
 export function assertAllWeeksStatusMatch(expectedWeeklyGoalsHistory: WeeklyGoalStructOutput[], actualWeeklyGoalsHistory: WeeklyGoalStructOutput[]) {

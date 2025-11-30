@@ -42,7 +42,7 @@ class PhysicalActivityEventRepositoryTest {
 
         val sleep = SleepEvent(now, durationInMinutes = 90, avgBpm = 55, syncDetails = null)
         val run = RunningEvent(now.plusSeconds(60), distanceInMeters = 3000, paceInSecondsPerKm = 300, avgBpm = 120, syncDetails = null)
-        val gym = GymVisitEvent(GymVisitEvent.Location(0.0, 0.0), now.plusSeconds(120), durationInMinutes = 45, avgBpm = 110, maxBpm = 150, syncDetails = null)
+        val gym = GymVisitEvent(GymVisitEvent.Location(0.0, 0.0), now.plusSeconds(120), durationInMinutes = 45, avgBpm = 110, maxBpm = 150, "GYM#1", syncDetails = null)
 
         repository.registerSleep(listOf(sleep))
         repository.registerRunning(listOf(run))
@@ -72,7 +72,7 @@ class PhysicalActivityEventRepositoryTest {
 
         val sleep = SleepEvent(t, 60, 50, null)
         val run = RunningEvent(t.plusSeconds(1), 2500, 320, 118, null)
-        val gym = GymVisitEvent(GymVisitEvent.Location(1.0, 1.0), t.plusSeconds(2), 30, 115, 140, null)
+        val gym = GymVisitEvent(GymVisitEvent.Location(1.0, 1.0), t.plusSeconds(2), 30, 115, 140, "GYM#0",null)
 
         repository.registerSleep(listOf(sleep))
         repository.registerSleep(listOf(sleep)) // duplicate
@@ -91,7 +91,7 @@ class PhysicalActivityEventRepositoryTest {
 
         val sleep = SleepEvent(t, 50, 52, null)
         val run = RunningEvent(t.plusSeconds(1), 2200, 295, 119, null)
-        val gym = GymVisitEvent(GymVisitEvent.Location(2.0, 2.0), t.plusSeconds(2), 40, 112, 155, null)
+        val gym = GymVisitEvent(GymVisitEvent.Location(2.0, 2.0), t.plusSeconds(2), 40, 112, 155,"GYM#1", null)
 
         repository.registerSleep(listOf(sleep))
         repository.registerRunning(listOf(run))
