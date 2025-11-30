@@ -1,6 +1,6 @@
 import "./style.css";
 import AppLogo from "../../assets/logo-icon.svg";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getContractOverview } from "./api/contract-overview";
 import { ContractPhase, type Currency, type GetContractOverviewResponse } from "./types";
 import ContractOverviewSection from "./components/ContractOverviewSection";
