@@ -61,7 +61,7 @@ export async function signRunningEvent(record: Omit<RunningEventStruct, 'signatu
 }
 
 export function isRunningEventValid(evento: RunningEventStruct) {
-    return  Number(evento.distanceInMeters) >= 1000 &&
+    return  Number(evento.distanceInMeters) >= 2000 &&
             Number(evento.paceInSecondsPerKm) <= (8 * 60) &&
             Number(evento.avgBpm) >= 110;
 }
@@ -104,8 +104,8 @@ export function mergeSleep(current: SleepStatsStruct, events: SleepEventStruct[]
 }
 
 export function isSleepEventValid(evento: SleepEventStruct) {
-    return  Number(evento.durationInMinutes) >= (6 * 60 + 10) &&
-            Number(evento.avgBpm) >= 50 && Number(evento.avgBpm) <= 80;
+    return  Number(evento.durationInMinutes) >= (6 * 60 + 30) &&
+            Number(evento.avgBpm) >= 40 && Number(evento.avgBpm) <= 70;
 }
 
 export async function signGymVisitEvent(record: Omit<GymVisitEventStruct, 'signature'> & { useWrongSignature?: boolean }) {
@@ -158,11 +158,10 @@ export function mergeGymVisit(current: GymVisitStatsStruct, events: GymVisitEven
 
 export function isGymVisitEventValid(evento: GymVisitEventStruct) {
     const validLocation = 
-        isSameLocation(Number(evento.location.latitudeNanoDegree), Number(evento.location.longitudeNanoDegree), 0, 0) ||
-        isSameLocation(Number(evento.location.latitudeNanoDegree), Number(evento.location.longitudeNanoDegree), -228969577, -432726589);
+        isSameLocation(Number(evento.location.latitudeNanoDegree), Number(evento.location.longitudeNanoDegree), -260758108, 280636459);
 
     return  validLocation &&
-            Number(evento.durationInMinutes) >= 10 &&
+            Number(evento.durationInMinutes) >= 40 &&
             Number(evento.avgBpm) >= 95;
 }
 

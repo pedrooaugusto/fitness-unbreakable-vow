@@ -9,8 +9,6 @@ export default async function verify(
     constructorArguments: Array<string | number | bigint | BytesLike>,
     timeoutMs = 45_000,
 ) {
-    return;
-
     const args = [
         'hardhat',
         'verify',

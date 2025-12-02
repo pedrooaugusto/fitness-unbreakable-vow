@@ -18,15 +18,15 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
 
     function sleepValidator() public pure returns (SleepEventValidator memory) {
         return SleepEventValidator({
-            minimumDurationInMinutes: uint16((6 hours + 10 minutes) / 60), //7h30
-            avgBpmLowerBand: 50,
-            avgBpmUpperBand: 80
+            minimumDurationInMinutes: uint16((6 hours + 30 minutes) / 60), //7h30
+            avgBpmLowerBand: 40,
+            avgBpmUpperBand: 70
         });
     }
 
     function runningValidator() public pure returns (RunningEventValidator memory) {
         return RunningEventValidator({
-            minimumDistanceInMeters: 1000,
+            minimumDistanceInMeters: 2000,
             maximumPaceInSecondsPerKm: uint16(8 minutes), // 7 minutes
             minimumAvgBpm: 110
         });
@@ -34,12 +34,13 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
 
     function gymVisitValidator() public pure returns (GymVisitEventValidator memory) {
         return GymVisitEventValidator({
-            // int(-22.897596695112696 * 1e7), int(-43.2729018641947 * 1e7)
+            // ale top (aka: int(-22.897596695112696 * 1e7), int(-43.2729018641947 * 1e7))
             gym1Location: Geofence({ latitudeNanoDegree: -228975966, longitudeNanoDegree: -432729018, radiusInMeters: 150 }),
-            gym2Location: Geofence({ latitudeNanoDegree: -228934446, longitudeNanoDegree: -432925724, radiusInMeters: 400 }),
+            // mall
+            gym2Location: Geofence({ latitudeNanoDegree: -229037765, longitudeNanoDegree: -432834109, radiusInMeters: 150 }),
             // waka waka https://www.youtube.com/watch?v=pRpeEdMmmQ0&t=55s
             gym3Location: Geofence({ latitudeNanoDegree: -260758108, longitudeNanoDegree:  280636459, radiusInMeters: 150 }),
-            minimumVisitTimeInMinutes: uint8((10 minutes) / 60), // 40 minutes
+            minimumVisitTimeInMinutes: uint8((40 minutes) / 60), // 40 minutes
             minimumAvgBpm: 95
         });
     }

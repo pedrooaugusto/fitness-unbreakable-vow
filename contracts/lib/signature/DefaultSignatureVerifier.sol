@@ -44,7 +44,6 @@ abstract contract DefaultSignatureVerifier is SignatureVerifier {
      * @param keyAttestation Android Key Attestation metadata (digest, challenge, and IPFS CID of the cert chain).
      */
     function setPublicKey(P256PublicKey calldata publicKey, AndroidKeyAttestation calldata keyAttestation) external {
-        // TODO: Uncomment next two lines
         require(PUBLIC_KEY.x == bytes32(0), "Public key already set");
         require(PUBLIC_KEY.y == bytes32(0), "Public key already set");
         require(publicKey.x != bytes32(0), "Public key cannot be empty");

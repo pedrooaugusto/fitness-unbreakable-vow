@@ -187,9 +187,9 @@ function getFinalStats(contractInteractions: ContractInteraction[]): PhysicalAct
 }
 
 function getWeeklyGoalsStatus(stats: PhysicalActivityStatsStruct) {
-    const wentoToTheGymEnoughTimes = BigInt(stats.gym.count) >= 2n;
-    const ran2km = BigInt(stats.running.count) >= 2n;
-    const sleptWell = BigInt(stats.sleep.count) >= 2n;
+    const wentoToTheGymEnoughTimes = BigInt(stats.gym.count) >= 1n;
+    const ran2km = BigInt(stats.running.count) >= 1n;
+    const sleptWell = BigInt(stats.sleep.count) >= 4n;
 
     const isCompleted = (wentoToTheGymEnoughTimes && ran2km) || (wentoToTheGymEnoughTimes && sleptWell) || (ran2km && sleptWell);
 

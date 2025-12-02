@@ -1,4 +1,4 @@
-export type WeekDurations = '3-minutes' | '5-minutes' | '2-days' | '7-days';
+export type WeekDurations = '3-minutes' | '5-minutes' | '2-days' | '3-days' | '7-days';
 
 // Round *up* to the next multiple of `stepMinutes` in UTC time.
 function nextMultipleOfMinutes(stepMinutes: number, date: Date) {
@@ -25,6 +25,24 @@ function buildTwoDayCron(date: Date, bufferHours = 3) {
         dow,
         (dow + 2) % 7,
         (dow + 4) % 7,
+        (dow + 6) % 7,
+    ];
+    const uniqueSorted = [...new Set(dows)].sort((a, b) => a - b);
+
+    return `${minute} ${hour} * * ${uniqueSorted.join(",")}`;
+}
+
+// Approximate "every 3 days" schedule: d0, d0+3, d0+6
+function buildThreeDayCron(date: Date, bufferHours = 3) {
+    const d = new Date(date.getTime() + bufferHours * 60 * 60 * 1000);
+
+    const minute = d.getUTCMinutes();
+    const hour = d.getUTCHours();
+    const dow = d.getUTCDay();
+
+    const dows = [
+        dow,
+        (dow + 3) % 7,
         (dow + 6) % 7,
     ];
     const uniqueSorted = [...new Set(dows)].sort((a, b) => a - b);
@@ -68,6 +86,14 @@ export function getTimeSettings(startDate: string, secondsInOneWeek: WeekDuratio
                 startDate: Math.floor(start.getTime() / 1000),
                 cronUpkeeperSpec: buildTwoDayCron(start, 3), // (period=2d, buffer=3h)
                 secondsInOneWeek: 172800,
+            };
+        }
+
+        case '3-days': {
+            return {
+                startDate: Math.floor(start.getTime() / 1000),
+                cronUpkeeperSpec: buildThreeDayCron(start, 3), // (period=3d, buffer=3h)
+                secondsInOneWeek: 259200,
             };
         }
 

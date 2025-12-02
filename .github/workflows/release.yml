@@ -20,6 +20,7 @@ on:
           - 3-minutes
           - 5-minutes
           - 2-days
+          - 3-days
           - 7-days
         default: "5-minutes"
       number_of_weeks:

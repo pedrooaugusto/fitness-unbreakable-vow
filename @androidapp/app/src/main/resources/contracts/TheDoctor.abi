@@ -18,17 +18,17 @@
       },
       {
         "internalType": "bytes32",
-        "name": "endOfWeekCron1",
+        "name": "endOfWeekCronP1",
         "type": "bytes32"
       },
       {
         "internalType": "bytes32",
-        "name": "endOfWeekCron2",
+        "name": "endOfWeekCronP2",
         "type": "bytes32"
       },
       {
         "internalType": "bytes32",
-        "name": "endOfWeekCron3",
+        "name": "endOfWeekCronP3",
         "type": "bytes32"
       }
     ],
