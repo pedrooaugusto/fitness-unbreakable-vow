@@ -110,7 +110,6 @@ class FakeDataProducerDoNotUse @Inject constructor(
 
         healthConnectClient.insertRecords(listOf(heartRateRecord))
         gymVisitTracker.startVisit(startTime, gym)
-        gymVisitTracker.markVisitAsValid()
         val visit = gymVisitTracker.finishVisit(endTime)
 
         Log.i("FitVow", "Adding fake gym visit: $visit")

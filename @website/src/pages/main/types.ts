@@ -59,11 +59,13 @@ export interface Geofence {
 }
 
 export interface GymVisitEventValidator {
-    gym1Location: Geofence;
-    gym2Location: Geofence;
-    gym3Location: Geofence;
+    meierSF:    Geofence;
+    cachambiSF: Geofence;
+    sandtonPL:  Geofence;
+    sandtonVA:  Geofence;
     minimumVisitTimeInMinutes: bigint;
     minimumAvgBpm: bigint;
+    minimumMaxBpm: bigint;
 }
 
 export interface SleepEventValidator {
@@ -96,7 +98,8 @@ export interface PhysicalActivityRecordProcessed extends ContractEvent {
 
 export interface GymVisitEventProcessed extends ContractEvent {
     weekIndex: number;
-    location: number;
+    gymLocationLatitudeNanoDegree: number;
+    gymLocationLongitudeNanoDegree: number;
     timestamp: number;
     durationInMinutes: number;
     avgBpm: number;
@@ -186,7 +189,11 @@ export interface GetWeekDetailsResponse {
         runningSessions: number;
         healthySleepNights: number;
     };
-    history: PhysicalActivityStatsUpdate[] | null;
+    history: {
+        gymVisitEventProcessed: GymVisitEventProcessed[],
+        runningEventProcessed: RunningEventProcessed[],
+        sleepEventProcessed: SleepEventProcessed[],
+    } | null;
     penalty: PenaltyApplied | null;
 }
 

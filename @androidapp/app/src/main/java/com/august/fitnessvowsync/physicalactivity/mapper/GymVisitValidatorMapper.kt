@@ -7,13 +7,18 @@ import javax.inject.Inject
 
 class GymVisitValidatorMapper @Inject constructor() {
     fun toTrackedGyms(validator: PhysicalActivityOracle.GymVisitEventValidator): List<TrackedGymConfig> {
-        val gymLocations = mutableListOf<PhysicalActivityOracle.Geofence>(validator.gym1Location, validator.gym2Location, validator.gym3Location)
+        val gymLocations = mutableMapOf<String, PhysicalActivityOracle.Geofence>(
+            "Meier SM" to validator.meierSF,
+            "Cachambi SM" to validator.cachambiSF,
+            "Sandton PL" to validator.sandtonPL,
+            "Sandton VA" to validator.sandtonVA,
+        )
 
-        return gymLocations.mapIndexed {index, gym -> TrackedGymConfig(
-            id = "GYM_#$index",
-            latitude = gym.latitudeNanoDegree.toDouble() / 1e7,
-            longitude = gym.longitudeNanoDegree.toDouble() / 1e7f,
-            radius = gym.radiusInMeters.toDouble(),
+        return gymLocations.map {gym -> TrackedGymConfig(
+            id = gym.key,
+            latitude = gym.value.latitudeNanoDegree.toDouble() / 1e7,
+            longitude = gym.value.longitudeNanoDegree.toDouble() / 1e7f,
+            radius = gym.value.radiusInMeters.toDouble(),
             minimumPermanence = Duration.ofMinutes(validator.minimumVisitTimeInMinutes.toLong()),
         )}
     }

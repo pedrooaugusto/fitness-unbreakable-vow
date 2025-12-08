@@ -1,4 +1,11 @@
-import type { GetContractOverviewResponse, GetWeekDetailsResponse, PenaltyApplied, PhysicalActivityStatsUpdate } from '../types';
+import type {
+    GetContractOverviewResponse,
+    GetWeekDetailsResponse,
+    PenaltyApplied,
+    GymVisitEventProcessed,
+    RunningEventProcessed,
+    SleepEventProcessed,
+} from '../types';
 import loadContract, { type EnhancedContract } from './load-contract';
 
 export async function getWeekDetails(weekIndex: string): Promise<GetWeekDetailsResponse> {
@@ -6,7 +13,7 @@ export async function getWeekDetails(weekIndex: string): Promise<GetWeekDetailsR
 
     const weeklyGoal = await FitnessUnbreakableVow.weeklyGoalsRecords!(weekIndex);
     const mergedRecord = await PhysicalActivityOracle.physicalActivityStats!(weekIndex) as GetContractOverviewResponse['currentWeekPhysicalActivityStats'];
-    const recordsSubmittedForWeek = await getRecordsHistoryForWeek(weekIndex, PhysicalActivityOracle);
+    const weekHistory = await getPhysicalActivityWeekHistory(weekIndex, PhysicalActivityOracle);
     const penaltyDetails = await getPenaltyAppliedEvent(weeklyGoal, weekIndex, FitnessUnbreakableVow);
 
     const goals = {
@@ -22,23 +29,58 @@ export async function getWeekDetails(weekIndex: string): Promise<GetWeekDetailsR
     return {
         weekIndex: Number(weekIndex),
         goals: goals,
-        history: recordsSubmittedForWeek,
+        history: weekHistory,
         penalty: penaltyDetails,
     };
 }
 
-async function getRecordsHistoryForWeek(weekIndex: string, oracleContract: EnhancedContract) {
+async function getPhysicalActivityWeekHistory(weekIndex: string, oracleContract: EnhancedContract) {
     // We don't have a limit on how many blocks we can query in localhost.
-    if (oracleContract.network === 'localhost') {
-        return await oracleContract.getEvents<PhysicalActivityStatsUpdate>('PhysicalActivityStatsUpdate', [weekIndex], ['weekIndex', 'stats']);
-    }
-
     try {
-        // We do have one in prod. So we just fetch from a file that will probably be there...
-        const response = await fetch(`/events/${oracleContract.contractAddress}/week-${weekIndex}/PhysicalActivityStatsUpdate.json`)
+        if (oracleContract.network === 'localhost') {
+            const [gymVisitEventProcessed, runningEventProcessed, sleepEventProcessed] = await Promise.all([
+                oracleContract.getEvents<GymVisitEventProcessed>('GymVisitEventProcessed', [weekIndex], [
+                    'weekIndex',
+                    'gymLocationLatitudeNanoDegree',
+                    'gymLocationLongitudeNanoDegree',
+                    'timestamp',
+                    'durationInMinutes',
+                    'avgBpm',
+                    'maxBpm',
+                ]),
+                oracleContract.getEvents<RunningEventProcessed>('RunningEventProcessed', [weekIndex], [
+                    'weekIndex',
+                    'timestamp',
+                    'distanceInMeters',
+                    'paceInSecondsPerKm',
+                    'avgBpm',
+                ]),
+                oracleContract.getEvents<SleepEventProcessed>('SleepEventProcessed', [weekIndex], [
+                    'weekIndex',
+                    'timestamp',
+                    'durationInMinutes',
+                    'avgBpm',
+                ]),
+            ]);
 
-        if (!response.ok) return null;
-        return await response.json() as PhysicalActivityStatsUpdate[];
+            return { gymVisitEventProcessed, runningEventProcessed, sleepEventProcessed };
+        }
+
+        const fetchJson = async <T>(fileName: string) => {
+            const response = await fetch(`/events/${oracleContract.contractAddress}/week-${weekIndex}/${fileName}`);
+
+            if (!response.ok) throw new Error(`Unable to fetch ${fileName}: HTTP ${response.status}`);
+
+            return await response.json() as T;
+        };
+
+        const [gymVisitEventProcessed, runningEventProcessed, sleepEventProcessed] = await Promise.all([
+            fetchJson<GymVisitEventProcessed[]>('GymVisitEventProcessed.json'),
+            fetchJson<RunningEventProcessed[]>('RunningEventProcessed.json'),
+            fetchJson<SleepEventProcessed[]>('SleepEventProcessed.json'),
+        ]);
+
+        return { gymVisitEventProcessed, runningEventProcessed, sleepEventProcessed };
     } catch(ex) {
         console.error('Unable to fetch events for week: ' + weekIndex, ex);
 

@@ -2,7 +2,7 @@ import { time, loadFixture } from '@nomicfoundation/hardhat-toolbox/network-help
 import chai, { expect } from 'chai';
 import hre, { network } from 'hardhat';
 import chaiSubset from 'chai-subset';
-import { PhysicalActivityStatsStruct } from '../typechain-types/contracts/PhysicalActivityOracle';
+import { GymVisitEventValidatorStructOutput, PhysicalActivityStatsStruct, RunningEventValidatorStructOutput, SleepEventValidatorStructOutput } from '../typechain-types/contracts/PhysicalActivityOracle';
 import { WeeklyGoalStructOutput } from '../typechain-types/contracts/FitnessUnbreakableVow';
 import { FitnessUnbreakableVow, PhysicalActivityOracle } from '../typechain-types';
 import { recordEq } from './helpers/custom-chai-extensions';
@@ -12,6 +12,16 @@ import { EMPTY_GYM_VISIT_STAT, EMPTY_RUNNING_STAT, EMPTY_SLEEP_STAT, mergeGymVis
 
 chai.use(chaiSubset);
 chai.use(recordEq);
+
+type PhysicalActivityValidator = {
+    run: RunningEventValidatorStructOutput;
+    sleep: SleepEventValidatorStructOutput;
+    gymVisit: GymVisitEventValidatorStructOutput;
+    runReps: bigint;
+    sleepReps: bigint;
+    gymReps: bigint;
+    completedGoalsReq: bigint;
+}
 
 describe("EndToEndTest", function () {
     this.beforeAll(async () => {
@@ -26,6 +36,17 @@ describe("EndToEndTest", function () {
 
             const weeklyContractInteractions = createContractInteractions(Math.floor(NUMBER_OF_CYLES));
             const completedGoalsHistory: WeeklyGoalStructOutput[] = [];
+            const validators = {
+                run: await physicalActivityOracle.runningValidator(),
+                sleep: await physicalActivityOracle.sleepValidator(),
+                gymVisit: await physicalActivityOracle.gymVisitValidator(),
+                runReps: await fitnessUnbreakableVow.RUNNING_SESSIONS_GOAL(),
+                sleepReps: await fitnessUnbreakableVow.HEALTHY_SLEEP_NIGHTS_GOAL(),
+                gymReps: await fitnessUnbreakableVow.GYM_VISITS_GOAL(),
+                completedGoalsReq: await fitnessUnbreakableVow.REQUIRED_NUMBER_OF_COMPLETED_GOALS(),
+            }
+
+            console.log('Starting end to end test');
 
             for (const { weekNumber, interactions } of weeklyContractInteractions) {
                 for (const interaction of interactions) {
@@ -48,7 +69,7 @@ describe("EndToEndTest", function () {
                     await time.increase(20);
                 }
 
-                const completedGoals = await assertEndOfWeek(weekNumber, otherAccount, interactions, fitnessUnbreakableVow, physicalActivityOracle);
+                const completedGoals = await assertEndOfWeek(weekNumber, otherAccount, interactions, fitnessUnbreakableVow, physicalActivityOracle, validators);
 
                 completedGoalsHistory.push(completedGoals);
             }
@@ -119,10 +140,11 @@ async function assertEndOfWeek(
     enforcerAddress: any,
     contractInteractions: ContractInteraction[],
     fitnessUnbreakableVow: FitnessUnbreakableVow,
-    physicalActivityOracle: PhysicalActivityOracle
+    physicalActivityOracle: PhysicalActivityOracle,
+    validators: PhysicalActivityValidator,
 ) {
-    const finalWeekStats = getFinalStats(contractInteractions);
-    const weeklyGoalsStatus = getWeeklyGoalsStatus(finalWeekStats);
+    const finalWeekStats = getFinalStats(contractInteractions, validators);
+    const weeklyGoalsStatus = getWeeklyGoalsStatus(finalWeekStats, validators);
 
     expect((await physicalActivityOracle.getCurrentWeekPhysicalActivityStats())[1]).to.be.equalsStats(finalWeekStats);
 
@@ -170,7 +192,7 @@ async function assertPenaltyWhenEnforceAgreement(penaltyAmount: bigint, weekInde
     await expect(transaction).to.emit(fitnessUnbreakableVow, 'PenaltyApplied').withArgs(weekIndex, enforcerAddress.address);
 }
 
-function getFinalStats(contractInteractions: ContractInteraction[]): PhysicalActivityStatsStruct {
+function getFinalStats(contractInteractions: ContractInteraction[], validators: PhysicalActivityValidator): PhysicalActivityStatsStruct {
     const validPublishInteractions = contractInteractions
         .filter(interaction => interaction.type === 'PUBLISH_ACTIVITY_EVENT')
         .filter(interaction => !interaction.data.request!.useWrongSignature);
@@ -178,20 +200,22 @@ function getFinalStats(contractInteractions: ContractInteraction[]): PhysicalAct
     const finalStats = { timestamp: 0, sleep: { ...EMPTY_SLEEP_STAT }, running: { ...EMPTY_RUNNING_STAT }, gym: { ...EMPTY_GYM_VISIT_STAT } }; 
 
     for (const { data: { request } } of validPublishInteractions) {
-        finalStats.running = mergeRunning(finalStats.running, request!.running || []);
-        finalStats.sleep = mergeSleep(finalStats.sleep, request!.sleep || []);
-        finalStats.gym = mergeGymVisit(finalStats.gym, request!.gymVisit || []);
+        finalStats.running = mergeRunning(finalStats.running, request!.running || [], validators.run);
+        finalStats.sleep = mergeSleep(finalStats.sleep, request!.sleep || [], validators.sleep);
+        finalStats.gym = mergeGymVisit(finalStats.gym, request!.gymVisit || [], validators.gymVisit);
     }
 
     return finalStats;
 }
 
-function getWeeklyGoalsStatus(stats: PhysicalActivityStatsStruct) {
-    const wentoToTheGymEnoughTimes = BigInt(stats.gym.count) >= 1n;
-    const ran2km = BigInt(stats.running.count) >= 1n;
-    const sleptWell = BigInt(stats.sleep.count) >= 4n;
+function getWeeklyGoalsStatus(stats: PhysicalActivityStatsStruct, validators: PhysicalActivityValidator) {
+    const { completedGoalsReq, sleepReps, gymReps, runReps } = validators;
 
-    const isCompleted = (wentoToTheGymEnoughTimes && ran2km) || (wentoToTheGymEnoughTimes && sleptWell) || (ran2km && sleptWell);
+    const wentoToTheGymEnoughTimes = BigInt(stats.gym.count) >= gymReps;
+    const ran2km = BigInt(stats.running.count) >= runReps;
+    const sleptWell = BigInt(stats.sleep.count) >= sleepReps;
+
+    const isCompleted = [wentoToTheGymEnoughTimes, ran2km, sleptWell].filter(Boolean).length >= Number(completedGoalsReq);
 
     const output = [isCompleted ? 1n : 5n, wentoToTheGymEnoughTimes, ran2km, sleptWell, isCompleted ? 0n : 1n] as WeeklyGoalStructOutput;
 

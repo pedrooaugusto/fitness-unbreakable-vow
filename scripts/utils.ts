@@ -74,6 +74,24 @@ export function getTransactionEvent(eventId: string, eventDefinition: string, tr
     return null;
 }
 
+export async function installRip7212Mock(hre: HardhatRuntimeEnvironment) {
+    const RIP7212_PRECOMPILE_ADDRESS = '0x0000000000000000000000000000000000000100';
+    const artifact = await hre.artifacts.readArtifact('RIP7212PrecompileMock');
+    const bytecode = artifact.deployedBytecode;
+
+    if (!bytecode || bytecode === '0x') {
+        throw new Error('Missing RIP7212PrecompileMock bytecode. Run `npx hardhat compile` first.');
+    }
+
+    const currentCode = await hre.ethers.provider.getCode(RIP7212_PRECOMPILE_ADDRESS);
+
+    if (currentCode === bytecode) return;
+
+    await hre.network.provider.send('hardhat_setCode', [RIP7212_PRECOMPILE_ADDRESS, bytecode]);
+
+    console.log(`Installed RIP-7212 mock precompile at ${RIP7212_PRECOMPILE_ADDRESS}`);
+}
+
 export interface LocalContractsMap {
     TheDoctor: [Contracts.TheDoctor__factory, Contracts.TheDoctor];
     PhysicalActivityOracle: [Contracts.PhysicalActivityOracle__factory, Contracts.PhysicalActivityOracle];

@@ -42,11 +42,13 @@ event GymVisitEventProcessed(
 );
 
 struct GymVisitEventValidator {
-    Geofence gym1Location;
-    Geofence gym2Location;
-    Geofence gym3Location;
+    Geofence meierSF;
+    Geofence cachambiSF;
+    Geofence sandtonPL;
+    Geofence sandtonVA;
     uint8 minimumVisitTimeInMinutes;
     uint8 minimumAvgBpm;
+    uint8 minimumMaxBpm;
 }
 
 library GymVisitEventValidatorFunctions {
@@ -54,18 +56,20 @@ library GymVisitEventValidatorFunctions {
         GymVisitEventValidator memory self,
         GymVisitEvent calldata evento
     ) internal pure returns (bool) {
-        Geofence[3] memory gymLocations;
+        Geofence[4] memory gymLocations;
 
-        gymLocations[0] = self.gym1Location;
-        gymLocations[1] = self.gym2Location;
-        gymLocations[2] = self.gym3Location;
+        gymLocations[0] = self.meierSF;
+        gymLocations[1] = self.cachambiSF;
+        gymLocations[2] = self.sandtonPL;
+        gymLocations[3] = self.sandtonVA;
 
         return  isValidGymLocation(evento.location, gymLocations) &&
                 evento.durationInMinutes >= self.minimumVisitTimeInMinutes &&
-                evento.avgBpm >= self.minimumAvgBpm;
+                evento.avgBpm >= self.minimumAvgBpm &&
+                evento.maxBpm >= self.minimumMaxBpm;
     }
 
-    function isValidGymLocation(Location calldata location, Geofence[3] memory geofences) private pure returns (bool) {
+    function isValidGymLocation(Location calldata location, Geofence[4] memory geofences) private pure returns (bool) {
         for(uint i = 0; i < geofences.length; i++) {
             if (isInsideGeofence(location, geofences[i])) {
                 return true;

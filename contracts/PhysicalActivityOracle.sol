@@ -5,46 +5,18 @@ import { PhysicalActivityStats, PublishPhysicalActivityEventRequest, Listener, O
 import { TimeLord, TimeBound } from './lib/timelord/Types.sol';
 import { RunningEventFunctions, RunningEvent, RunningEventValidator } from './lib/Running.sol';
 import { SleepEventFunctions, SleepEvent, SleepEventValidator } from './lib/Sleep.sol';
-import { GymVisitEventFunctions, GymVisitEvent, GymVisitEventValidator, Geofence } from './lib/GymVisit.sol';
+import { GymVisitEventFunctions, GymVisitEvent, GymVisitEventValidator } from './lib/GymVisit.sol';
+import { PhysicalActivityValidators } from './lib/PhysicalActivityValidator.sol';
 import { Ownable } from './lib/Ownable.sol';
 import { Versioned } from './lib/Versioned.sol';
 import { DefaultSignatureVerifier } from './lib/signature/DefaultSignatureVerifier.sol';
+import { P256PublicKey, AndroidKeyAttestation } from './lib/signature/Types.sol';
 import { PhysicalActivityListable } from './lib/PhysicalActivityListable.sol';
 import { console } from './lib/variants/console.sol';
 
 event PhysicalActivityStatsUpdate(uint8 indexed weekIndex, PhysicalActivityStats stats);
 
 contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityListable, Observable, TimeBound, Ownable, Versioned {
-
-    function sleepValidator() public pure returns (SleepEventValidator memory) {
-        return SleepEventValidator({
-            minimumDurationInMinutes: uint16((6 hours + 30 minutes) / 60), //7h30
-            avgBpmLowerBand: 40,
-            avgBpmUpperBand: 70
-        });
-    }
-
-    function runningValidator() public pure returns (RunningEventValidator memory) {
-        return RunningEventValidator({
-            minimumDistanceInMeters: 2000,
-            maximumPaceInSecondsPerKm: uint16(8 minutes), // 7 minutes
-            minimumAvgBpm: 110
-        });
-    }
-
-    function gymVisitValidator() public pure returns (GymVisitEventValidator memory) {
-        return GymVisitEventValidator({
-            // ale top (aka: int(-22.897596695112696 * 1e7), int(-43.2729018641947 * 1e7))
-            gym1Location: Geofence({ latitudeNanoDegree: -228975966, longitudeNanoDegree: -432729018, radiusInMeters: 150 }),
-            // mall
-            gym2Location: Geofence({ latitudeNanoDegree: -229037765, longitudeNanoDegree: -432834109, radiusInMeters: 150 }),
-            // waka waka https://www.youtube.com/watch?v=pRpeEdMmmQ0&t=55s
-            gym3Location: Geofence({ latitudeNanoDegree: -260758108, longitudeNanoDegree:  280636459, radiusInMeters: 150 }),
-            minimumVisitTimeInMinutes: uint8((40 minutes) / 60), // 40 minutes
-            minimumAvgBpm: 95
-        });
-    }
-
     TimeLord public immutable TIME_LORD;
     Listener public ORACLE_UPDATE_LISTENER;
 
@@ -52,6 +24,11 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
         TIME_LORD = timeLordAddress;
     }
 
+    /**
+     * @notice Submits batches of running, sleep, and gym visit events for the current week.
+     * @dev Verifies P-256 signatures, validates each event, updates aggregates, and emits processed events plus a weekly stats update.
+     * Only callable by the vow (contract owner) while the oracle is active.
+     */
     function publishPhysicalActivityEvent(PublishPhysicalActivityEventRequest calldata request) external onlyOwner onlyWhileActive {
         uint8 currentWeekIndex = TIME_LORD.getCurrentWeekIndex();
 
@@ -64,10 +41,22 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
         emit PhysicalActivityStatsUpdate(currentWeekIndex, physicalActivityStats[currentWeekIndex]);
     }
 
-    function registerPhysicalActivityStatsUpdateListener(address listener) external {
+    /**
+     * @notice Registers a single stats update listener that will receive callbacks after each publish.
+     * @dev Intended to be set to the FitnessUnbreakableVow contract; can only be set once and must be called by the oracle owner.
+     */
+    function registerPhysicalActivityStatsUpdateListener(address listener) external onlyOwnerOrigin {
         require(address(ORACLE_UPDATE_LISTENER) == address(0), "Listener already set.");
 
         ORACLE_UPDATE_LISTENER = Listener(listener);
+    }
+
+    /**
+     * @notice Sets the public key and attestation metadata used to verify submitted events. Once set it cannot be altered.
+     * @dev Forwards to the internal setter defined in DefaultSignatureVerifier; callable only by the owner.
+     */
+    function setPublicKey(P256PublicKey calldata publicKey, AndroidKeyAttestation calldata keyAttestation) external onlyOwner {
+        _setPublicKey(publicKey, keyAttestation);
     }
 
     function getCurrentWeekPhysicalActivityStats() external view returns (uint8 currentWeekIndex, PhysicalActivityStats memory stats) {
@@ -127,6 +116,18 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
                 GymVisitEventFunctions.emitProcessedEvent(eventos[i], eventWeekIndex);
             }
         }
+    }
+
+    function sleepValidator() public pure returns (SleepEventValidator memory) {
+        return PhysicalActivityValidators.sleep();
+    }
+
+    function runningValidator() public pure returns (RunningEventValidator memory) {
+        return PhysicalActivityValidators.running();
+    }
+
+    function gymVisitValidator() public pure returns (GymVisitEventValidator memory) {
+        return PhysicalActivityValidators.gymVisit();
     }
 
     modifier onlyWhileActive() {

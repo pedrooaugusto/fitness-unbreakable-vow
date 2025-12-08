@@ -14,6 +14,7 @@ import com.august.fitnessvowsync.physicalactivity.data.GymVisitTracker
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingClient
 import com.google.android.gms.location.GeofencingRequest
+import java.time.Duration
 import javax.inject.Inject
 
 class GymGeofenceCreator @Inject constructor (
@@ -41,7 +42,7 @@ class GymGeofenceCreator @Inject constructor (
                 Geofence.Builder()
                     .setRequestId(gym.id)
                     .setCircularRegion(gym.latitude, gym.longitude, gym.radius.toFloat())
-                    .setLoiteringDelay(gym.minimumPermanence.toMillis().toInt())
+                    .setLoiteringDelay(GymVisitTracker.LOITERING_DELAY.toMillis().toInt())
                     .setTransitionTypes(
                         Geofence.GEOFENCE_TRANSITION_ENTER or
                         Geofence.GEOFENCE_TRANSITION_EXIT or
@@ -53,7 +54,7 @@ class GymGeofenceCreator @Inject constructor (
         }
 
         val geofencingRequest = GeofencingRequest.Builder()
-            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_DWELL or Geofence.GEOFENCE_TRANSITION_ENTER)
+            .setInitialTrigger(Geofence.GEOFENCE_TRANSITION_ENTER)
             .addGeofences(geofences)
             .build()
 

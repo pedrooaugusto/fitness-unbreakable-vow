@@ -287,29 +287,93 @@ function TargetGoalsList(props: {
 function RecordsHistory({ weekDetails, network, oracleAddress }: { weekDetails: GetWeekDetailsResponse; network: Network; oracleAddress: string }) {
     const blockExplorerLink = getAddressBlockExplorerUrl(oracleAddress, network) + '#events';
 
+    if (weekDetails.history == null) {
+        return (
+            <div className="records-history">
+                <h4 className="records-history__heading">🔎 Physical Activity History</h4>
+                <p className="hint">
+                    Records for this week are not available yet.{" "}
+                    <a href={blockExplorerLink} target="_blank">Check them on Etherscan.</a>
+                </p>
+            </div>
+        );
+    }
+
+    const rows = [
+        ...weekDetails.history.runningEventProcessed.map(event => ({
+            type: 'Run',
+            timestamp: event.timestamp,
+            detail: `${(event.distanceInMeters / 1000).toFixed(2)} km • ${formatPace(event.paceInSecondsPerKm)} • ${event.avgBpm} bpm`,
+            transactionHash: event.transactionHash,
+        })),
+        ...weekDetails.history.gymVisitEventProcessed.map(event => ({
+            type: 'Workout',
+            timestamp: event.timestamp,
+            detail: <> {event.durationInMinutes} min • {event.avgBpm} bpm • {event.maxBpm} bpm • ({Number(event.gymLocationLatitudeNanoDegree / 1e7)}°, {Number(event.gymLocationLongitudeNanoDegree / 1e7)}°)</>,
+            transactionHash: event.transactionHash,
+        })),
+        ...weekDetails.history.sleepEventProcessed.map(event => ({
+            type: 'Sleep',
+            timestamp: event.timestamp,
+            detail: `${(event.durationInMinutes / 60).toFixed(1)} hrs • ${event.avgBpm} bpm`,
+            transactionHash: event.transactionHash,
+        })),
+    ].sort((a, b) => b.timestamp - a.timestamp);
+
+    if (rows.length === 0) {
+        return (
+            <div className="records-history">
+                <h4 className="records-history__heading">🔎 Physical Activity History</h4>
+                <p className="hint">
+                    No physical activity records reported this week.{" "}
+                    <a href={blockExplorerLink} target="_blank">More details on Etherscan.</a>
+                </p>
+            </div>
+        );
+    }
+
     return (
-        <>
-            <br />
-            <details>
-                <summary style={{cursor: 'pointer'}}><u>Physical activity records reported this week.</u></summary>
-                <ul>
-                    {weekDetails.history == null && (<li>Records for this week not available yet. <a href={blockExplorerLink} target="_blank">Go check them on Etherscan.</a></li>)}
-                    {weekDetails.history?.length == 0 && (<li>No physical activity records reported this week. <a href={blockExplorerLink} target="_blank">More details on Etherscan.</a></li>)}
-                    {(weekDetails.history || []).map((record, index) => (
-                        <li key={index}>
-                            <a
-                                href={getTransactionBlockExplorerUrl(record.transactionHash, network)}
-                                target="_blank"
-                                style={{ fontWeight: 600, fontSize: '14px' }}
-                            >
-                                {formatDate(Number(record.stats.timestamp))} <small>[{shortAddress(record.transactionHash)}]</small> {":"} 🏃 {record.stats.running.totalDistanceInMeters} m, 🏋️‍♀️ {record.stats.gym.totalMinutes} min, 🛏️ {(Number(record.stats.sleep.totalSleepInMinutes) / 60).toFixed(1)} hours.
-                            </a>
-                        </li>
-                    ))}
-                </ul>
-            </details>
-        </>
+        <div className="records-history">
+            <h4 className="records-history__heading">🔎 Physical Activity History</h4>
+            <div className="records-history__table-wrapper">
+                <table className="records-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>When</th>
+                            <th>Details</th>
+                            <th>Transaction</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((row, index) => (
+                            <tr key={`${row.transactionHash}-${index}`}>
+                                <td>{row.type}</td>
+                                <td>{formatDate(row.timestamp, "numeric", "short")}</td>
+                                <td className="record-detail">{row.detail}</td>
+                                <td>
+                                    <a
+                                        href={getTransactionBlockExplorerUrl(row.transactionHash, network)}
+                                        target="_blank"
+                                        className="records-history__tx-link"
+                                    >
+                                        {shortAddress(row.transactionHash)}
+                                    </a>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     );
+}
+
+function formatPace(secondsPerKm: number) {
+    const minutes = Math.floor(secondsPerKm / 60);
+    const seconds = secondsPerKm % 60;
+
+    return `${minutes}:${seconds.toString().padStart(2, '0')} min/km`;
 }
 
 

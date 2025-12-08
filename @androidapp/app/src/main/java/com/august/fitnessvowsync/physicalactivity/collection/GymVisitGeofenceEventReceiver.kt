@@ -78,12 +78,7 @@ class GymVisitGeofenceEventReceiver : BroadcastReceiver() {
     private fun processOnDwell(gym: TrackedGymConfig, context: Context) {
         Log.i("FitVow - Sync", "User stayed in the ${gym.id} gym long enough to be a valid visit.")
 
-        try {
-            gymVisitTracker.markVisitAsValid()
-            notificationService.showGeofenceNotification("${gym.id} gym visit started.", context)
-        } catch (ex: IllegalStateException) {
-            Log.e("FitVow - Sync", "Unable to mark gym visit as valid.", ex)
-        }
+        notificationService.showGeofenceNotification("${gym.id} gym visit started.", context)
     }
 
     private fun processOnExit(gym: TrackedGymConfig, timestamp: Instant, context: Context) {

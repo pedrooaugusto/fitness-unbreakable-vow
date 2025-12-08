@@ -1,6 +1,6 @@
 import { sign } from '../../scripts/keys';
 import crypto from 'crypto';
-import { GymVisitEventStruct, GymVisitStatsStruct, RunningEventStruct, RunningStatsStruct, SleepEventStruct, SleepStatsStruct } from '../../typechain-types/contracts/PhysicalActivityOracle';
+import { GymVisitEventStruct, GymVisitEventValidatorStruct, GymVisitStatsStruct, RunningEventStruct, RunningEventValidatorStruct, RunningStatsStruct, SleepEventStruct, SleepEventValidatorStruct, SleepStatsStruct } from '../../typechain-types/contracts/PhysicalActivityOracle';
 
 export const RUNNING_EVENT = 0x11;
 export const SLEEP_EVENT = 0x13;
@@ -10,7 +10,7 @@ export const EMPTY_SLEEP_STAT: SleepStatsStruct = { count: 0, longestSleepInMinu
 export const EMPTY_GYM_VISIT_STAT: GymVisitStatsStruct = { avgBpm: 0, count: 0, totalMinutes: 0 };
 export const EMPTY_RUNNING_STAT: RunningStatsStruct = { bestPaceInSecondsPerKm: 0, count: 0, longestDistanceInMeters: 0, maxAvgBpm: 0, totalDistanceInMeters: 0 };
 
-export function mergeRunning(current: RunningStatsStruct, events: RunningEventStruct[]): RunningStatsStruct {
+export function mergeRunning(current: RunningStatsStruct, events: RunningEventStruct[], validator: RunningEventValidatorStruct): RunningStatsStruct {
     const result: RunningStatsStruct = {
         count: Number(current.count),
         longestDistanceInMeters: Number(current.longestDistanceInMeters),
@@ -20,7 +20,7 @@ export function mergeRunning(current: RunningStatsStruct, events: RunningEventSt
     };
 
     for (const ev of events) {
-        if (!isRunningEventValid(ev)) continue;
+        if (!isRunningEventValid(ev, validator)) continue;
 
         result.count = Number(result.count) + 1;
         result.totalDistanceInMeters = Number(result.totalDistanceInMeters) + Number(ev.distanceInMeters);
@@ -60,10 +60,10 @@ export async function signRunningEvent(record: Omit<RunningEventStruct, 'signatu
     return { ...record, signature: signature };
 }
 
-export function isRunningEventValid(evento: RunningEventStruct) {
-    return  Number(evento.distanceInMeters) >= 2000 &&
-            Number(evento.paceInSecondsPerKm) <= (8 * 60) &&
-            Number(evento.avgBpm) >= 110;
+export function isRunningEventValid(evento: RunningEventStruct, validator: RunningEventValidatorStruct) {
+    return  Number(evento.distanceInMeters) >= Number(validator.minimumDistanceInMeters) &&
+            Number(evento.paceInSecondsPerKm) <= Number(validator.maximumPaceInSecondsPerKm) &&
+            Number(evento.avgBpm) >= Number(validator.minimumAvgBpm);
 }
 
 export async function signSleepEvent(record: Omit<SleepEventStruct, 'signature'> & { useWrongSignature?: boolean }) {
@@ -81,7 +81,7 @@ export async function signSleepEvent(record: Omit<SleepEventStruct, 'signature'>
     return { ...record, signature: signature };
 }
 
-export function mergeSleep(current: SleepStatsStruct, events: SleepEventStruct[]): SleepStatsStruct {
+export function mergeSleep(current: SleepStatsStruct, events: SleepEventStruct[], validator: SleepEventValidatorStruct): SleepStatsStruct {
     const result: SleepStatsStruct = {
         count: Number(current.count),
         longestSleepInMinutes: Number(current.longestSleepInMinutes),
@@ -89,7 +89,7 @@ export function mergeSleep(current: SleepStatsStruct, events: SleepEventStruct[]
     };
 
     for (const ev of events) {
-        if (!isSleepEventValid(ev)) continue;
+        if (!isSleepEventValid(ev, validator)) continue;
 
         result.count = Number(result.count) + 1;
         result.totalSleepInMinutes = Number(result.totalSleepInMinutes) + Number(ev.durationInMinutes);
@@ -103,9 +103,9 @@ export function mergeSleep(current: SleepStatsStruct, events: SleepEventStruct[]
     return result;
 }
 
-export function isSleepEventValid(evento: SleepEventStruct) {
-    return  Number(evento.durationInMinutes) >= (6 * 60 + 30) &&
-            Number(evento.avgBpm) >= 40 && Number(evento.avgBpm) <= 70;
+export function isSleepEventValid(evento: SleepEventStruct, validator: SleepEventValidatorStruct) {
+    return  Number(evento.durationInMinutes) >= Number(validator.minimumDurationInMinutes) &&
+            Number(evento.avgBpm) >= Number(validator.avgBpmLowerBand) && Number(evento.avgBpm) <= Number(validator.avgBpmUpperBand);
 }
 
 export async function signGymVisitEvent(record: Omit<GymVisitEventStruct, 'signature'> & { useWrongSignature?: boolean }) {
@@ -126,7 +126,7 @@ export async function signGymVisitEvent(record: Omit<GymVisitEventStruct, 'signa
     return { ...record, signature: signature };
 }
 
-export function mergeGymVisit(current: GymVisitStatsStruct, events: GymVisitEventStruct[]): GymVisitStatsStruct {
+export function mergeGymVisit(current: GymVisitStatsStruct, events: GymVisitEventStruct[], validator: GymVisitEventValidatorStruct): GymVisitStatsStruct {
     const result: GymVisitStatsStruct = {
         count: Number(current.count),
         totalMinutes: Number(current.totalMinutes),
@@ -134,7 +134,7 @@ export function mergeGymVisit(current: GymVisitStatsStruct, events: GymVisitEven
     };
 
     for (const ev of events) {
-        if (!isGymVisitEventValid(ev)) continue;
+        if (!isGymVisitEventValid(ev, validator)) continue;
 
         const oldCount = Number(result.count);
 
@@ -156,13 +156,18 @@ export function mergeGymVisit(current: GymVisitStatsStruct, events: GymVisitEven
     return result;
 }
 
-export function isGymVisitEventValid(evento: GymVisitEventStruct) {
-    const validLocation = 
-        isSameLocation(Number(evento.location.latitudeNanoDegree), Number(evento.location.longitudeNanoDegree), -260758108, 280636459);
+export function isGymVisitEventValid(evento: GymVisitEventStruct, validator: GymVisitEventValidatorStruct) {
+    const validLocation = [validator.cachambiSF, validator.meierSF, validator.sandtonPL, validator.sandtonVA].some((gym) => {
+        return isSameLocation(
+            Number(evento.location.latitudeNanoDegree), Number(evento.location.longitudeNanoDegree),
+            Number(gym.latitudeNanoDegree), Number(gym.longitudeNanoDegree),
+        );
+    });
 
     return  validLocation &&
-            Number(evento.durationInMinutes) >= 40 &&
-            Number(evento.avgBpm) >= 95;
+            Number(evento.durationInMinutes) >= Number(validator.minimumVisitTimeInMinutes) &&
+            Number(evento.avgBpm) >= Number(validator.minimumAvgBpm) &&
+            Number(evento.maxBpm) >= Number(validator.minimumMaxBpm);
 }
 
 export function createSHA256Hash(inputString: string) {

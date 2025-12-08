@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import { ScheduledHandler } from 'aws-lambda';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { loadContracts, parsePhysicalActivityStatsUpdateEvent } from './contract';
+import { EventTopic, loadContracts, parseGymVisitEventProcessed, parsePhysicalActivityStatsUpdateEvent, parseRunningEventProcessed, parseSleepEventProcessed } from './contract';
 import { getBlockNumber, getEvents } from './etherscan';
 import { requireEnv } from './helpers';
 
@@ -20,28 +20,46 @@ export const handler: ScheduledHandler = async (event: any, context) => {
     }
 
     console.log('[INFO] Fetching events for week #' + previousWeek);
-
     const secondsInOneWeek = Number(await timeLord.SECONDS_IN_ONE_WEEK());
     const creationDate = Number(await timeLord.CREATION_DATE());
 
     const { weekStart, weekEnd } = getWeekStartAndEnd(creationDate, previousWeek, secondsInOneWeek);
 
     console.log(`[INFO] Retrieving block numbers for timestamps: ${weekStart} and ${weekEnd}`);
-
     const weekStartBlockNumber = await getBlockNumber(weekStart, network);
     const weekEndBlockNumber = await getBlockNumber(weekEnd, network);
 
+    await sleep(4000); // 3-calls per second limit
+
     console.log(`[INFO] Querying events between blocks ${weekStartBlockNumber} and ${weekEndBlockNumber}`);
+    const statsUpdateEvent = await getEvents(physicalActivityOracleAddress, EventTopic.PhysicalActivityStatsUpdate, network, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
+    const gymVisitEvent = await getEvents(physicalActivityOracleAddress, EventTopic.GymVisitEventProcessed, network, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
+    const runningEvent = await getEvents(physicalActivityOracleAddress, EventTopic.RunningEventProcessed, network, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
+    const sleepEvent = await getEvents(physicalActivityOracleAddress, EventTopic.SleepEventProcessed, network, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
 
-    const events = await getEvents(physicalActivityOracleAddress, network, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
+    console.log('[INFO] Trying to parse `statsUpdateEvent` '+ statsUpdateEvent.length +' events returned by Etherscan.' );
+    const statsUpdateEventStr = JSON.stringify(parsePhysicalActivityStatsUpdateEvent(statsUpdateEvent), bigIntNormalizer);
 
-    console.log('[INFO] Trying to parse '+ events.length +' events returned by Etherscan.' );
+    console.log('[INFO] Trying to parse `gymVisitEvent` '+ gymVisitEvent.length +' events returned by Etherscan.' );
+    const gymVisitEventStr = JSON.stringify(parseGymVisitEventProcessed(gymVisitEvent), bigIntNormalizer);
 
-    const physicalActivityStatsUpdate = JSON.stringify(parsePhysicalActivityStatsUpdateEvent(events), (_, value) => typeof value === 'bigint' ? Number(value) : value);
+    console.log('[INFO] Trying to parse `runningEvent` '+ runningEvent.length +' events returned by Etherscan.' );
+    const runningEventStr = JSON.stringify(parseRunningEventProcessed(runningEvent), bigIntNormalizer);
 
-    console.log('[INFO] Saving events to S3: ', physicalActivityStatsUpdate);
+    console.log('[INFO] Trying to parse `sleepEvent` '+ sleepEvent.length +' events returned by Etherscan.' );
+    const sleepEventStr = JSON.stringify(parseSleepEventProcessed(sleepEvent), bigIntNormalizer);
 
-    await saveToS3(physicalActivityStatsUpdate, `events/${physicalActivityOracleAddress}/week-${previousWeek}/PhysicalActivityStatsUpdate.json`);
+    console.log('[INFO] Saving statsUpdateEventStr to S3: ', statsUpdateEventStr);
+    await saveToS3(statsUpdateEventStr, `events/${physicalActivityOracleAddress}/week-${previousWeek}/PhysicalActivityStatsUpdate.json`);
+    
+    console.log('[INFO] Saving gymVisitEventStr to S3: ', gymVisitEventStr);
+    await saveToS3(gymVisitEventStr, `events/${physicalActivityOracleAddress}/week-${previousWeek}/GymVisitEventProcessed.json`);
+    
+    console.log('[INFO] Saving runningEventStr to S3: ', runningEventStr);
+    await saveToS3(runningEventStr, `events/${physicalActivityOracleAddress}/week-${previousWeek}/RunningEventProcessed.json`);
+
+    console.log('[INFO] Saving sleepEventStr to S3: ', sleepEventStr);
+    await saveToS3(sleepEventStr, `events/${physicalActivityOracleAddress}/week-${previousWeek}/SleepEventProcessed.json`);
 
     console.log('[INFO] Completed.');
 }
@@ -61,3 +79,7 @@ async function saveToS3(body: string, key: string) {
 
     await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: 'application/json' }));
 }
+
+const bigIntNormalizer = (_: unknown, value: unknown) => typeof value === 'bigint' ? Number(value) : value
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))

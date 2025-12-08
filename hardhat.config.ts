@@ -8,15 +8,15 @@ import path from 'path';
 import fs from 'fs';
 import { GymVisitEventStruct, RunningEventStruct, SleepEventStruct } from './typechain-types/contracts/PhysicalActivityOracle';
 import { signGymVisitEvent, signRunningEvent, signSleepEvent } from './test/helpers/Stats';
-import { deployContract, FitnessUnbreakableVowUpkeeper, getContract, to96BytesString } from './scripts/utils';
+import { deployContract, FitnessUnbreakableVowUpkeeper, getContract, to96BytesString, installRip7212Mock } from './scripts/utils';
 import verify from './scripts/verify-contract';
 import { getTimeSettings, WeekDurations } from './scripts/timing';
 
 // Defaults
-const STAKED_AMOUNT = "0.0001";
+const STAKED_AMOUNT = "0.02";
 const CREATION_DATE = new Date().toISOString();
 const NUMBER_OF_CYLES = "8";
-const SECONDS_IN_WEEK: WeekDurations = '3-days'; // 95min to run android test
+const SECONDS_IN_WEEK: WeekDurations = '3-minutes'; // 95min to run android test
 
 dotenv.config();
 
@@ -35,7 +35,7 @@ task('pre:compile')
         const source = path.join(__dirname, 'contracts', 'lib', 'variants', isLocalhost ? 'hardhat' : 'standard');
         const destination = path.join(source, '..');
 
-        for (const file of ['console.sol', 'P256.sol']) {            
+        for (const file of ['console.sol']) {
             fs.copyFileSync(path.join(source, file + '.source'), path.join(destination, file));
         }
 
@@ -89,7 +89,7 @@ task('PushPhysicalActivityRecord', "Calls contract pushPhysicalActivityRecord fu
 
             const running: RunningEventStruct = await signRunningEvent({
                 timestamp: parseInt((+ new Date() / 1000).toFixed(0)),
-                avgBpm: 115,
+                avgBpm: 125,
                 distanceInMeters: parseInt(taskArgs.d, 10),
                 paceInSecondsPerKm: 5 * 60
             });
@@ -98,14 +98,14 @@ task('PushPhysicalActivityRecord', "Calls contract pushPhysicalActivityRecord fu
                 timestamp: parseInt((+ new Date() / 1000).toFixed(0)),
                 avgBpm: 130,
                 maxBpm: 167,
-                durationInMinutes: 65,
-                location: { latitudeNanoDegree: 0n, longitudeNanoDegree: 0n }
+                durationInMinutes: 55,
+                location: { latitudeNanoDegree: -229034320n, longitudeNanoDegree: -432820980n }
             });
 
             const sleep: SleepEventStruct = await signSleepEvent({
                 timestamp: parseInt((+ new Date() / 1000).toFixed(0)),
                 avgBpm: 60,
-                durationInMinutes: 9*60,
+                durationInMinutes: 4*60,
             });
 
             const result = await contract.publishPhysicalActivityEvent({
@@ -154,7 +154,11 @@ task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
 
         const network = hre.network.name;
 
-        if (network === 'localhost') return console.log('Skipping Etherscan verification for local network.');
+        if (network === 'localhost') {
+            await installRip7212Mock(hre);
+
+            return console.log('Skipping Etherscan verification for local network.');
+        }
 
         try {
             await verify(network, 'PhysicalActivityOracle', contractAddress, [timeLordAddess]);
