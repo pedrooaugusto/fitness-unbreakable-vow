@@ -127,6 +127,12 @@ class PhysicalActivityEventRepository @Inject constructor(private val encryptedP
         return PhysicalActivityEvents(sleepSessions, runningSessions, gymVisits)
     }
 
+    fun clear() {
+        editPreferences(GYM_VISIT_PREF_KEY, gson.toJson(mutableListOf<GymVisitEvent>()))
+        editPreferences(SLEEP_PREF_KEY, gson.toJson(mutableListOf<SleepEvent>()))
+        editPreferences(RUNNING_PREF_KEY, gson.toJson(mutableListOf<RunningEvent>()))
+    }
+
     private fun <T> list(preferencesKey: String, type: Type): List<T> {
         try {
             val str = encryptedPreferences.getString(preferencesKey, null)

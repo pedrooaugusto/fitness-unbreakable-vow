@@ -80,13 +80,6 @@ class GymVisitTracker @Inject constructor (private val encryptedPreferences: Sha
         return gson.fromJson(json, typeOfT)
     }
 
-    private fun updateCurrentGymVisit(gymVisitSession: GymVisitSession?) {
-        with(encryptedPreferences.edit()) {
-            putString(CURRENT_GYM_VISIT_PREF_KEY, gson.toJson(gymVisitSession))
-            apply()
-        }
-    }
-
     fun gymGeofenceCreated(): Boolean {
         return encryptedPreferences.getBoolean("GYM_GEOFENCE_CREATED", false)
     }
@@ -94,6 +87,21 @@ class GymVisitTracker @Inject constructor (private val encryptedPreferences: Sha
     fun setGymGeofenceCreated(created: Boolean) {
         with(encryptedPreferences.edit()) {
             putBoolean("GYM_GEOFENCE_CREATED", created)
+            apply()
+        }
+    }
+
+    fun clearVisitHistory() {
+        updateCurrentGymVisit(null)
+        with(encryptedPreferences.edit()) {
+            putString(GYM_VISITS_PREF_KEY, gson.toJson(mutableListOf<GymVisitSession>()))
+            apply()
+        }
+    }
+
+    private fun updateCurrentGymVisit(gymVisitSession: GymVisitSession?) {
+        with(encryptedPreferences.edit()) {
+            putString(CURRENT_GYM_VISIT_PREF_KEY, gson.toJson(gymVisitSession))
             apply()
         }
     }
