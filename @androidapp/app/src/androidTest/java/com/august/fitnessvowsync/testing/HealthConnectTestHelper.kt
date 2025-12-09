@@ -25,7 +25,6 @@ class HealthConnectTestHelper(
         insertConstantHeartRate(start, end, avgBpm)
 
         gymVisitTracker.startVisit(start, gym)
-        gymVisitTracker.markVisitAsValid()
         gymVisitTracker.finishVisit(end)
     }
 

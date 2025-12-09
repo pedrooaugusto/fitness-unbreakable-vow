@@ -73,7 +73,7 @@ export default function CurrentWeekStatusSection({
                         met={currentWeekGoals.run2KmGoalMet}
                         mainTitle={
                             <>
-                                Jog for {runningSessionMinimumDistance}km{" "}
+                                Run for {runningSessionMinimumDistance}km{" "}
                                 <small>({runningSessions}/{overview.runningSessionsGoal})</small>
                             </>
                         }
@@ -279,7 +279,7 @@ function RunningSessionsGoalModal(props: GoalModalProps) {
                 }
                 currentStatus={
                     <p>
-                        {props.currentValue} / {props.requiredValue}: <b>{props.goalMet ? 'Met' : 'Not Met'}</b>
+                        {props.currentValue} out of {props.requiredValue} running sessions reported this week. <b>Weekly goal {props.goalMet ? 'met' : 'not Met'}.</b>
                     </p>
                 }
                 {...props}
@@ -295,7 +295,7 @@ function RunningSessionsGoalModal(props: GoalModalProps) {
 
 function SleepGoalModal(props: GoalModalProps) {
     const validator = props.validator as SleepEventValidator;
-    const requiredSleepDuration = formatTime(Number(validator.minimumDurationInMinutes * 60n));
+    const requiredSleepDuration = formatTime(Number(validator.minimumDurationInMinutes * 60n), 'and', 'long');
 
     return (
         <div className="main">
@@ -303,7 +303,7 @@ function SleepGoalModal(props: GoalModalProps) {
                 requirement={
                     <>
                         Within each seven-day period (“Weekly Term”), the Pledger shall achieve{" "}
-                        <strong>at least {props.requiredValue} separate nights of {requiredSleepDuration} or more hours of sleep</strong>.
+                        <strong>at least {props.requiredValue} separate nights of {requiredSleepDuration} or more of sleep</strong>.
                     </>
                 }
                 definition={
@@ -329,9 +329,10 @@ function SleepGoalModal(props: GoalModalProps) {
                 }
                 currentStatus={
                     <p>
-                        {props.currentValue} / {props.requiredValue} nights: <b>{props.goalMet ? 'Met' : 'Not Met'}</b>
+                        {props.currentValue} out of {props.requiredValue} healthy sleep sessions reported this week. <b>Weekly goal {props.goalMet ? 'met' : 'not Met'}.</b>
                     </p>
                 }
+                
                 {...props}
             />
             <div className="actions">
@@ -345,10 +346,11 @@ function SleepGoalModal(props: GoalModalProps) {
 
 function GymVisitsGoalModal(props: GoalModalProps) {
     const validator = props.validator as GymVisitEventValidator;
-    const requiredVisitDuration = formatTime(Number(validator.minimumVisitTimeInMinutes * 60n));
-    const gymLocations = [validator.gym1Location, validator.gym2Location, validator.gym3Location]
-        .map(item => [Number(item.latitudeNanoDegree) / 1e7, Number(item.longitudeNanoDegree) / 1e7])
-        .map(([lat, lon], index, arr) => <><a href={`https://www.google.com/maps/?q=${lat},${lon}`} target="_blank"><code>({lat}°, {lon}°)</code></a>{index === arr.length - 1 ? '' : ' or '}</>)
+    const requiredVisitDuration = formatTime(Number(validator.minimumVisitTimeInMinutes * 60n), ' ', 'long');
+    const gymLocations = [validator.meierSF, validator.cachambiSF, validator.sandtonPL, validator.sandtonVA]
+        .filter(a => a != undefined)
+        .map(item => [Number(item.latitudeNanoDegree) / 1e7, Number(item.longitudeNanoDegree) / 1e7, Number(item.radiusInMeters)])
+        .map(([lat, lon, radius], index, arr) => <><a href={`https://www.google.com/maps/?q=${lat},${lon}`} target="_blank"><code>({lat}°, {lon}°, {radius}m)</code></a>{index === arr.length - 1 ? '' : ' or '}</>)
 
     return (
         <div className="main">
@@ -361,7 +363,7 @@ function GymVisitsGoalModal(props: GoalModalProps) {
                 }
                 definition={
                     <p>
-                        A valid gym visit ocurs up to X meters of either gym locations {gymLocations}, has a minimum duration of <b>{requiredVisitDuration}</b> and average heart rate during the visit greater than <b>{validator.minimumAvgBpm}bpm</b>.
+                        A valid gym visit is defined as the Pledger staying inside one of the following geofences defined by a circle: {gymLocations} for a minimum of <b>{requiredVisitDuration}</b> with average and max heart rates during this period greater than <b>{validator.minimumAvgBpm}bpm</b> and <b>{validator.minimumMaxBpm}bpm</b> respectively.
                     </p>
                 }
                 verificationBulletPoints={
@@ -376,7 +378,7 @@ function GymVisitsGoalModal(props: GoalModalProps) {
                 }
                 currentStatus={
                     <p>
-                        {props.currentValue} / {props.requiredValue} visits: <b>{props.goalMet ? 'Met' : 'Not Met'}</b>
+                        {props.currentValue} out of {props.requiredValue} healthy gym visits reported this week. <b>Weekly goal {props.goalMet ? 'met' : 'not Met'}.</b>
                     </p>
                 }
                 {...props}

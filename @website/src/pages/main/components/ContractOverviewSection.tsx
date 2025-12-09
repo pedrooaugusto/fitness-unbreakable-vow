@@ -21,11 +21,12 @@ interface ContractOverviewSectionProps extends WithModalProps {
     changeCurrency: (currency: Currency) => void;
 };
 
-type WeekDurations = '180' | '300' | '172800' | '604800';
+type WeekDurations = '180' | '300' | '172800' | '259200' | '604800';
 const CronInterval: Record<WeekDurations, number> = {
     '180':    1 * 60    + 180,
     '300':    3 * 60    + 300,
     '172800': 3 * 3600  + 172800,
+    '259200': 3 * 3600  + 259200,
     '604800': 4 * 3600  + 604800,
 };
 
@@ -354,7 +355,7 @@ function InitialStakeInfoModal(props: InitialStakeInfoModalProps) {
         <div className="main">
             <div className="weekly-goal-modal">
                 <p>
-                    The Initial Stake is the amount of cryptocurrency locked into the contract by the Pledger <b>(P.A)</b> at the commencement of the vow. This sum <b>({props.initialStake})</b> is held in escrow on-chain as collateral for the Fitness Unbreakable Vow.
+                    The Initial Stake is the amount of cryptocurrency (<b>native ETH</b>) locked into the contract by the Pledger at the commencement of the vow. This sum <b>({props.initialStake})</b> is held in escrow on-chain as collateral for the Fitness Unbreakable Vow.
                     <br /><br />
                     In the event of breach, fines may be imposed and collected by any party through invocation of the <a href={props.enforceVowFunctionUrl} target="_blank">#enforceAgreement</a> function on the smart contract. Such fines reduce the remaining balance, with forfeited amounts distributed in equal measure to the enforcing party (You) and the registered beneficiary (<a href={GIVETH_PAGE_URL} target="_blank">Giveth Charity</a>).
                     <br /><br />

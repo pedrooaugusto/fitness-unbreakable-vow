@@ -439,7 +439,7 @@
                 }
               ],
               "internalType": "struct Geofence",
-              "name": "gym1Location",
+              "name": "meierSF",
               "type": "tuple"
             },
             {
@@ -461,7 +461,7 @@
                 }
               ],
               "internalType": "struct Geofence",
-              "name": "gym2Location",
+              "name": "cachambiSF",
               "type": "tuple"
             },
             {
@@ -483,7 +483,29 @@
                 }
               ],
               "internalType": "struct Geofence",
-              "name": "gym3Location",
+              "name": "sandtonPL",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "int64",
+                  "name": "latitudeNanoDegree",
+                  "type": "int64"
+                },
+                {
+                  "internalType": "int64",
+                  "name": "longitudeNanoDegree",
+                  "type": "int64"
+                },
+                {
+                  "internalType": "uint16",
+                  "name": "radiusInMeters",
+                  "type": "uint16"
+                }
+              ],
+              "internalType": "struct Geofence",
+              "name": "sandtonVA",
               "type": "tuple"
             },
             {
@@ -494,6 +516,11 @@
             {
               "internalType": "uint8",
               "name": "minimumAvgBpm",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "minimumMaxBpm",
               "type": "uint8"
             }
           ],

@@ -818,39 +818,50 @@ public class PhysicalActivityOracle extends Contract {
     }
 
     public static class GymVisitEventValidator extends StaticStruct {
-        public Geofence gym1Location;
+        public Geofence meierSF;
 
-        public Geofence gym2Location;
+        public Geofence cachambiSF;
 
-        public Geofence gym3Location;
+        public Geofence sandtonPL;
+
+        public Geofence sandtonVA;
 
         public BigInteger minimumVisitTimeInMinutes;
 
         public BigInteger minimumAvgBpm;
 
-        public GymVisitEventValidator(Geofence gym1Location, Geofence gym2Location,
-                Geofence gym3Location, BigInteger minimumVisitTimeInMinutes,
-                BigInteger minimumAvgBpm) {
-            super(gym1Location, 
-                    gym2Location, 
-                    gym3Location, 
+        public BigInteger minimumMaxBpm;
+
+        public GymVisitEventValidator(Geofence meierSF, Geofence cachambiSF, Geofence sandtonPL,
+                Geofence sandtonVA, BigInteger minimumVisitTimeInMinutes, BigInteger minimumAvgBpm,
+                BigInteger minimumMaxBpm) {
+            super(meierSF, 
+                    cachambiSF, 
+                    sandtonPL, 
+                    sandtonVA, 
                     new org.web3j.abi.datatypes.generated.Uint8(minimumVisitTimeInMinutes), 
-                    new org.web3j.abi.datatypes.generated.Uint8(minimumAvgBpm));
-            this.gym1Location = gym1Location;
-            this.gym2Location = gym2Location;
-            this.gym3Location = gym3Location;
+                    new org.web3j.abi.datatypes.generated.Uint8(minimumAvgBpm), 
+                    new org.web3j.abi.datatypes.generated.Uint8(minimumMaxBpm));
+            this.meierSF = meierSF;
+            this.cachambiSF = cachambiSF;
+            this.sandtonPL = sandtonPL;
+            this.sandtonVA = sandtonVA;
             this.minimumVisitTimeInMinutes = minimumVisitTimeInMinutes;
             this.minimumAvgBpm = minimumAvgBpm;
+            this.minimumMaxBpm = minimumMaxBpm;
         }
 
-        public GymVisitEventValidator(Geofence gym1Location, Geofence gym2Location,
-                Geofence gym3Location, Uint8 minimumVisitTimeInMinutes, Uint8 minimumAvgBpm) {
-            super(gym1Location, gym2Location, gym3Location, minimumVisitTimeInMinutes, minimumAvgBpm);
-            this.gym1Location = gym1Location;
-            this.gym2Location = gym2Location;
-            this.gym3Location = gym3Location;
+        public GymVisitEventValidator(Geofence meierSF, Geofence cachambiSF, Geofence sandtonPL,
+                Geofence sandtonVA, Uint8 minimumVisitTimeInMinutes, Uint8 minimumAvgBpm,
+                Uint8 minimumMaxBpm) {
+            super(meierSF, cachambiSF, sandtonPL, sandtonVA, minimumVisitTimeInMinutes, minimumAvgBpm, minimumMaxBpm);
+            this.meierSF = meierSF;
+            this.cachambiSF = cachambiSF;
+            this.sandtonPL = sandtonPL;
+            this.sandtonVA = sandtonVA;
             this.minimumVisitTimeInMinutes = minimumVisitTimeInMinutes.getValue();
             this.minimumAvgBpm = minimumAvgBpm.getValue();
+            this.minimumMaxBpm = minimumMaxBpm.getValue();
         }
     }
 

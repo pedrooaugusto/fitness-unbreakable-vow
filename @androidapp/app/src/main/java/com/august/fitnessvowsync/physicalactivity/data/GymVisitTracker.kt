@@ -7,12 +7,17 @@ import com.august.fitnessvowsync.helpers.InstantTypeAdapter
 import com.august.fitnessvowsync.physicalactivity.model.TrackedGymConfig
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
-import kotlin.time.Duration
 
 class GymVisitTracker @Inject constructor (private val encryptedPreferences: SharedPreferences) {
     data class GymVisitSession(val startTime: Instant, val endTime: Instant?, val isValid: Boolean, val gym: TrackedGymConfig)
+
+    companion object {
+        @JvmStatic
+        val LOITERING_DELAY = Duration.ofMinutes(15)
+    }
 
     private val CURRENT_GYM_VISIT_PREF_KEY = "CURRENT_GYM_VISIT_PREF_KEY"
     private val GYM_VISITS_PREF_KEY = "GYM_VISITS_PREF_KEY"
@@ -32,19 +37,6 @@ class GymVisitTracker @Inject constructor (private val encryptedPreferences: Sha
         updateCurrentGymVisit(gymVisitSession)
     }
 
-    fun markVisitAsValid() {
-        val session = getCurrentGymVisit()
-
-        if (session == null) throw IllegalStateException("Unable to mark an inexistent gym visit as valid.")
-
-        updateCurrentGymVisit(GymVisitSession(
-            session.startTime,
-            session.endTime,
-            true,
-            session.gym)
-        )
-    }
-
     fun finishVisit(endTime: Instant): GymVisitSession {
         val session = getCurrentGymVisit()
 
@@ -52,7 +44,7 @@ class GymVisitTracker @Inject constructor (private val encryptedPreferences: Sha
 
         updateCurrentGymVisit(null)
 
-        val newSession = session.copy(endTime = endTime)
+        val newSession = session.copy(endTime = endTime, isValid = Duration.between(session.startTime, endTime) >= LOITERING_DELAY)
 
         if (!newSession.isValid) return newSession
 
@@ -88,13 +80,6 @@ class GymVisitTracker @Inject constructor (private val encryptedPreferences: Sha
         return gson.fromJson(json, typeOfT)
     }
 
-    private fun updateCurrentGymVisit(gymVisitSession: GymVisitSession?) {
-        with(encryptedPreferences.edit()) {
-            putString(CURRENT_GYM_VISIT_PREF_KEY, gson.toJson(gymVisitSession))
-            apply()
-        }
-    }
-
     fun gymGeofenceCreated(): Boolean {
         return encryptedPreferences.getBoolean("GYM_GEOFENCE_CREATED", false)
     }
@@ -102,6 +87,21 @@ class GymVisitTracker @Inject constructor (private val encryptedPreferences: Sha
     fun setGymGeofenceCreated(created: Boolean) {
         with(encryptedPreferences.edit()) {
             putBoolean("GYM_GEOFENCE_CREATED", created)
+            apply()
+        }
+    }
+
+    fun clearVisitHistory() {
+        updateCurrentGymVisit(null)
+        with(encryptedPreferences.edit()) {
+            putString(GYM_VISITS_PREF_KEY, gson.toJson(mutableListOf<GymVisitSession>()))
+            apply()
+        }
+    }
+
+    private fun updateCurrentGymVisit(gymVisitSession: GymVisitSession?) {
+        with(encryptedPreferences.edit()) {
+            putString(CURRENT_GYM_VISIT_PREF_KEY, gson.toJson(gymVisitSession))
             apply()
         }
     }

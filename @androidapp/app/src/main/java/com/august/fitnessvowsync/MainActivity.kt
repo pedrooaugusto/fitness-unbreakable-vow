@@ -16,13 +16,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.august.fitnessvowsync.donotuse.FakeDataProducerDoNotUse
 import com.august.fitnessvowsync.helpers.SettingsService
 
 import com.august.fitnessvowsync.ui.FitnessVowApp
 import com.august.fitnessvowsync.ui.RequiredPermissions
 import com.august.fitnessvowsync.ui.Settings
-import com.august.fitnessvowsync.ui.components.PhysicalActivityDialogType
 import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
 import com.august.fitnessvowsync.ui.viewmodel.DefaultMainScreenViewModel
 import com.august.fitnessvowsync.ui.viewmodel.DefaultPermissionsScreenViewModel
@@ -101,6 +99,7 @@ class MainActivity : ComponentActivity() {
                     composable("settings") {
                         Settings(
                             navigateToPermission = navigateToPermission,
+                            clearHistory = { mainScreenViewModel.clearHistory() },
                             settingsService = settingsService
                         )
                     }

@@ -17,8 +17,8 @@ abstract contract Ownable {
         _;
     }
 
-    modifier onlyTxOriginIsOwner() {
-        require(tx.origin == owner, "Ownable: tx origin is not the owner");
+    modifier onlyOwnerOrigin() {
+        require(tx.origin == owner, "Forbidden.");
         _;
     }
 }

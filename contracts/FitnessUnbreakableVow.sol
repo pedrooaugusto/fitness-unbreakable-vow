@@ -66,6 +66,7 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
      * a portion of the contract's funds is transferred to the caller as a penalty.
      * @dev This function incentivizes meeting activity goals by imposing a financial penalty
      * for non-compliance, rewarding the caller who verifies the unmet goal.
+     * Callable by anyone; scans weeks in order and applies the first missing-goal penalty.
      */
     function enforceAgreement() external onlyBeforeFullExpiry {
         int8 weekIndex = findFirstFailedWeek();
@@ -78,8 +79,9 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
     }
 
     /**
-     * @notice Transfers all remaining contract funds to the owner after contract (vow) has expired.
-     * Can only be called after the contract has expired and by the contract's owner.
+     * @notice Transfers remaining contract funds to the owner after the vow expires or pulls LINK from Upkeep.
+     * @dev If `withdrawUpkeeperFunds2` is true, it only withdraws LINK from the Upkeep and returns early.
+     * Otherwise, it releases the ETH balance to the owner, cancels the Upkeep, and emits `VowTeminated`.
      */
     function terminateAgreement(bool withdrawUpkeeperFunds2) external onlyOwner {
         // Allow vow termination if public keys weren't registered.
@@ -103,10 +105,18 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
         emit VowTeminated(balance, msg.sender);
     }
 
+    /**
+     * @notice Callback invoked by the oracle when weekly physical activity stats change.
+     * @dev Updates internal weekly goal records based on the latest stats for `weekIndex`.
+     */
     function onPhysicalActivityStatsUpdate(uint8 weekIndex, PhysicalActivityStats calldata stats) external onlyOracle {
         putWeek(weekIndex, buildWeeklyGoalFrom(stats));
     }
 
+    /**
+     * @notice One-time configuration of the Chainlink Upkeeper used to automate enforcement.
+     * @dev Owner sets the Upkeeper address and funds it with LINK using the provided amount.
+     */
     function configureUpkeeper(address upkeeper, uint256 linkFunding) external onlyOwner {
         require(address(CHAINLINK_UPKEEPER_ADDRESS) == address(0), "Upkeeper already set.");
 

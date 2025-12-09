@@ -23,7 +23,7 @@ class DurationTypeAdapter : TypeAdapter<Duration>() {
     }
 
     override fun read(reader: JsonReader): Duration {
-        return Duration.parse(reader.nextLong().toString())
+        return Duration.parse(reader.nextString())
     }
 }
 

@@ -105,6 +105,10 @@ open class DefaultMainScreenViewModel (
         }
     }
 
+    override fun clearHistory() {
+
+    }
+
     private fun showErrorMessage(message: String, ex: Exception) {
         _uiState.update { it.copy(errorMessage = message) }
 
@@ -136,6 +140,8 @@ interface MainScreenViewModel {
     fun eraseLastSyncTransactionHash()
 
     fun dismissErrorMessage()
+
+    fun clearHistory()
 
     suspend fun setupGymGeofence(context: Context)
 }
@@ -175,6 +181,8 @@ class PreviewMainScreenViewModel: MainScreenViewModel {
     override fun eraseLastSyncTransactionHash() { error("mock") }
 
     override fun dismissErrorMessage() { error("mock") }
+
+    override fun clearHistory() { error("mock") }
 
     override suspend fun setupGymGeofence(context: Context) { error("mock") }
 }

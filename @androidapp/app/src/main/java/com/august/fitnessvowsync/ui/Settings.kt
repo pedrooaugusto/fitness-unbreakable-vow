@@ -16,10 +16,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -50,7 +52,8 @@ import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
 @Composable
 fun Settings(
     navigateToPermission: () -> Unit,
-    settingsService: SettingsService
+    clearHistory: () -> Unit,
+    settingsService: SettingsService,
 ) {
     val focusManager = LocalFocusManager.current
     var walletPrivateKey by remember { mutableStateOf(settingsService.getClientAccountPrivateKey() ?: "") }
@@ -247,13 +250,44 @@ fun Settings(
                 style = TextStyle(fontSize = 16.sp, color = Color.White)
             )
         }
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(20.dp))
+        Button(
+            onClick = clearHistory,
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .clip(RoundedCornerShape(12.dp))
+                .then(Modifier.background(
+                    color = Color.DarkGray,
+                    shape = RoundedCornerShape(12.dp))
+                ),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                contentColor = Color.White,
+                disabledContainerColor = Color.Transparent
+            ),
+            contentPadding = PaddingValues(5.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Clear,
+                contentDescription = "Clear sync history",
+                tint = Color.White,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Clear Sync History",
+                fontWeight = FontWeight.SemiBold,
+                style = TextStyle(fontSize = 14.sp, color = Color.White)
+            )
+        }
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, device = "spec:width=1080px,height=3040px,dpi=440", showSystemUi = true)
 @Composable
 fun SettingsPreview() {
     FitnessVowSyncTheme {
-        Settings({}, SettingsService.PreviewSettingsService())
+        Settings({}, {}, SettingsService.PreviewSettingsService())
     }
 }
