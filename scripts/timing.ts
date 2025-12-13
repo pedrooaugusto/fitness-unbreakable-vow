@@ -1,4 +1,4 @@
-export type WeekDurations = '3-minutes' | '5-minutes' | '2-days' | '3-days' | '7-days';
+export type WeekDurations = '3-minutes' | '5-minutes' | '3-hours' | '2-days' | '3-days' | '7-days';
 
 // Round *up* to the next multiple of `stepMinutes` in UTC time.
 function nextMultipleOfMinutes(stepMinutes: number, date: Date) {
@@ -11,6 +11,19 @@ function nextMultipleOfMinutes(stepMinutes: number, date: Date) {
     d.setUTCMinutes(minutes + minutesToAdd, 0, 0);
 
     return d;
+}
+
+// "Every 3 hours" schedule with a small safety buffer.
+function buildThreeHourCron(date: Date, bufferMinutes = 10) {
+    const d = new Date(date.getTime() + bufferMinutes * 60 * 1000);
+
+    const minute = d.getUTCMinutes();
+    const startHour = d.getUTCHours();
+
+    const hours = Array.from({ length: 8 }, (_, idx) => (startHour + idx * 3) % 24);
+    const uniqueSorted = [...new Set(hours)].sort((a, b) => a - b);
+
+    return `${minute} ${uniqueSorted.join(",")} * * *`;
 }
 
 // Approximate "every 2 days" schedule: d0, d0+2, d0+4, d0+6
@@ -78,6 +91,14 @@ export function getTimeSettings(startDate: string, secondsInOneWeek: WeekDuratio
                 startDate: Math.floor(nextMultipleOfMinutes(5, start).getTime() / 1000),
                 cronUpkeeperSpec: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *',   // (period=5min, buffer=2min)
                 secondsInOneWeek: 300,
+            };
+        }
+
+        case '3-hours': {
+            return {
+                startDate: Math.floor(start.getTime() / 1000),
+                cronUpkeeperSpec: buildThreeHourCron(start, 10), // (period=3h, buffer=10min)
+                secondsInOneWeek: 10800,
             };
         }
 

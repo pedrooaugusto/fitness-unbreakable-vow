@@ -29,7 +29,7 @@ library PhysicalActivityValidators {
             // waka waka https://www.youtube.com/watch?v=pRpeEdMmmQ0&t=55s
             sandtonPL:  Geofence({ latitudeNanoDegree: -260758108, longitudeNanoDegree:  280636459, radiusInMeters: 150 }),
             sandtonVA:  Geofence({ latitudeNanoDegree: -260888460, longitudeNanoDegree:  280602968, radiusInMeters: 150 }),
-            minimumVisitTimeInMinutes: uint8((50 minutes) / 60), // 50 minutes
+            minimumVisitTimeInMinutes: uint8((40 minutes) / 60), // 50 minutes
             minimumAvgBpm: 95,
             minimumMaxBpm: 125
         });
