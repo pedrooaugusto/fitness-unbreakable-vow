@@ -93,7 +93,7 @@ dependencies {
 
     implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
 
-    // Helath connect client
+    // Health connect client
     implementation("androidx.health.connect:connect-client:1.0.0-alpha11")
 
     // EncryptedSharedPreferences

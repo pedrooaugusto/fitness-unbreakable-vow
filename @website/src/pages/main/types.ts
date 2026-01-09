@@ -59,10 +59,10 @@ export interface Geofence {
 }
 
 export interface GymVisitEventValidator {
-    meierSF:    Geofence;
-    cachambiSF: Geofence;
-    sandtonPL:  Geofence;
-    sandtonVA:  Geofence;
+    gymLoc1:  Geofence;
+    gymLoc2:  Geofence;
+    gymLoc3:  Geofence;
+    gymLoc4:  Geofence;
     minimumVisitTimeInMinutes: bigint;
     minimumAvgBpm: bigint;
     minimumMaxBpm: bigint;

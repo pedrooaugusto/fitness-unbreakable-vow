@@ -42,7 +42,7 @@ class GymGeofenceCreator @Inject constructor (
                 Geofence.Builder()
                     .setRequestId(gym.id)
                     .setCircularRegion(gym.latitude, gym.longitude, gym.radius.toFloat())
-                    .setLoiteringDelay(GymVisitTracker.LOITERING_DELAY.toMillis().toInt())
+                    .setLoiteringDelay(gymVisitTracker.validVisitLoiteringDuration.toMillis().toInt())
                     .setTransitionTypes(
                         Geofence.GEOFENCE_TRANSITION_ENTER or
                         Geofence.GEOFENCE_TRANSITION_EXIT or

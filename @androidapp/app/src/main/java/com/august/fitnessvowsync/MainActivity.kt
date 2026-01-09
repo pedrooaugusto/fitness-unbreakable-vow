@@ -24,6 +24,7 @@ import com.august.fitnessvowsync.ui.Settings
 import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
 import com.august.fitnessvowsync.ui.viewmodel.DefaultMainScreenViewModel
 import com.august.fitnessvowsync.ui.viewmodel.DefaultPermissionsScreenViewModel
+import com.august.fitnessvowsync.ui.viewmodel.DefaultSettingsScreenViewModel
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -37,6 +38,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     @Named("PERMISSIONS_VIEW_MODEL")
     lateinit var permissionsViewModelFactory: ViewModelProvider.Factory
+    @Inject
+    @Named("SETTINGS_VIEW_MODEL")
+    lateinit var settingsViewModelFactory: ViewModelProvider.Factory
 
     //TODO: Remove support fake data during development
     /*@Inject
@@ -68,6 +72,7 @@ class MainActivity : ComponentActivity() {
 
             val mainScreenViewModel: DefaultMainScreenViewModel = viewModel(factory = mainScreenViewModelFactory)
             val permissionScreenViewModel: DefaultPermissionsScreenViewModel = viewModel(factory = permissionsViewModelFactory)
+            val settingsScreenViewModel: DefaultSettingsScreenViewModel = viewModel(factory = settingsViewModelFactory)
 
             FitnessVowSyncTheme {
                 NavHost(
@@ -99,8 +104,7 @@ class MainActivity : ComponentActivity() {
                     composable("settings") {
                         Settings(
                             navigateToPermission = navigateToPermission,
-                            clearHistory = { mainScreenViewModel.clearHistory() },
-                            settingsService = settingsService
+                            viewModel = settingsScreenViewModel,
                         )
                     }
                 }

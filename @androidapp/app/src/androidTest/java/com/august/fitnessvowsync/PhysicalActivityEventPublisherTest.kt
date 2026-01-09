@@ -2,6 +2,7 @@ package com.august.fitnessvowsync
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.august.fitnessvowsync.contract.AddressBalanceRetriever
 import com.august.fitnessvowsync.contract.InterPlanetaryFileSystemService
 import com.august.fitnessvowsync.contract.PhysicalActivityOracleService
 import com.august.fitnessvowsync.contract.SignatureMapper
@@ -72,6 +73,7 @@ class PhysicalActivityEventPublisherTest {
         val physicalActivityOracle = Web3jModule().providePhysicalActivityOracle(settingsService)
         val timeLordContact = Web3jModule().provideTimeLord(settingsService, physicalActivityOracle)
         val ipfsService = InterPlanetaryFileSystemService(settingsService)
+        val balanceRetriever = AddressBalanceRetriever(settingsService)
 
         gymVisitTracker = GymVisitTracker(encryptedPreferences)
         oracle = PhysicalActivityOracleService(
@@ -80,6 +82,7 @@ class PhysicalActivityEventPublisherTest {
             ipfsService,
             physicalActivityOracle,
             physicalActivityEventMapper,
+            balanceRetriever
         )
         timeLord = TimeLordService(timeLordContact)
         repository = PhysicalActivityEventRepository(encryptedPreferences)
@@ -87,7 +90,7 @@ class PhysicalActivityEventPublisherTest {
         collector = PhysicalActivityEventCollector(healthConnectAggregator, gymVisitTracker, physicalActivityEventMapper)
         publisher = PhysicalActivityEventPublisher(repository, collector, oracle, timeLord)
 
-        oracle.registerAppAsRecordPublisher()
+        oracle.createPhysicalActivityPublisherPublicKey()
         GymVisitValidatorMapper()
             .toTrackedGyms(oracle.getGymVisitValidator())
             .forEach { gymVisitTracker.addTrackedGym(it) }
@@ -123,14 +126,17 @@ class PhysicalActivityEventPublisherTest {
         val sleepStart = base.plusSeconds(3600 * 3)
         val sleepEnd = sleepStart.plusSeconds(3600 * 8)
         healthConnectTestHelper.insertSleepSession(sleepStart, sleepEnd, avgBpm = 60)
+        healthConnectTestHelper.insertSleepStages(
+            Triple(sleepStart, sleepEnd, androidx.health.connect.client.records.SleepStageRecord.STAGE_TYPE_DEEP),
+        )
 
         val gymStart = base.plusSeconds(3600)
-        val gymEnd = gymStart.plusSeconds(1800)
+        val gymEnd = gymStart.plusSeconds(60 * 50)
         healthConnectTestHelper.insertGymVisit(
             start = gymStart,
             end = gymEnd,
             gym = gymVisitTracker.getTrackedGyms().first(),
-            avgBpm = 120
+            avgBpm = 135
         )
 
         return SeededTimestamps(runStart, sleepStart, gymStart)
@@ -141,6 +147,7 @@ class PhysicalActivityEventPublisherTest {
         val sleep = repository.getSleepSessions().firstOrNull { it.timestamp.epochSecond == ts.sleepStart.epochSecond }
         val gym = repository.getGymVisitSessions().firstOrNull { it.timestamp.epochSecond == ts.gymStart.epochSecond }
 
+        println("Expected events timestamps: $ts")
         println("Repository events, sleep: ${repository.getSleepSessions()}")
         println("Repository events, running: ${repository.getRunningSessions()}")
         println("Repository events, gym: ${repository.getGymVisitSessions()}")
@@ -169,7 +176,7 @@ class PhysicalActivityEventPublisherTest {
     }
 
     private fun initSettings(settings: SettingsService): SettingsService {
-        settings.saveRpcEndpoint("http://192.168.0.105:8545")
+        settings.saveRpcEndpoint("http://192.168.0.103:8545")
         settings.savePinataApiToken("test")
         // Hardhat development private key, no issues
         settings.saveClientAccountPrivateKey("")

@@ -42,10 +42,10 @@ event GymVisitEventProcessed(
 );
 
 struct GymVisitEventValidator {
-    Geofence meierSF;
-    Geofence cachambiSF;
-    Geofence sandtonPL;
-    Geofence sandtonVA;
+    Geofence gymLoc1;
+    Geofence gymLoc2;
+    Geofence gymLoc3;
+    Geofence gymLoc4;
     uint8 minimumVisitTimeInMinutes;
     uint8 minimumAvgBpm;
     uint8 minimumMaxBpm;
@@ -58,10 +58,10 @@ library GymVisitEventValidatorFunctions {
     ) internal pure returns (bool) {
         Geofence[4] memory gymLocations;
 
-        gymLocations[0] = self.meierSF;
-        gymLocations[1] = self.cachambiSF;
-        gymLocations[2] = self.sandtonPL;
-        gymLocations[3] = self.sandtonVA;
+        gymLocations[0] = self.gymLoc1;
+        gymLocations[1] = self.gymLoc2;
+        gymLocations[2] = self.gymLoc3;
+        gymLocations[3] = self.gymLoc4;
 
         return  isValidGymLocation(evento.location, gymLocations) &&
                 evento.durationInMinutes >= self.minimumVisitTimeInMinutes &&

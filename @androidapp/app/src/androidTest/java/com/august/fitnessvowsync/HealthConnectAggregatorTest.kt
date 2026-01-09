@@ -50,6 +50,33 @@ class HealthConnectAggregatorTest {
         helper.clearRecordsInRange(periodStart, periodEnd)
     }
 
+    /*fun testRoute() = runBlocking {
+        val hcClient = HealthConnectModule().provideHealthConnectClient(InstrumentationRegistry.getInstrumentation().targetContext)
+        val client = com.august.fitnessvowsync.health.HealthConnectClient(hcClient)
+
+        val r = client.readRecords(ExerciseSessionRecord::class, TimeRange.last(Period.ofDays(90)))
+
+        println("Size: ${r.size}")
+
+        for (record in r) {
+            val origin = record.metadata.dataOrigin.packageName
+            println(
+                """
+                ----
+                Origin: $origin
+                Type: ${record.exerciseType}
+                Start: ${record.startTime}
+                End:   ${record.endTime}
+                hasRoute=${record.hasRoute}
+                segments=${record.segments.size}
+                laps=${record.laps.size}
+                route=${record.route}
+                notes=${record.notes}
+                """.trimIndent()
+            )
+        }
+    }*/
+
     @Test
     fun mergeSleepSessions_merges_within_threshold() = runBlocking {
         val hcClient = HealthConnectModule().provideHealthConnectClient(InstrumentationRegistry.getInstrumentation().targetContext)

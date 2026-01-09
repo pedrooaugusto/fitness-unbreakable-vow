@@ -25,10 +25,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,30 +48,44 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.august.fitnessvowsync.helpers.SettingsService
 import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
+import com.august.fitnessvowsync.ui.viewmodel.PreviewSettingsScreenViewModel
+import com.august.fitnessvowsync.ui.viewmodel.SettingsScreenViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Settings(
     navigateToPermission: () -> Unit,
-    clearHistory: () -> Unit,
-    settingsService: SettingsService,
+    viewModel: SettingsScreenViewModel,
 ) {
     val focusManager = LocalFocusManager.current
-    var walletPrivateKey by remember { mutableStateOf(settingsService.getClientAccountPrivateKey() ?: "") }
-    var rpcEndpoint by remember { mutableStateOf(settingsService.getRpcEndpoint() ?: "") }
-    var pinataApiToken by remember { mutableStateOf(settingsService.getPinataApiToken() ?: "") }
-    var gasLimit by remember { mutableStateOf(settingsService.getGasLimit().toString()) }
-    var gasPriceMarkup by remember { mutableStateOf(settingsService.getGasPriceMarkUp().toString()) }
+    val coroutineScope = rememberCoroutineScope()
 
-    val saveSettings = {
-        settingsService.saveClientAccountPrivateKey(walletPrivateKey)
-        settingsService.saveRpcEndpoint(rpcEndpoint)
-        settingsService.savePinataApiToken(pinataApiToken)
-        settingsService.saveGasLimit(gasLimit.toLong())
-        settingsService.saveGasPriceMarkUp(gasPriceMarkup.toLong())
+    var walletPrivateKey by remember { mutableStateOf(viewModel.settingsService().getClientAccountPrivateKey() ?: "") }
+    var rpcEndpoint by remember { mutableStateOf(viewModel.settingsService().getRpcEndpoint() ?: "") }
+    var pinataApiToken by remember { mutableStateOf(viewModel.settingsService().getPinataApiToken() ?: "") }
+    var gasLimit by remember { mutableStateOf(viewModel.settingsService().getGasLimit().toString()) }
+    var gasPriceMarkup by remember { mutableStateOf(viewModel.settingsService().getGasPriceMarkUp().toString()) }
+    var emergencyKeyChangeReason by remember { mutableStateOf("") }
+    var arePublicKeysSynced by remember { mutableStateOf(true) }
+
+    val saveSettings: suspend () -> Unit = {
+        viewModel.settingsService().saveClientAccountPrivateKey(walletPrivateKey)
+        viewModel.settingsService().saveRpcEndpoint(rpcEndpoint)
+        viewModel.settingsService().savePinataApiToken(pinataApiToken)
+        viewModel.settingsService().saveGasLimit(gasLimit.toLong())
+        viewModel.settingsService().saveGasPriceMarkUp(gasPriceMarkup.toLong())
+
+        if (!arePublicKeysSynced && !emergencyKeyChangeReason.isEmpty()) {
+            viewModel.emergencyPublicKeyChange(emergencyKeyChangeReason)
+        }
+
         navigateToPermission()
+    }
+
+    LaunchedEffect(Unit) {
+        arePublicKeysSynced = viewModel.arePublicKeysInSync()
     }
 
     Column(
@@ -120,21 +137,46 @@ fun Settings(
         Spacer(modifier = Modifier.height(12.dp))
 
         TextField(
-            value = settingsService.getAppFormattedPublicKey() ?: "<not registered>",
+            value = viewModel.settingsService().getAppFormattedPublicKey() ?: "<not registered>",
             readOnly = true,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             onValueChange = {},
-            label = { Text("Oracle Public Key") } ,
+            label = { Text("App Public Key") } ,
             supportingText = {
-                Text("The oracle will only accept physical activity data signed with this key.", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
+                Text("The app will sign all publish physical activity requests to the oracle with this key.", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
             }
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        if (!arePublicKeysSynced) {
+            TextField(
+                value = emergencyKeyChangeReason,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                onValueChange = { value -> emergencyKeyChangeReason = value },
+                label = { Text("Public Key Change Reason") },
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Red,
+                    unfocusedIndicatorColor = Color.Red,
+                ),
+                supportingText = {
+                    Text(
+                        "The public key on this device does not match the registered key in the contract. A one time, emergency, expensive key change is allowed.",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Start,
+                        color = Color(0xFFFF474D),
+                    )
+                }
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         TextField(
-            value = settingsService.getPhysicalActivityRecordOracleAddress(),
+            value = viewModel.settingsService().getPhysicalActivityRecordOracleAddress(),
             readOnly = true,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
@@ -148,7 +190,7 @@ fun Settings(
         Spacer(modifier = Modifier.height(12.dp))
 
         TextField(
-            value = settingsService.getNetwork(),
+            value = viewModel.settingsService().getNetwork(),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             readOnly = true,
@@ -222,7 +264,7 @@ fun Settings(
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick = saveSettings,
+            onClick = { coroutineScope.launch { saveSettings() } },
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
@@ -253,7 +295,7 @@ fun Settings(
         HorizontalDivider()
         Spacer(modifier = Modifier.height(20.dp))
         Button(
-            onClick = clearHistory,
+            onClick = { viewModel.clearHistory() },
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
@@ -288,6 +330,6 @@ fun Settings(
 @Composable
 fun SettingsPreview() {
     FitnessVowSyncTheme {
-        Settings({}, {}, SettingsService.PreviewSettingsService())
+        Settings({}, PreviewSettingsScreenViewModel())
     }
 }

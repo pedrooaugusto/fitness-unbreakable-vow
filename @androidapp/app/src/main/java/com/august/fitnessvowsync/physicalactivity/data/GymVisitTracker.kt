@@ -11,13 +11,11 @@ import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 
-class GymVisitTracker @Inject constructor (private val encryptedPreferences: SharedPreferences) {
-    data class GymVisitSession(val startTime: Instant, val endTime: Instant?, val isValid: Boolean, val gym: TrackedGymConfig)
+class GymVisitTracker(private val encryptedPreferences: SharedPreferences, public val validVisitLoiteringDuration: Duration) {
 
-    companion object {
-        @JvmStatic
-        val LOITERING_DELAY = Duration.ofMinutes(15)
-    }
+    @Inject constructor (encryptedPreferences: SharedPreferences) : this(encryptedPreferences, Duration.ofMinutes(15))
+
+    data class GymVisitSession(val startTime: Instant, val endTime: Instant?, val isValid: Boolean, val gym: TrackedGymConfig)
 
     private val CURRENT_GYM_VISIT_PREF_KEY = "CURRENT_GYM_VISIT_PREF_KEY"
     private val GYM_VISITS_PREF_KEY = "GYM_VISITS_PREF_KEY"
@@ -44,7 +42,7 @@ class GymVisitTracker @Inject constructor (private val encryptedPreferences: Sha
 
         updateCurrentGymVisit(null)
 
-        val newSession = session.copy(endTime = endTime, isValid = Duration.between(session.startTime, endTime) >= LOITERING_DELAY)
+        val newSession = session.copy(endTime = endTime, isValid = Duration.between(session.startTime, endTime) >= validVisitLoiteringDuration)
 
         if (!newSession.isValid) return newSession
 

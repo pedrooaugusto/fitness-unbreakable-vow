@@ -28,7 +28,7 @@ class HealthConnectTestHelper(
         gymVisitTracker.finishVisit(end)
     }
 
-    suspend fun insertRunningSession(start: Instant, end: Instant, distanceMeters: Double, avgBpm: Long) {
+    suspend fun insertRunningSession(start: Instant, end: Instant, distanceMeters: Double, avgBpm: Long?) {
         val session: Record = ExerciseSessionRecord(
             startTime = start,
             endTime = end,
@@ -45,18 +45,24 @@ class HealthConnectTestHelper(
             endZoneOffset = null,
         )
 
-        val hr: Record = HeartRateRecord(
-            startTime = start,
-            endTime = end,
-            samples = listOf(
-                HeartRateRecord.Sample(start.plus(Duration.ofSeconds(5)), avgBpm),
-                HeartRateRecord.Sample(end.minus(Duration.ofSeconds(5)), avgBpm)
-            ),
-            startZoneOffset = null,
-            endZoneOffset = null,
-        )
+        val records = mutableListOf(session, distance)
 
-        client.insertRecords(listOf(session, distance, hr))
+        if (avgBpm != null) {
+            val hr: Record = HeartRateRecord(
+                startTime = start,
+                endTime = end,
+                samples = listOf(
+                    HeartRateRecord.Sample(start.plus(Duration.ofSeconds(5)), avgBpm),
+                    HeartRateRecord.Sample(end.minus(Duration.ofSeconds(5)), avgBpm)
+                ),
+                startZoneOffset = null,
+                endZoneOffset = null,
+            )
+
+            records += hr
+        }
+
+        client.insertRecords(records)
     }
 
     suspend fun insertSleepSession(start: Instant, end: Instant, avgBpm: Long) {

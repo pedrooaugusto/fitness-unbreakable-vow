@@ -15,8 +15,8 @@ import { getTimeSettings, WeekDurations } from './scripts/timing';
 // Defaults
 const STAKED_AMOUNT = "0.0002";
 const CREATION_DATE = new Date().toISOString();
-const NUMBER_OF_CYLES = "2";
-const SECONDS_IN_WEEK: WeekDurations = '3-hours'; // 95min to run android test
+const NUMBER_OF_CYLES = "5";
+const SECONDS_IN_WEEK: WeekDurations = '3-minutes'; // 95min to run android test
 
 dotenv.config();
 

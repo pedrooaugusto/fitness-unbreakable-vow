@@ -16,6 +16,7 @@ import com.august.fitnessvowsync.physicalactivity.model.TrackedGymConfig
 import com.august.fitnessvowsync.testing.HealthConnectTestHelper
 import com.august.fitnessvowsync.testing.PeriodSpec
 import com.august.fitnessvowsync.testing.RandomPhysicalActivityGenerator
+import com.august.fitnessvowsync.testing.RunSpec
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -49,7 +50,7 @@ class PhysicalActivityEventCollectorTest {
     fun collect_handles_multiple_periods_correctly() = runBlocking {
         for (randomEvent in randomEvents) {
             // Arrange
-            randomEvent.runningSessions.forEach { healthConnectTestHelper.insertRunningSession(it.start, it.end, it.distanceMeters.toDouble(), it.avgBpm.toLong()) }
+            randomEvent.runningSessions.forEach { healthConnectTestHelper.insertRunningSession(it.start, it.end, it.distanceMeters.toDouble(),it.avgBpm?.toLong()) }
             randomEvent.sleepSessions.forEach { healthConnectTestHelper.insertSleepSession(it.start, it.end, it.avgBpm.toLong()) }
             randomEvent.gymVisits.forEach { healthConnectTestHelper.insertGymVisit(it.start, it.end, it.gym, it.avgBpm.toLong()) }
 
@@ -102,9 +103,11 @@ class PhysicalActivityEventCollectorTest {
         randomEvent: PeriodSpec,
         events: PhysicalActivityEvents
     ) {
-        println("Asserting ${randomEvent.runningSessions} on ${events.running}")
-        assertEquals(randomEvent.runningSessions.size, events.running.size)
-        for (run in randomEvent.runningSessions) {
+        val expectedRuns = randomEvent.runningSessions.filter { r -> r.avgBpm != null }
+
+        println("Asserting $expectedRuns on ${events.running}")
+        assertEquals(expectedRuns.size, events.running.size)
+        for (run in expectedRuns) {
             val e = events.running.firstOrNull { it.timestamp == run.start }
             assertNotNull("Missing running event $run on list ${events.running}", e)
             assertEquals(run.distanceMeters, e!!.distanceInMeters)
@@ -117,7 +120,10 @@ class PhysicalActivityEventCollectorTest {
     public fun init() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val healthConnectClient = HealthConnectModule().provideHealthConnectClient(context)
-        val gymVisitTracker = GymVisitTracker(EncryptedSharedPreferencesModule().let { it.provideEncryptedSharedPreferences(context, it.provideMainKeyAlias()) })
+        val gymVisitTracker = GymVisitTracker(
+            EncryptedSharedPreferencesModule().let { it.provideEncryptedSharedPreferences(context, it.provideMainKeyAlias()) },
+            Duration.ofMinutes(4)
+        )
 
         randomEvents = RandomPhysicalActivityGenerator.generate(Instant.ofEpochMilli(Instant.now().toEpochMilli()).minusSeconds(60 * 60), count = 4, trackedGyms, seed = 42L)
         healthConnectTestHelper = HealthConnectTestHelper(healthConnectClient, gymVisitTracker)

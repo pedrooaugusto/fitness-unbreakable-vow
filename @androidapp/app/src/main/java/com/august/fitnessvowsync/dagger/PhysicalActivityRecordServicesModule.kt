@@ -1,5 +1,6 @@
 package com.august.fitnessvowsync.dagger;
 
+import com.august.fitnessvowsync.contract.AddressBalanceRetriever
 import com.august.fitnessvowsync.contract.ContractProvider
 import com.august.fitnessvowsync.contract.PhysicalActivityOracle
 import com.august.fitnessvowsync.contract.SignatureMapper
@@ -22,13 +23,15 @@ class PhysicalActivityRecordServicesModule {
         ipfsService: InterPlanetaryFileSystemService,
         physicalActivityOracle: ContractProvider<PhysicalActivityOracle>,
         physicalActivityEventMapper: PhysicalActivityEventMapper,
+        balanceRetriever: AddressBalanceRetriever
     ): PhysicalActivityOracleService {
         return PhysicalActivityOracleService(
             protectedKeyService,
             signatureMapper,
             ipfsService,
             physicalActivityOracle,
-            physicalActivityEventMapper
+            physicalActivityEventMapper,
+            balanceRetriever
         )
     }
 }
