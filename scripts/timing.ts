@@ -73,7 +73,7 @@ function buildWeeklyCron(date: Date, bufferHours: number = 3): string {
     return `${minute} ${hour} * * ${dow}`;
 }
 
-
+// It has to align witht he chainlink cron schedule
 export function getTimeSettings(startDate: string, secondsInOneWeek: WeekDurations) {
     const start = new Date(startDate);
 

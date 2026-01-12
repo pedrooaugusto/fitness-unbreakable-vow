@@ -21,7 +21,7 @@ class HealthConnectClient @Inject constructor(
     private val dataOriginFilter = setOf(
         DataOrigin("com.sec.android.app.shealth"),
         // TODO: Remove support fake data during development
-        // DataOrigin("com.august.fitnessvowsync")
+        //DataOrigin("com.august.fitnessvowsync")
     )
 
     suspend fun <T: Record> readRecords(recordType: KClass<T>, timeRangeFilter: TimeRangeFilter): List<T> {
