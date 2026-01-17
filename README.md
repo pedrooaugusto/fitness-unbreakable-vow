@@ -4,6 +4,10 @@ FitVow is a self-enforcing fitness vow built on-chain. You stake funds, commit t
 
 Live dashboard: http://fitvow.pedroaugusto.dev/ (shows the current state of the challenge)
 
+## Current challenge parameters
+- Duration: 13 weeks.
+- Total staked amount: 200 USD.
+
 ## What it is
 - A fitness commitment contract that escrows funds and penalizes missed weeks.
 - An oracle that validates signed activity records and updates weekly status.
@@ -60,19 +64,25 @@ npm run start
 
 Build contracts:
 ```bash
-./run.sh build localhost
+./run.sh build-prod localhost
 ```
 
-Deploy locally:
+Deploy locally to hardhat:
 ```bash
 ./run.sh deploy localhost
 ```
 
 Start the frontend:
+(if you get timey wimey error wait a few minutes...)
 ```bash
 cd @website
 npm install
 npm run dev
+```
+
+Publish fake physical activity events:
+```bash
+./run.sh push-record localhost
 ```
 
 Enforce a missed week:

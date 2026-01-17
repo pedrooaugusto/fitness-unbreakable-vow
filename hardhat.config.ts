@@ -18,7 +18,8 @@ const CREATION_DATE = new Date().toISOString();
 const NUMBER_OF_CYLES = "5";
 const SECONDS_IN_WEEK: WeekDurations = '3-minutes'; // 95min to run android test
 
-dotenv.config();
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env', override: true });
 
 // Optional environment variables (may be missing in CI)
 const SEPOLIA_RPC_URL = process.env['sepolia.RPC_URL'];
