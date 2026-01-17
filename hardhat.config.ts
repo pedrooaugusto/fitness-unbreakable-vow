@@ -13,10 +13,10 @@ import verify from './scripts/verify-contract';
 import { getTimeSettings, WeekDurations } from './scripts/timing';
 
 // Defaults
-const STAKED_AMOUNT = "0.01";
+const STAKED_AMOUNT = "0.0001";
 const CREATION_DATE = new Date().toISOString();
-const NUMBER_OF_CYLES = "10";
-const SECONDS_IN_WEEK: WeekDurations = '5-minutes'; // 95min to run android test
+const NUMBER_OF_CYLES = "2";
+const SECONDS_IN_WEEK: WeekDurations = '3-minutes'; // 95min to run android test
 
 dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env', override: true });
@@ -141,17 +141,22 @@ task('DeployPhysicalActivityOracle', "Deploys the PhysicalActivityOracle.")
 
         const cronSpec96String = to96BytesString(hre, cronUpkeeperSpec);
 
-        const { contractAddress: timeLordAddess, contract } = await deployContract(
+        const { contractAddress: timeLordAddess } = await deployContract(
             hre,
             'TheDoctor',
             async (factory) => await factory.deploy(startDate, expirationDate, secondsInOneWeek, ...cronSpec96String)
         );
 
-        const { contractAddress } = await deployContract(
+        const { contractAddress, contract } = await deployContract(
             hre,
             'PhysicalActivityOracle',
             async (factory) => await factory.deploy(timeLordAddess)
         );
+
+        const testPublicKey = await getRawPublicKey();
+
+        const result1 = await contract.setPublicKey(testPublicKey, { attestationSha256: '0xfff', attestationChallenge: 'sandbox', attestationIpfsCID: 'sandbox' });
+        await result1.wait();
 
         const network = hre.network.name;
 
@@ -185,7 +190,8 @@ task('DeployFitnessUnbreakableVow', "Deploys the FitnessUnbreakableVow")
 
         if (network === 'localhost') return console.log('Skipping Etherscan verification for local network.');
 
-        await FitnessUnbreakableVowUpkeeper.create(contract, hre);
+        // Upkeeper is not enabled in sandbox
+        // await FitnessUnbreakableVowUpkeeper.create(contract, hre);
 
         try {
             await verify(network, 'FitnessUnbreakableVow', contractAddress, [oracleAddress]);

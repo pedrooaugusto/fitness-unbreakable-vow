@@ -30,7 +30,7 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
      * @dev Giveth Charity Wallet.
      * @dev https://giveth.io/project/Giveth-Matching-Pool-0
      */
-    address public GIVETH_WALLET_ADDRESS;
+    address public immutable GIVETH_WALLET_ADDRESS;
 
     /**
      * @notice The total amount of funds staked in this contract at deployment.
@@ -58,7 +58,8 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
 
         if (Environment.isLocalhost()) return;
 
-        _createUpkeeper(TIME_LORD.END_OF_WEEK_CRON());
+        // Upkeeper is not enabled in sandbox
+        // _createUpkeeper(TIME_LORD.END_OF_WEEK_CRON());
     }
 
     /**
@@ -123,14 +124,15 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
         _configureUpkeeper(upkeeper, linkFunding, TIME_LORD.END_OF_WEEK_CRON());
     }
 
-    function reset(uint256 creationDate, uint256 expirationDate) external onlyOwner {
+    function reset(uint256 creationDate, uint256 expirationDate) external onlyOwner payable {
         require(address(this).balance > 0.00001 ether, "No enough funds to reset.");
 
         TIME_LORD.reset(creationDate, expirationDate);
         PHYSICAL_ACTIVITY_ORACLE.reset();
+        clearWeeks();
 
         STAKED_AMOUNT = address(this).balance;
-        PENALTY_AMOUNT = STAKED_AMOUNT / ((TIME_LORD.EXPIRATION_DATE() - TIME_LORD.CREATION_DATE()) / TIME_LORD.SECONDS_IN_ONE_WEEK());        
+        PENALTY_AMOUNT = STAKED_AMOUNT / ((TIME_LORD.EXPIRATION_DATE() - TIME_LORD.CREATION_DATE()) / TIME_LORD.SECONDS_IN_ONE_WEEK());
     }
 
     /** 

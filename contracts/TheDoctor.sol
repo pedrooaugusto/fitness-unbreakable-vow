@@ -48,7 +48,7 @@ contract TheDoctor is TimeLord, Ownable {
         END_OF_WEEK_CRON_P3 = endOfWeekCronP3;
     }
 
-    function reset(uint256 creationDate, uint256 expirationDate) external onlyTxOriginIsOwner {
+    function reset(uint256 creationDate, uint256 expirationDate) external onlyOwnerOrigin {
         NUMBER_OF_WEEKS = uint8((expirationDate - creationDate) / SECONDS_IN_ONE_WEEK);
         CREATION_DATE = creationDate;
         EXPIRATION_DATE = creationDate + NUMBER_OF_WEEKS * SECONDS_IN_ONE_WEEK;

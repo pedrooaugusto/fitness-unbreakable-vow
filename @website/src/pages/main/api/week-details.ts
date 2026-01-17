@@ -9,11 +9,11 @@ import type {
 import loadContract, { type EnhancedContract } from './load-contract';
 
 export async function getWeekDetails(weekIndex: string): Promise<GetWeekDetailsResponse> {
-    const { PhysicalActivityOracle, FitnessUnbreakableVow } = await loadContract();
+    const { PhysicalActivityOracle, FitnessUnbreakableVow, TimeLordContract } = await loadContract();
 
     const weeklyGoal = await FitnessUnbreakableVow.weeklyGoalsRecords!(weekIndex);
     const mergedRecord = await PhysicalActivityOracle.physicalActivityStats!(weekIndex) as GetContractOverviewResponse['currentWeekPhysicalActivityStats'];
-    const weekHistory = await getPhysicalActivityWeekHistory(weekIndex, PhysicalActivityOracle);
+    const weekHistory = await getPhysicalActivityWeekHistory(weekIndex, PhysicalActivityOracle, TimeLordContract);
     const penaltyDetails = await getPenaltyAppliedEvent(weeklyGoal, weekIndex, FitnessUnbreakableVow);
 
     const goals = {
@@ -34,9 +34,12 @@ export async function getWeekDetails(weekIndex: string): Promise<GetWeekDetailsR
     };
 }
 
-async function getPhysicalActivityWeekHistory(weekIndex: string, oracleContract: EnhancedContract) {
+async function getPhysicalActivityWeekHistory(weekIndex: string, oracleContract: EnhancedContract, timeLordContract: EnhancedContract) {
     // We don't have a limit on how many blocks we can query in localhost.
     try {
+        const creationDate = Number(await timeLordContract.CREATION_DATE());
+        const onlyAfterCreation = (event: { timestamp: number }) => event.timestamp >= creationDate;
+
         if (oracleContract.network === 'localhost') {
             const [gymVisitEventProcessed, runningEventProcessed, sleepEventProcessed] = await Promise.all([
                 oracleContract.getEvents<GymVisitEventProcessed>('GymVisitEventProcessed', [weekIndex], [
@@ -63,7 +66,11 @@ async function getPhysicalActivityWeekHistory(weekIndex: string, oracleContract:
                 ]),
             ]);
 
-            return { gymVisitEventProcessed, runningEventProcessed, sleepEventProcessed };
+            return {
+                gymVisitEventProcessed: gymVisitEventProcessed.filter(onlyAfterCreation),
+                runningEventProcessed: runningEventProcessed.filter(onlyAfterCreation),
+                sleepEventProcessed: sleepEventProcessed.filter(onlyAfterCreation),
+            };
         }
 
         const fetchJson = async <T>(fileName: string) => {
@@ -80,7 +87,12 @@ async function getPhysicalActivityWeekHistory(weekIndex: string, oracleContract:
             fetchJson<SleepEventProcessed[]>('SleepEventProcessed.json'),
         ]);
 
-        return { gymVisitEventProcessed, runningEventProcessed, sleepEventProcessed };
+        return {
+            gymVisitEventProcessed: gymVisitEventProcessed.filter(onlyAfterCreation),
+            runningEventProcessed: runningEventProcessed.filter(onlyAfterCreation),
+            sleepEventProcessed: sleepEventProcessed.filter(onlyAfterCreation),
+        };
+
     } catch(ex) {
         console.error('Unable to fetch events for week: ' + weekIndex, ex);
 
