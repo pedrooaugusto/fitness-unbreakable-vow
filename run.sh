@@ -93,6 +93,10 @@ case "$1" in
         npx hardhat --network $2 TerminateVow
         echo "Done."
         ;;
+    diff)
+        echo "Git diff"
+        git diff main -- . ':!*.java' ':!*.json' ':!*.abi' ':!*.bin' ':!*.addresses' ':!*addresses'
+        ;;
     deploy-webapp)
         echo "Deploying frontend"
 

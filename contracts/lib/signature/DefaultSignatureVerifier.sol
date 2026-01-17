@@ -55,6 +55,17 @@ abstract contract DefaultSignatureVerifier is SignatureVerifier {
         PUBLIC_KEY_ATTESTATION = keyAttestation;
     }
 
+    function _emergencyPublicKeyChange(
+        P256PublicKey calldata newPublicKey,
+        AndroidKeyAttestation calldata newKeyAttestation
+    ) internal {
+        require(newPublicKey.x != bytes32(0), "Public key cannot be empty");
+        require(newPublicKey.y != bytes32(0), "Public key cannot be empty");
+
+        PUBLIC_KEY = newPublicKey;
+        PUBLIC_KEY_ATTESTATION = newKeyAttestation;
+    }
+
     /**
      * @dev Taken as it is from: `@openzeppelin/contracts/utils/cryptography/P256.sol`
      * 

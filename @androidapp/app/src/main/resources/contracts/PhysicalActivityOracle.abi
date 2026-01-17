@@ -14,6 +14,31 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "reason",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "oldKey",
+        "type": "string"
+      }
+    ],
+    "name": "EmergencyPublicKeyChange",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "uint8",
         "name": "weekIndex",
@@ -231,12 +256,38 @@
   },
   {
     "inputs": [],
-    "name": "ORACLE_UPDATE_LISTENER",
+    "name": "FITNESS_UNBREAKABLE_VOW",
     "outputs": [
       {
-        "internalType": "contract Listener",
+        "internalType": "contract FitVowInterface",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ONE_TIME_EMERGENCY_KEY_CHANGE_PRICE",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ONE_TIME_EMERGENCY_KEY_CHANGE_USED",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -307,6 +358,58 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "x",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "y",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct P256PublicKey",
+        "name": "newPublicKey",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "attestationSha256",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "attestationChallenge",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "attestationIpfsCID",
+            "type": "string"
+          }
+        ],
+        "internalType": "struct AndroidKeyAttestation",
+        "name": "newKeyAttestation",
+        "type": "tuple"
+      },
+      {
+        "internalType": "string",
+        "name": "changeReason",
+        "type": "string"
+      }
+    ],
+    "name": "expensiveOneTimeEmergencyPublicKeyChange",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -435,7 +538,7 @@
               }
             ],
             "internalType": "struct Geofence",
-            "name": "meierSF",
+            "name": "gymLoc1",
             "type": "tuple"
           },
           {
@@ -457,7 +560,7 @@
               }
             ],
             "internalType": "struct Geofence",
-            "name": "cachambiSF",
+            "name": "gymLoc2",
             "type": "tuple"
           },
           {
@@ -479,7 +582,7 @@
               }
             ],
             "internalType": "struct Geofence",
-            "name": "sandtonPL",
+            "name": "gymLoc3",
             "type": "tuple"
           },
           {
@@ -501,7 +604,7 @@
               }
             ],
             "internalType": "struct Geofence",
-            "name": "sandtonVA",
+            "name": "gymLoc4",
             "type": "tuple"
           },
           {

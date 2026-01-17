@@ -201,7 +201,7 @@ function CurrentWeekInformation({ overview }: { overview: GetContractOverviewRes
     const weekDurationInfo = (
         <>
             Week #{currentWeekNumber} • {' '}
-            {formatDate(currentWeekStartDate, null)} ➡ {' '}
+            {formatDate(currentWeekStartDate, null)}{'  '}➡{'  '}
             {formatDate(currentWeekEndDate, null)}: {' '}
         </>
     );
@@ -258,8 +258,8 @@ function RunningSessionsGoalModal(props: GoalModalProps) {
                 definition={
                     <p>
                         A valid running session has a minimum distance of <b>{requiredDistance}km</b>, pace smaller{" "}
-                        than <b>{Number(validator.maximumPaceInSecondsPerKm / 60n)}min/km</b> and avarage heart rate during the{" "}
-                        exercise greater than <b>{Number(validator.minimumAvgBpm)}bpm</b>.
+                        than <b>{Number(validator.maximumPaceInSecondsPerKm / 60n)}min/km</b>, avarage heart rate during the{" "}
+                        exercise greater than <b>{Number(validator.minimumAvgBpm)}bpm</b> and cannot happen <b>during</b> a gym session.
                     </p>
                 }
                 verificationBulletPoints={
@@ -347,10 +347,10 @@ function SleepGoalModal(props: GoalModalProps) {
 function GymVisitsGoalModal(props: GoalModalProps) {
     const validator = props.validator as GymVisitEventValidator;
     const requiredVisitDuration = formatTime(Number(validator.minimumVisitTimeInMinutes * 60n), ' ', 'long');
-    const gymLocations = [validator.meierSF, validator.cachambiSF, validator.sandtonPL, validator.sandtonVA]
+    const gymLocations = [validator.gymLoc1, validator.gymLoc2]
         .filter(a => a != undefined)
         .map(item => [Number(item.latitudeNanoDegree) / 1e7, Number(item.longitudeNanoDegree) / 1e7, Number(item.radiusInMeters)])
-        .map(([lat, lon, radius], index, arr) => <><a href={`https://www.google.com/maps/?q=${lat},${lon}`} target="_blank"><code>({lat}°, {lon}°, {radius}m)</code></a>{index === arr.length - 1 ? '' : ' or '}</>)
+        .map(([lat, lon, radius], index, arr) => <><a href={`https://www.google.com/maps/?q=${lat},${lon}`} target="_blank"><code>({lat}°, {lon}°, {radius}m)</code></a>{index === arr.length - 1 ? '' : ', '}</>)
 
     return (
         <div className="main">
@@ -363,7 +363,7 @@ function GymVisitsGoalModal(props: GoalModalProps) {
                 }
                 definition={
                     <p>
-                        A valid gym visit is defined as the Pledger staying inside one of the following geofences defined by a circle: {gymLocations} for a minimum of <b>{requiredVisitDuration}</b> with average and max heart rates during this period greater than <b>{validator.minimumAvgBpm}bpm</b> and <b>{validator.minimumMaxBpm}bpm</b> respectively.
+                        A valid gym visit is defined as the Pledger staying inside one of the following geofences defined by a circle: {gymLocations} and others... for a minimum of <b>{requiredVisitDuration}</b> with average and max heart rates during this period greater than <b>{validator.minimumAvgBpm}bpm</b> and <b>{validator.minimumMaxBpm}bpm</b> respectively.
                     </p>
                 }
                 verificationBulletPoints={

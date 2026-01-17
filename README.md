@@ -1,65 +1,102 @@
-# **FitVow Smart Contract**
+# FitVow
 
-This smart contract creates a self-enforced health and wellness commitment backed by financial penalties and decentralized accountability.
+FitVow is a self-enforcing fitness vow built on-chain. You stake funds, commit to weekly activity goals, and let the contract enforce the rules without a trusted referee. Miss a week, pay a penalty. Keep your word, get your stake back.
 
----
+Live dashboard: http://fitvow.pedroaugusto.dev/ (shows the current state of the challenge)
 
-## **1. Commitment Overview**
+## Current challenge parameters
+- Duration: 13 weeks.
+- Total staked amount: 200 USD.
 
-- **Duration:** 3 months (12 weeks)  
-- **Stake:** $150 USD (or equivalent in a stablecoin such as USDC), locked within the smart contract.  
+## What it is
+- A fitness commitment contract that escrows funds and penalizes missed weeks.
+- An oracle that validates signed activity records and updates weekly status.
+- A mobile app that collects data from Health Connect and geofences, then signs it with hardware-backed keys.
+- A public enforcement model that routes penalties to charity and optional enforcers.
 
-This stake acts as collateral to incentivize goal completion. It will be gradually reduced if health and habit goals are not met.  
+## How it works
+1. A Pledger deploys `FitnessUnbreakableVow` with a stake in native ETH (or the chain's native token).
+2. The FitVow Sync Android app collects running, sleep, and gym visit events and signs them on-device.
+3. `PhysicalActivityOracle` verifies P-256 signatures (RIP-7212), validates the events, and aggregates weekly stats.
+4. The vow contract receives weekly stats and tracks whether the Pledger met the goals.
+5. If a week is missed, anyone can call `enforceAgreement()` to apply the penalty.
+6. At the end of the term (plus grace), remaining funds are released back to the Pledger.
 
----
+## Weekly goals (on-chain)
+Goals are hard-coded in the contracts to keep rules immutable and auditable.
 
-## **2. Weekly Health Goals & Verification**
+- Running sessions: minimum 2 km, pace cap, and minimum average BPM.
+- Sleep sessions: minimum 7 hours and a healthy BPM band.
+- Gym visits: geofenced location, minimum visit duration, and heart-rate thresholds.
+- The Pledger must hit at least 2 of the 3 goals each week.
+- Weekly counts and validators live in `contracts/lib/WeeklyGoalListable.sol` and `contracts/lib/PhysicalActivityValidator.sol`.
 
-To remain in good standing each week, the **Pledger** must complete at least **two** of the following verifiable obligations:
+## Enforcement and penalties
+- Penalty per missed week is `STAKED_AMOUNT / number_of_weeks`.
+- If a regular user enforces, the penalty is split 50/50 between the caller and [Giveth charity](https://giveth.io/project/Giveth-Matching-Pool-0?tab=donations).
+- If Chainlink Automation enforces, 100 percent goes to Giveth.
+- [Giveth Charity wallet](https://giveth.io/project/Giveth-Matching-Pool-0?tab=donations): `0x6e8873085530406995170Da467010565968C7C62`.
 
-- **Run:** A running session of at least 2 km (measured via Smart Watch).  
-- **Healthy Sleep:** Log at least two nights with 7h30m or more of sleep (measured via Smart Watch).  
-- **Gym Visit:** Verified presence at a registered gym (via Android Geofence).  
+## Trust and integrity model
+- Records are signed with a hardware-backed P-256 key stored in Android Keystore.
+- The oracle stores Android Key Attestation metadata on-chain for external verification.
+- Public key is set once; emergency rotation costs 35 percent of the vow balance and goes to Giveth.
+- The Android app can be built with a sign-and-forget flow to prevent silent APK replacement.
 
-### **Data Integrity & Verification Process**
+## Core contracts
+- `contracts/FitnessUnbreakableVow.sol`: escrows stake, enforces weekly penalties, releases funds.
+- `contracts/PhysicalActivityOracle.sol`: verifies signatures, validates activity, publishes weekly stats.
+- `contracts/TheDoctor.sol`: time schedule and week index logic (active, grace, fully expired).
 
-- Metrics are collected via the **FitVow Android App**.  
-- Each record is signed on-device with a hardware-protected private key (Android Keystore / TEE).  
-- Signed records are submitted to a **PhysicalActivityOracle Contract**, which validates the signatures and makes the data available to the vow contract.  
-- A **sign-and-forget build mechanism** ensures app authenticity:  
-  - APKs are signed once with an ephemeral key that is immediately discarded.  
-  - Because the signing key is unrecoverable, new modified builds cannot replace the installed app.  
-  - Reinstallation would erase all original keys and records, preventing fraudulent continuation.  
+## Repository layout
+- `contracts/`: Solidity contracts and libraries.
+- `@androidapp/`: FitVow Sync Android app.
+- `@website/`: Web dashboard (Vite + React).
+- `@contract-event-store/`: Optional Lambda that mirrors contract events to S3 for the UI.
+- `scripts/`: deployment helpers, key tools, and utilities.
+- `run.sh`: build, deploy, enforce, and tooling shortcuts.
 
----
+## Local development
+```bash
+npm install
+npm run start
+```
 
-## **3. Enforcement & Penalty Mechanism**
+Build contracts:
+```bash
+./run.sh build-prod localhost
+```
 
-If the contract fails to verify that weekly obligations were completed:
+Deploy locally to hardhat:
+```bash
+./run.sh deploy localhost
+```
 
-- **Fine:** $8 USD (or equivalent) is deducted from the staked balance.  
-- **Distribution:**  
-  - If the `enforceAgreement()` function is called by an individual user, the fine is split equally between the caller (the **Enforcer**) and the **Giveth Charity Foundation** at  
-    [`0x6e8873085530406995170Da467010565968C7C62`](https://etherscan.io/address/0x6e8873085530406995170Da467010565968C7C62).  
-  - If enforcement is performed by the designated **Upkeeper** (e.g., Chainlink Automation), **100% of the fine** is routed to the Charity.  
+Start the frontend:
+(if you get timey wimey error wait a few minutes...)
+```bash
+cd @website
+npm install
+npm run dev
+```
 
----
+Publish fake physical activity events:
+```bash
+./run.sh push-record localhost
+```
 
-## **4. Contract Completion & Fund Release**
+Enforce a missed week:
+```bash
+./run.sh enforce localhost
+```
 
-At the end of the 3-month term:
+## Notes
+- Local settings use short weeks for testing (see `hardhat.config.ts` and `scripts/timing.ts`).
+- Deployment addresses are tracked in `contracts/.addresses` and copied into the web and Android apps.
+- This project is experimental and has not been audited.
 
-- Any remaining staked funds are automatically released and returned to the **Pledger’s wallet**.  
-- No further enforcement or obligations remain.  
+## Diagram
+![FitVow Architecture](FitVow-Architecture.png)
 
----
-
-## **5. Trust & Decentralization Model**
-
-The **FitVow Agreement** operates under a decentralized trust model:
-
-- **Immutable Logic:** All rules are codified in the smart contract, transparently auditable on-chain.  
-- **Tamper Resistance:** Records are signed by the app using hardware-protected keys, validated on-chain by the Oracle.  
-- **Sign-and-Forget Distribution:** Ephemeral APK signing prevents the developer from re-issuing modified versions with the same identity.  
-- **Open Enforcement:** Any address may invoke `enforceAgreement()` against a breaching Pledger, decentralizing accountability.  
-- **Charity Guarantee:** The Upkeeper ensures enforcement even if no enforcer acts, routing fines fully to Charity.  
+## License
+GPL-3.0-only. See `LICENSE`.

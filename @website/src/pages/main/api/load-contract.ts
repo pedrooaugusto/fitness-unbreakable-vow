@@ -10,8 +10,8 @@ const RPC_URL_MAP: Record<Network, Networkish & { rpc: string[] }> = {
         name: 'localhost',
         chainId: 31337,        
         rpc: [
-            "http://192.168.0.105:8545",
-            //"http://localhost:8545"
+            //"http://192.168.0.103:8545",
+            "http://localhost:8545"
         ], // hardhat
     },
     sepolia: {

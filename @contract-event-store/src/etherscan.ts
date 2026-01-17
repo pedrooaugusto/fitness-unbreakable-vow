@@ -51,6 +51,7 @@ export async function getEvents(contractAddress: string, eventTopic: string, net
 
     const payload = await response.json() as EtherscanResponse<LogEntry[]>;
 
+    if (payload.message === 'NOTOK') throw new Error(`Unable to retrieve events: ${payload.result}`);
     if (payload.status !== '1') return [];
 
     return payload.result;

@@ -157,10 +157,12 @@ export function mergeGymVisit(current: GymVisitStatsStruct, events: GymVisitEven
 }
 
 export function isGymVisitEventValid(evento: GymVisitEventStruct, validator: GymVisitEventValidatorStruct) {
-    const validLocation = [validator.cachambiSF, validator.meierSF, validator.sandtonPL, validator.sandtonVA].some((gym) => {
+    const validLocation = [validator.gymLoc1, validator.gymLoc2, validator.gymLoc3, validator.gymLoc4].some((gym) => {
         return isSameLocation(
-            Number(evento.location.latitudeNanoDegree), Number(evento.location.longitudeNanoDegree),
-            Number(gym.latitudeNanoDegree), Number(gym.longitudeNanoDegree),
+            Number(evento.location.latitudeNanoDegree),
+            Number(evento.location.longitudeNanoDegree),
+            Number(gym.latitudeNanoDegree),
+            Number(gym.longitudeNanoDegree),
         );
     });
 

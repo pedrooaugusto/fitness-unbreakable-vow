@@ -9,6 +9,7 @@ import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.units.Length
 import com.august.fitnessvowsync.physicalactivity.data.GymVisitTracker
+import com.august.fitnessvowsync.ui.components.PhysicalActivityDialogType
 import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
@@ -113,5 +114,13 @@ class FakeDataProducerDoNotUse @Inject constructor(
         val visit = gymVisitTracker.finishVisit(endTime)
 
         Log.i("FitVow", "Adding fake gym visit: $visit")
+    }
+
+    suspend fun addFakeActivity(goal: PhysicalActivityDialogType) {
+        when (goal) {
+            PhysicalActivityDialogType.RUNNING -> addFakeRunningSession(500)
+            PhysicalActivityDialogType.SLEEP -> addFakeSleepSession((60).toLong())
+            PhysicalActivityDialogType.GYM -> addFakeGymVisit()
+        }
     }
 }

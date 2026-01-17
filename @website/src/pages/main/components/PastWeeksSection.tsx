@@ -309,7 +309,7 @@ function RecordsHistory({ weekDetails, network, oracleAddress }: { weekDetails: 
         ...weekDetails.history.gymVisitEventProcessed.map(event => ({
             type: 'Workout',
             timestamp: event.timestamp,
-            detail: <> {event.durationInMinutes} min • {event.avgBpm} bpm • {event.maxBpm} bpm • ({Number(event.gymLocationLatitudeNanoDegree / 1e7)}°, {Number(event.gymLocationLongitudeNanoDegree / 1e7)}°)</>,
+            detail: <> {event.durationInMinutes} min • {event.avgBpm} bpm • {event.maxBpm} bpm • Valid Gym Location ✔</>,
             transactionHash: event.transactionHash,
         })),
         ...weekDetails.history.sleepEventProcessed.map(event => ({

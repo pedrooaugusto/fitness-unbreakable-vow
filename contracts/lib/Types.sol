@@ -98,3 +98,9 @@ interface Resetable {
 }
 
 interface OracleInterface is TimeBound, Observable, SignatureVerifier, Resetable {}
+
+interface FitVowInterface is Listener {
+    function GIVETH_WALLET_ADDRESS() external returns (address);
+    function STAKED_AMOUNT() external returns (uint256);
+    function PENALTY_AMOUNT() external returns (uint256);
+}

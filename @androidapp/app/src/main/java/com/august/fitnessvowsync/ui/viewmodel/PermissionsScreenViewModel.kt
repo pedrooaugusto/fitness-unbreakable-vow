@@ -34,7 +34,7 @@ class DefaultPermissionsScreenViewModel(
 
         try {
             _uiState.update { it.copy(isExchangingKeys = true, keysExchanged = false) }
-            physicalActivityOracleService.registerAppAsRecordPublisher()
+            physicalActivityOracleService.createPhysicalActivityPublisherPublicKey()
             _uiState.update { it.copy(keysExchanged = true) }
             updatePermissions()
         } catch (ex: Exception) {

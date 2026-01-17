@@ -16,14 +16,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.august.fitnessvowsync.donotuse.FakeDataProducerDoNotUse
 import com.august.fitnessvowsync.helpers.SettingsService
 
 import com.august.fitnessvowsync.ui.FitnessVowApp
 import com.august.fitnessvowsync.ui.RequiredPermissions
 import com.august.fitnessvowsync.ui.Settings
+import com.august.fitnessvowsync.ui.components.PhysicalActivityDialogType
 import com.august.fitnessvowsync.ui.theme.FitnessVowSyncTheme
 import com.august.fitnessvowsync.ui.viewmodel.DefaultMainScreenViewModel
 import com.august.fitnessvowsync.ui.viewmodel.DefaultPermissionsScreenViewModel
+import com.august.fitnessvowsync.ui.viewmodel.DefaultSettingsScreenViewModel
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -37,17 +40,12 @@ class MainActivity : ComponentActivity() {
     @Inject
     @Named("PERMISSIONS_VIEW_MODEL")
     lateinit var permissionsViewModelFactory: ViewModelProvider.Factory
+    @Inject
+    @Named("SETTINGS_VIEW_MODEL")
+    lateinit var settingsViewModelFactory: ViewModelProvider.Factory
 
     //TODO: Remove support fake data during development
-    /*@Inject
-    lateinit var doNotUse: FakeDataProducerDoNotUse
-    suspend fun __debug_PleaseRemove__randomValueFor(goal: PhysicalActivityDialogType): Unit {
-        when (goal) {
-            PhysicalActivityDialogType.RUNNING -> doNotUse.addFakeRunningSession(500)
-            PhysicalActivityDialogType.SLEEP -> doNotUse.addFakeSleepSession((60).toLong())
-            PhysicalActivityDialogType.GYM -> doNotUse.addFakeGymVisit()
-        }
-    }*/
+    //@Inject lateinit var doNotUse: FakeDataProducerDoNotUse
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_BACKGROUND_LOCATION])
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,6 +66,7 @@ class MainActivity : ComponentActivity() {
 
             val mainScreenViewModel: DefaultMainScreenViewModel = viewModel(factory = mainScreenViewModelFactory)
             val permissionScreenViewModel: DefaultPermissionsScreenViewModel = viewModel(factory = permissionsViewModelFactory)
+            val settingsScreenViewModel: DefaultSettingsScreenViewModel = viewModel(factory = settingsViewModelFactory)
 
             FitnessVowSyncTheme {
                 NavHost(
@@ -84,8 +83,7 @@ class MainActivity : ComponentActivity() {
                             navigateToSettings = navigateToSettings,
                             // TODO: Remove support fake data during development
                             /*onClickPhysicalActivity = { activity ->
-                                __debug_PleaseRemove__randomValueFor(activity)
-                                //mainScreenViewModel.refreshScreen()
+                                doNotUse.addFakeActivity(activity)
                             }*/
                         )
                     }
@@ -99,8 +97,7 @@ class MainActivity : ComponentActivity() {
                     composable("settings") {
                         Settings(
                             navigateToPermission = navigateToPermission,
-                            clearHistory = { mainScreenViewModel.clearHistory() },
-                            settingsService = settingsService
+                            viewModel = settingsScreenViewModel,
                         )
                     }
                 }

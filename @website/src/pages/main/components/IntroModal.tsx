@@ -23,13 +23,13 @@ export function IntroModal(props: IntroModalProps) {
         <div className="main">
             <div className="upkeeper-info-modal">
                 <p>
-                    FitVow is a {weeks}-week fitness commitment enforced by a smart contract on the
+                    FitVow is a {weeks}-week fitness commitment experiment enforced by a smart contract on the
                     Arbitrum network (Ethereum L2). At the start, the pledger locked <b>{stake}</b>{' '}
                     on-chain as a stake, which is held in escrow by the contract until the challenge ends <EL l={contractUrl} c="[1]" />.
                 </p>
 
                 <p>
-                    On the pledger&apos;s Android phone, the <EL l={appGithub} c="FitVow-Sync app" /> collects physical activity data
+                    On the pledger&apos;s Android phone, the <EL l={appGithub} c="FitVow-Sync app" /> autonomously collects physical activity data
                     (runs, sleep, and gym visits) published by a SmartWatch, signs it using hardware-backed keys, and sends it on-chain
                     to the <EL l={oracleUrl} c="Physical Activity Oracle" /> smart contract. The Oracle validates these signed
                     records and forwards the verified results to the <EL l={contractUrl} c="Fitness Unbreakable Vow" /> smart contract.

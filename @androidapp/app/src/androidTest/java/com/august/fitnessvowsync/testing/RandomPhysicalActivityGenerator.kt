@@ -3,6 +3,9 @@ package com.august.fitnessvowsync.testing
 import com.august.fitnessvowsync.physicalactivity.model.TrackedGymConfig
 import java.time.Duration
 import java.time.Instant
+import java.time.Period
+import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalUnit
 import kotlin.math.roundToLong
 import kotlin.random.Random
 
@@ -14,7 +17,7 @@ data class PeriodSpec(
     val gymVisits: List<GymSpec>,
 )
 
-data class RunSpec(val start: Instant, val end: Instant, val distanceMeters: Int, val paceInSecondsPerKm: Int, val avgBpm: Int)
+data class RunSpec(val start: Instant, val end: Instant, val distanceMeters: Int, val paceInSecondsPerKm: Int, val avgBpm: Int?)
 data class SleepSpec(val start: Instant, val end: Instant, val avgBpm: Int)
 data class GymSpec(val start: Instant, val end: Instant, val avgBpm: Int, val maxBpm: Int, val gym: TrackedGymConfig)
 
@@ -31,7 +34,7 @@ object RandomPhysicalActivityGenerator {
             // 1) Running block: 60 minutes
             val runsStart = periodStart
             val runsEnd = runsStart.plus(Duration.ofMinutes(60))
-            val runs = addRunningSessions(start = runsStart, end = runsEnd, rnd = rnd)
+            val runs = addRunningSessions(start = runsStart, end = runsEnd, rnd = rnd).toMutableList()
 
             // 2) Sleep block: 60 minutes, ensure multiple sleep sessions don't merge in tests
             val sleepsStart = runsEnd.plus(Duration.ofMinutes(1))
@@ -43,6 +46,9 @@ object RandomPhysicalActivityGenerator {
             val gymsEnd = gymsStart.plus(Duration.ofMinutes(60))
             val gyms = addGymVisits(start = gymsStart, end = gymsEnd, rnd = rnd, trackedGyms = trackedGyms)
 
+            // 4) Invalid Gym Running Sessions
+            runs += addRunningSessions(start = gymsStart, end = gymsEnd.minus(5, ChronoUnit.MINUTES), rnd = rnd, false)
+
             periods += PeriodSpec(periodStart, periodEnd, runs, sleeps, gyms)
 
             cursor = periodEnd.plus(Duration.ofSeconds(60)) // small gap between periods
@@ -51,7 +57,7 @@ object RandomPhysicalActivityGenerator {
         return periods
     }
 
-    private fun addRunningSessions(start: Instant, end: Instant, rnd: Random): List<RunSpec> {
+    private fun addRunningSessions(start: Instant, end: Instant, rnd: Random, addHr: Boolean = true): List<RunSpec> {
         val totalMin = Duration.between(start, end).toMinutes().toInt()
         val sepMin = 2
         val minDur = 10
@@ -77,7 +83,7 @@ object RandomPhysicalActivityGenerator {
             val distance = ((durationSec.toDouble() / paceSecPerKm) * 1000.0).toInt().coerceAtLeast(1)
             val bpm = rnd.nextInt(92, 125)
             val expectedPace = calcExpectedPaceSecondsPerKm(s, e, distance)
-            sessions += RunSpec(s, e, distance, expectedPace, bpm)
+            sessions += RunSpec(s, e, distance, expectedPace, if (addHr) bpm else null)
 
             s = if (i == n - 1) e else e.plus(Duration.ofMinutes(sepMin.toLong()))
         }

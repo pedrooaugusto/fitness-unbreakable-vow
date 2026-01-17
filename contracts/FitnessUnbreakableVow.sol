@@ -151,11 +151,11 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
         if(isBeingCalledByUpkeep()) {
             weeklyGoalsRecords[weekIndex].status = WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UPKEEPER;
 
-            payable(GIVETH_WALLET_ADDRESS).transfer(penaltyAmount);
+            _sendEth(GIVETH_WALLET_ADDRESS, penaltyAmount);
         } else {
             weeklyGoalsRecords[weekIndex].status = WeeklyGoalStatus.FAILED_PENALTY_APPLIED_BY_UNKOWN;
 
-            payable(GIVETH_WALLET_ADDRESS).transfer(penaltyAmount / 2);
+            _sendEth(GIVETH_WALLET_ADDRESS, penaltyAmount / 2);
             payable(msg.sender).transfer(penaltyAmount / 2);
         }
 
@@ -180,6 +180,12 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
         if (Environment.isLocalhost()) return block.number;
 
         return ArbSys(address(100)).arbBlockNumber();
+    }
+
+    function _sendEth(address to, uint256 amount) private {
+        (bool success, ) = to.call{value: amount}("");
+
+        require(success, "ETH transfer failed");
     }
 
     modifier onlyOracle() {

@@ -17,6 +17,7 @@ class PhysicalActivityOracleService @Inject constructor(
     private val ipfsService: InterPlanetaryFileSystemService,
     private val physicalActivityOracle: ContractProvider<PhysicalActivityOracle>,
     private val physicalActivityEventMapper: PhysicalActivityEventMapper,
+    private val balanceRetriever: AddressBalanceRetriever,
 ) {
     suspend fun publishPhysicalActivityEvents(
         runningEvents: List<RunningEvent>,
@@ -46,7 +47,7 @@ class PhysicalActivityOracleService @Inject constructor(
         }
     }
 
-    suspend fun registerAppAsRecordPublisher() {
+    suspend fun createPhysicalActivityPublisherPublicKey() {
         return withContext(Dispatchers.IO) {
             try {
                 val response = protectedKeyService.initializeKeyStore()
@@ -70,6 +71,34 @@ class PhysicalActivityOracleService @Inject constructor(
         }
     }
 
+    suspend fun emergencyChangePhysicalActivityPublisherPublicKey(reason: String) {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = protectedKeyService.initializeKeyStore()
+
+                val appPublicKey = signatureMapper.toP256PublicKey(protectedKeyService.getPublicKey())
+                val oraclePublicKey = signatureMapper.toP256PublicKey(physicalActivityOracle.get().PUBLIC_KEY().send())
+
+                Log.i("FitVow - Sync", "Current public key: x: ${oraclePublicKey.x.toHexString()}; y: ${oraclePublicKey.y.toHexString()} ")
+
+                val keyAttestation = uploadKeyAttestation(response)
+                val fine = calculateEmergencyKeyChangeFine()
+                val transaction = physicalActivityOracle.get().expensiveOneTimeEmergencyPublicKeyChange(
+                    appPublicKey,
+                    keyAttestation,
+                    reason,
+                    fine,
+                ).send()
+
+                Log.i("FitVow - Sync", "Public key has been changed. Transaction hash: ${transaction.transactionHash}")
+                Log.i("FitVow - Sync", "Public key has been changed. Public key: x: ${appPublicKey.x.toHexString()}; y: ${appPublicKey.y.toHexString()}")
+            } catch (e: Exception) {
+                Log.e("FitVow - Sync", "Failed to change publisher public key: ${e.message}", e)
+                throw e
+            }
+        }
+    }
+
     suspend fun getPhysicalActivityStats(weekIndex: Int): PhysicalActivityOracle.PhysicalActivityStats {
         return withContext(Dispatchers.IO) {
             val result = physicalActivityOracle.get().physicalActivityStats(BigInteger.valueOf(weekIndex.toLong())).send()
@@ -81,6 +110,12 @@ class PhysicalActivityOracleService @Inject constructor(
     suspend fun getGymVisitValidator(): PhysicalActivityOracle.GymVisitEventValidator {
         return withContext(Dispatchers.IO) {
             physicalActivityOracle.get().gymVisitValidator().send()
+        }
+    }
+
+    suspend fun getOraclePublicKey(): PhysicalActivityOracle.P256PublicKey {
+        return withContext(Dispatchers.IO) {
+            signatureMapper.toP256PublicKey(physicalActivityOracle.get().PUBLIC_KEY().send())
         }
     }
 
@@ -124,5 +159,18 @@ class PhysicalActivityOracleService @Inject constructor(
 
     private fun ByteArray.toHexString(): String {
         return this.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun ByteArray.isNull(): Boolean {
+        val nullByte32Array = ByteArray(32)
+
+        return nullByte32Array.toHexString() == this.toHexString()
+    }
+
+    private fun calculateEmergencyKeyChangeFine(): BigInteger {
+        val vowBalance = balanceRetriever.getWeiBalance(physicalActivityOracle.get().FITNESS_UNBREAKABLE_VOW().send())
+        val finePercentage = physicalActivityOracle.get().ONE_TIME_EMERGENCY_KEY_CHANGE_PRICE().send().plus(BigInteger.ONE)
+
+        return (finePercentage * vowBalance) / BigInteger.valueOf(100)
     }
 }

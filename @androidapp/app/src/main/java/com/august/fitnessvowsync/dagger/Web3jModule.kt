@@ -11,6 +11,7 @@ import org.web3j.protocol.http.HttpService
 import javax.inject.Named
 import javax.inject.Singleton
 import com.august.fitnessvowsync.BuildConfig
+import com.august.fitnessvowsync.contract.AddressBalanceRetriever
 import com.august.fitnessvowsync.contract.TheDoctor
 import com.august.fitnessvowsync.helpers.SettingsService
 import org.web3j.tx.gas.StaticGasProvider
@@ -62,6 +63,12 @@ class Web3jModule {
     @Named("NETWORK")
     fun provideNetwork(): String {
         return BuildConfig.NETWORK;
+    }
+
+    @Provides
+    @Singleton
+    fun provideBalanceRetriever(contractSettings: SettingsService): AddressBalanceRetriever {
+        return AddressBalanceRetriever(contractSettings)
     }
 
     private fun createGasProvider(web3j: Web3j, gasPriceMarkup: Long, gasLimit: Long): StaticGasProvider {

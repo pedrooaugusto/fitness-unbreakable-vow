@@ -34,6 +34,9 @@ export const handler: ScheduledHandler = async (event: any, context) => {
     console.log(`[INFO] Querying events between blocks ${weekStartBlockNumber} and ${weekEndBlockNumber}`);
     const statsUpdateEvent = await getEvents(physicalActivityOracleAddress, EventTopic.PhysicalActivityStatsUpdate, network, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
     const gymVisitEvent = await getEvents(physicalActivityOracleAddress, EventTopic.GymVisitEventProcessed, network, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
+
+    await sleep(4000); // 3-calls per second limit
+
     const runningEvent = await getEvents(physicalActivityOracleAddress, EventTopic.RunningEventProcessed, network, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
     const sleepEvent = await getEvents(physicalActivityOracleAddress, EventTopic.SleepEventProcessed, network, previousWeek, weekStartBlockNumber, weekEndBlockNumber);
 

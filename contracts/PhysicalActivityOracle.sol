@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.28;
 
-import { PhysicalActivityStats, PublishPhysicalActivityEventRequest, Listener, Observable } from './lib/Types.sol';
+import { PhysicalActivityStats, PublishPhysicalActivityEventRequest, FitVowInterface, Observable } from './lib/Types.sol';
 import { TimeLord, TimeBound } from './lib/timelord/Types.sol';
 import { RunningEventFunctions, RunningEvent, RunningEventValidator } from './lib/Running.sol';
 import { SleepEventFunctions, SleepEvent, SleepEventValidator } from './lib/Sleep.sol';
@@ -15,10 +15,15 @@ import { PhysicalActivityListable } from './lib/PhysicalActivityListable.sol';
 import { console } from './lib/variants/console.sol';
 
 event PhysicalActivityStatsUpdate(uint8 indexed weekIndex, PhysicalActivityStats stats);
+event EmergencyPublicKeyChange(uint256 price, string reason, string oldKey);
 
 contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityListable, Observable, TimeBound, Ownable, Versioned {
+    uint8 public constant ONE_TIME_EMERGENCY_KEY_CHANGE_PRICE = 35; // 35% of the vow contract balance
+    bool  public   ONE_TIME_EMERGENCY_KEY_CHANGE_USED;
+
     TimeLord public immutable TIME_LORD;
-    Listener public ORACLE_UPDATE_LISTENER;
+    FitVowInterface public FITNESS_UNBREAKABLE_VOW;
+
     uint8 private lastEntryWeekNumber;
 
     constructor(TimeLord timeLordAddress) {
@@ -37,7 +42,7 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
         processSleepEvents(currentWeekIndex, request.sleep);
         processGymVisitEvents(currentWeekIndex, request.gymVisit);
 
-        ORACLE_UPDATE_LISTENER.onPhysicalActivityStatsUpdate(currentWeekIndex, physicalActivityStats[currentWeekIndex]);
+        FITNESS_UNBREAKABLE_VOW.onPhysicalActivityStatsUpdate(currentWeekIndex, physicalActivityStats[currentWeekIndex]);
 
         emit PhysicalActivityStatsUpdate(currentWeekIndex, physicalActivityStats[currentWeekIndex]);
     }
@@ -52,9 +57,9 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
      * @dev Intended to be set to the FitnessUnbreakableVow contract; can only be set once and must be called by the oracle owner.
      */
     function registerPhysicalActivityStatsUpdateListener(address listener) external onlyOwnerOrigin {
-        require(address(ORACLE_UPDATE_LISTENER) == address(0), "Listener already set.");
+        require(address(FITNESS_UNBREAKABLE_VOW) == address(0), "Listener already set.");
 
-        ORACLE_UPDATE_LISTENER = Listener(listener);
+        FITNESS_UNBREAKABLE_VOW = FitVowInterface(listener);
     }
 
     /**
@@ -63,6 +68,35 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
      */
     function setPublicKey(P256PublicKey calldata publicKey, AndroidKeyAttestation calldata keyAttestation) external onlyOwner {
         _setPublicKey(publicKey, keyAttestation);
+    }
+
+    /**
+     * @notice Allows the owner to swap the P-256 public key using a one-time, high-cost emergency escape hatch.
+     * @dev Charges 35% of the FitnessUnbreakableVow contract balance and forwards it to the Giveth charity wallet.
+     * Can only be executed once; emits the previous attestation CID for auditability. The reality of living in 
+     * a soon to be narcostate makes this method necessary in case my phone is stolen :(
+     * @param newPublicKey Replacement public key (x, y) coordinates.
+     * @param newKeyAttestation Android Key Attestation metadata tied to the replacement key.
+     * @param changeReason Free-form description explaining why the emergency change was needed.
+     */
+    function expensiveOneTimeEmergencyPublicKeyChange(
+        P256PublicKey calldata newPublicKey,
+        AndroidKeyAttestation calldata newKeyAttestation,
+        string calldata changeReason
+    ) external payable onlyOwner {
+        uint256 keyChangePrice = (ONE_TIME_EMERGENCY_KEY_CHANGE_PRICE * address(FITNESS_UNBREAKABLE_VOW).balance) / 100;
+        string memory previousAttestationCid = PUBLIC_KEY_ATTESTATION.attestationIpfsCID;
+
+        require(!ONE_TIME_EMERGENCY_KEY_CHANGE_USED, "Public key already changed");
+        require(msg.value >= keyChangePrice, "Payment Required");
+
+        // emergency, emergency, paging dr Beat https://www.youtube.com/shorts/8eeejFE2sIQ
+        _emergencyPublicKeyChange(newPublicKey, newKeyAttestation);
+        _sendEth(FITNESS_UNBREAKABLE_VOW.GIVETH_WALLET_ADDRESS(), msg.value);
+
+        emit EmergencyPublicKeyChange(keyChangePrice, changeReason, previousAttestationCid);
+
+        ONE_TIME_EMERGENCY_KEY_CHANGE_USED = true;
     }
 
     function getCurrentWeekPhysicalActivityStats() external view returns (uint8 currentWeekIndex, PhysicalActivityStats memory stats) {
@@ -142,5 +176,11 @@ contract PhysicalActivityOracle is DefaultSignatureVerifier, PhysicalActivityLis
     modifier onlyWhileActive() {
         require(TIME_LORD.isContractActive(), "Contract has expired.");
         _;
+    }
+
+    function _sendEth(address to, uint256 amount) private {
+        (bool success, ) = to.call{value: amount}("");
+
+        require(success, "ETH transfer failed");
     }
 }

@@ -15,6 +15,7 @@ import com.august.fitnessvowsync.physicalactivity.mapper.GymVisitValidatorMapper
 import com.august.fitnessvowsync.security.PermissionService
 import com.august.fitnessvowsync.ui.viewmodel.DefaultMainScreenViewModel
 import com.august.fitnessvowsync.ui.viewmodel.DefaultPermissionsScreenViewModel
+import com.august.fitnessvowsync.ui.viewmodel.DefaultSettingsScreenViewModel
 import dagger.Module
 import dagger.Provides
 import javax.inject.Named
@@ -69,6 +70,25 @@ class MainActivityModule {
                 gymGeofenceCreator,
                 gymVisitTracker,
                 gymVisitValidatorMapper
+            )
+        })
+    }
+
+    @Provides
+    @ActivityScope
+    @Named("SETTINGS_VIEW_MODEL")
+    fun provideSettingsViewModelFactory(
+        physicalActivityOracleService: PhysicalActivityOracleService,
+        settingsService: SettingsService,
+        gymVisitTracker: GymVisitTracker,
+        physicalActivityEventRepository: PhysicalActivityEventRepository
+    ): ViewModelProvider.Factory {
+        return GenericViewModelFactory({
+            DefaultSettingsScreenViewModel(
+                physicalActivityOracleService,
+                settingsService,
+                gymVisitTracker,
+                physicalActivityEventRepository,
             )
         })
     }

@@ -3,6 +3,7 @@ package com.august.fitnessvowsync.helpers
 import android.content.SharedPreferences
 import android.util.Log
 import com.august.fitnessvowsync.BuildConfig
+import com.august.fitnessvowsync.contract.PhysicalActivityOracle
 import com.august.fitnessvowsync.contract.SignatureMapper
 import com.august.fitnessvowsync.security.HardwareProtectedKeyService
 import javax.inject.Inject
@@ -17,6 +18,7 @@ interface SettingsService {
     fun getGasPriceMarkUp(): Long
     fun saveRpcEndpoint(rpcEndpoint: String)
     fun getAppFormattedPublicKey(): String?
+    fun getAppPublicKey(): PhysicalActivityOracle.P256PublicKey
     fun getPinataApiToken(): String?
     fun savePinataApiToken(token: String)
     fun saveGasLimit(limit: Long)
@@ -85,6 +87,14 @@ interface SettingsService {
                     .let { "x: ${it.x.toHexString()}; y: ${it.y.toHexString()}" }
             } catch (ex: IllegalStateException) {
                 null
+            }
+        }
+
+        override fun getAppPublicKey(): PhysicalActivityOracle.P256PublicKey {
+            return try {
+                signatureMapper.toP256PublicKey(protectedKeyService.getPublicKey())
+            } catch (ex: IllegalStateException) {
+                PhysicalActivityOracle.P256PublicKey(ByteArray(32), ByteArray(32))
             }
         }
 
@@ -163,6 +173,10 @@ interface SettingsService {
 
         override fun getRpcEndpoint(): String? {
             return "https://arb1.io"
+        }
+
+        override fun getAppPublicKey(): PhysicalActivityOracle.P256PublicKey {
+            return PhysicalActivityOracle.P256PublicKey(ByteArray(32), ByteArray(32))
         }
 
         override fun getGasLimit(): Long {

@@ -8,10 +8,10 @@ import javax.inject.Inject
 class GymVisitValidatorMapper @Inject constructor() {
     fun toTrackedGyms(validator: PhysicalActivityOracle.GymVisitEventValidator): List<TrackedGymConfig> {
         val gymLocations = mutableMapOf<String, PhysicalActivityOracle.Geofence>(
-            "Meier SM" to validator.meierSF,
-            "Cachambi SM" to validator.cachambiSF,
-            "Sandton PL" to validator.sandtonPL,
-            "Sandton VA" to validator.sandtonVA,
+            "Meier SM" to validator.gymLoc1,
+            "Cachambi SM" to validator.gymLoc2,
+            "Sandton PL" to validator.gymLoc3,
+            "Sandton VA" to validator.gymLoc4,
         )
 
         return gymLocations.map {gym -> TrackedGymConfig(

@@ -7,10 +7,10 @@ import { TimeLord, ContractPhase } from './timelord/Types.sol';
 abstract contract WeeklyGoalListable {
     using WeeklyGoalFunctions for WeeklyGoal;
 
-    uint8 public constant GYM_VISITS_GOAL = 3;
+    uint8 public constant GYM_VISITS_GOAL = 1; // actual value: 3
     uint8 public constant HEALTHY_SLEEP_NIGHTS_GOAL = 1; // actual value: 3
-    uint8 public constant RUNNING_SESSIONS_GOAL = 3; // actual value: 2
-    uint8 public constant REQUIRED_NUMBER_OF_COMPLETED_GOALS = 2;
+    uint8 public constant RUNNING_SESSIONS_GOAL = 1; // actual value: 2
+    uint8 public constant REQUIRED_NUMBER_OF_COMPLETED_GOALS = 2; // actual value: 2
 
     TimeLord private immutable TIME_LORD;
 
