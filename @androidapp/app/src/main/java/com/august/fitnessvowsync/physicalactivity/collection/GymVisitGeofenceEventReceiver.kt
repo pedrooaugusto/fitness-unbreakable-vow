@@ -44,7 +44,13 @@ class GymVisitGeofenceEventReceiver : BroadcastReceiver() {
         val triggeringLocation = geofencingEvent.triggeringLocation
 
         if (triggeringGeofences.isNullOrEmpty() || triggeringLocation == null) {
-            Log.i("Fit - Vow Sync", "Geofence triggered with no fence data. ")
+            Log.i("FitVow - Sync", "Geofence triggered with no fence data. ")
+
+            return
+        }
+
+        if(triggeringLocation.isMock) {
+            Log.i("FitVow - Sync", "Geofence event does not seem genuine. User is probably using mock locations.")
 
             return
         }
