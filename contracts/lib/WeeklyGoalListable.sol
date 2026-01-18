@@ -112,6 +112,7 @@ abstract contract WeeklyGoalListable {
         }
 
         weeklyGoalsRecordsLastEntryKey = 0;
+        lastSettledWeek = 255;
     }
 
     function listAllWeeks() internal view returns (WeeklyGoal[] memory) {
