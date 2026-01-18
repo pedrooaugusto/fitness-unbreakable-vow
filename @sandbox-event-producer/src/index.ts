@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv';
 import { ScheduledHandler } from 'aws-lambda';
 import { loadContracts } from './contract';
 import { createRandomPhysicalActivityRequest } from './physical-activity';
-import { Contract } from 'ethers';
+import { Contract, JsonRpcProvider } from 'ethers';
 
 dotenv.config();
 
@@ -58,7 +58,7 @@ async function getCurrentWeekWindow(timeLord: Contract) {
     };
 }
 
-async function resetVow(timeLord: Contract, vow: Contract, provider: import('ethers').JsonRpcProvider) {
+async function resetVow(timeLord: Contract, vow: Contract, provider: JsonRpcProvider) {
     const [secondsInWeek, numberOfWeeks] = await Promise.all([timeLord.SECONDS_IN_ONE_WEEK(), timeLord.NUMBER_OF_WEEKS()]);
 
     const creationDate = Math.floor(Date.now() / 1000);
