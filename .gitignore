@@ -61,4 +61,7 @@ dist-ssr
 @contract-event-store/.lambda
 @contract-event-store/update-scheduler.sh
 
+@sandbox-event-producer
+
+
 TODO.md
