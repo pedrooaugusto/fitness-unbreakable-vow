@@ -349,8 +349,8 @@ const StatInfoCard = (props: {
     )
 };
 
-const Link = (props: { icon: ReactElement; title: ReactElement; url: string }) => (
-    <a href={props.url} target="_blank" rel="noopener noreferrer">
+const Link = (props: { icon: ReactElement; title: ReactElement; url: string; newTab?: boolean }) => (
+    <a href={props.url} target={props.newTab === false ? undefined : '_blank'} rel="noopener noreferrer">
         {props.icon}
         <span>{props.title}</span>
     </a>

@@ -14,7 +14,7 @@ export function IntroModal(props: IntroModalProps) {
     const stake = formatCurrency(ov.initialStakedAmount, props.currency);
     const fine = formatCurrency(ov.penaltyAmount, props.currency);
     const weeks = Math.round((ov.expirationDate - ov.startDate) / ov.secondsInAWeek);
-    const weekLength = Math.round(ov.secondsInAWeek);
+    const weekLength = Math.round(ov.secondsInAWeek / 60);
     const contractUrl = getAddressBlockExplorerUrl(ov.contractAddress, ov.network);
     const oracleUrl = getAddressBlockExplorerUrl(ov.oracleAddress, ov.network);
     const enforceFunctionUrl = getAddressBlockExplorerUrl(ov.contractAddress, ov.network) + "#writeContract#F1";
