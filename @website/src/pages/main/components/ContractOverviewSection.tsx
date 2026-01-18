@@ -274,6 +274,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                                 </>
                             }
                             url={`${isSandbox ? '../' : '/sandbox'}`}
+                            newTab={false}
                         />
                         <Link
                             icon={<ArticleIcon />}

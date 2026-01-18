@@ -61,9 +61,6 @@ dist-ssr
 @contract-event-store/.lambda
 @contract-event-store/update-scheduler.sh
 
-@sandbox-event-producer
-
-!@sandbox-event-producer
 @sandbox-event-producer/deploy.sh
 @sandbox-event-producer/function.zip
 @sandbox-event-producer/.lambda
