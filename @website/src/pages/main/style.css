@@ -565,23 +565,25 @@ footer {
     }
 }
 
+.modal-wrapper {
+    .sandbox-banner {
+        background-color: #B71C1C;
+        border: solid 1px white;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 5px;
+        a {
+            color: white !important;
+        }
+    }
+}
+
 .modal-wrapper .modal .main > .upkeeper-info-modal {
     h4 {
         margin: 10px 0px;
     }
     p + p {
         margin-top: 10px;
-    }
-
-    .sandbox-banner {
-        background-color: #B71C1C;
-        border: solid 1px white;
-        padding: 10px;
-        border-radius: 5px;
-        margin: 0 5px;
-        a {
-            color: white;
-        }
     }
 }
 
