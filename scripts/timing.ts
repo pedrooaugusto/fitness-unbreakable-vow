@@ -1,4 +1,4 @@
-export type WeekDurations = '3-minutes' | '5-minutes' | '3-hours' | '2-days' | '3-days' | '7-days';
+export type WeekDurations = '3-minutes' | '5-minutes' | '10-minutes' | '3-hours' | '2-days' | '3-days' | '7-days';
 
 // Round *up* to the next multiple of `stepMinutes` in UTC time.
 function nextMultipleOfMinutes(stepMinutes: number, date: Date) {
@@ -91,6 +91,14 @@ export function getTimeSettings(startDate: string, secondsInOneWeek: WeekDuratio
                 startDate: Math.floor(nextMultipleOfMinutes(5, start).getTime() / 1000),
                 cronUpkeeperSpec: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *',   // (period=5min, buffer=2min)
                 secondsInOneWeek: 300,
+            };
+        }
+
+        case '10-minutes': {
+            return {
+                startDate: Math.floor(nextMultipleOfMinutes(10, start).getTime() / 1000),
+                cronUpkeeperSpec: '4,14,24,34,44,54 * * * *',   // (period=10min, buffer=4min)
+                secondsInOneWeek: 600,
             };
         }
 

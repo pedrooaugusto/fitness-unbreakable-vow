@@ -133,7 +133,9 @@ function PastWeekCard({
     sleepEventValidator: SleepEventValidator,
     upkeeperAddress: string
 } & WithModalProps) {
-    const { goals, status } = week;
+    let { goals, status } = week;
+
+    status = 3;
 
     const numberOfGoalsMet = [
         goals.gymVisitsGoalMet,
@@ -621,9 +623,18 @@ function PastWeekFailedClaimRewardDetailsModal({
         );
     }
 
+    const isSandbox = location.pathname === '/sandbox';
+
     return (
         <div className="main">
             <div className="past-week-details-modal">
+                {isSandbox && (
+                    <p className="sandbox-banner">
+                        <b>Sandbox mode:</b> you are interacting with the sandbox version of FitVow deployed on the <u>Arbitrum Sepolia Testnet</u>.{' '}
+                        Monetary values have no real-world value.<br />
+                        <a href="../">Access production version.</a>
+                    </p>
+                )}
                 <h4>🎯 Missed Weekly Goals</h4>
                 <p>Not enough goals were met this week:</p>
                 <TargetGoalsList {...props} weekDetails={weekDetails} />

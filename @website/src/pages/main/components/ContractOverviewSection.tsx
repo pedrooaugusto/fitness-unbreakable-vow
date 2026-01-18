@@ -21,10 +21,11 @@ interface ContractOverviewSectionProps extends WithModalProps {
     changeCurrency: (currency: Currency) => void;
 };
 
-type WeekDurations = '180' | '300' | '10800' | '172800' | '259200' | '604800';
+type WeekDurations = '180' | '300' | '600' | '10800' | '172800' | '259200' | '604800';
 const CronInterval: Record<WeekDurations, number> = {
     '180':    1 * 60    + 180,
-    '300':    3 * 60    + 300,
+    '300':    2 * 60    + 300,
+    '600':    4 * 60    + 600,
     '10800': 10 * 60    + 10800,
     '172800': 3 * 3600  + 172800,
     '259200': 3 * 3600  + 259200,
