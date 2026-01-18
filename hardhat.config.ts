@@ -59,12 +59,6 @@ task('TerminateVow', "Terminates the FitnessUnbreakableVow.")
         console.log('Terminating contract.');
         const terminateTx = await contract.terminateAgreement(false);
         await terminateTx.wait();
-
-        console.log('Withdrawing upkeeper link.');
-        await sleep(15_000);
-
-        const withdrawTx = await contract.terminateAgreement(true);
-        await withdrawTx.wait();
     })
 
 task('PushPhysicalActivityRecord', "Calls contract pushPhysicalActivityRecord function.")
