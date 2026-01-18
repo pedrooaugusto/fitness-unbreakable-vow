@@ -70,13 +70,12 @@ const MainPage = WithModal(function(props) {
                     closeModal={props.closeModal}
                     contractOverview={convertedOverview}
                     currency={currency}
+                    isSandbox={location.pathname == '/sandbox'}
                 />,
                 'Welcome to FitVow!'
             )
         }
     }, [convertedOverview]);
-
-    console.log('ui');
 
     if (fetchDataError) return <Loading error={fetchDataError} />;
 
@@ -86,6 +85,7 @@ const MainPage = WithModal(function(props) {
 
     return (
         <div className="page main-page">
+            <SandboxWarning />
             <header className="main-header">
                 <div className="logo-container">
                     <img src={AppLogo} alt="FitVow Logo" />
@@ -130,6 +130,7 @@ export default MainPage;
 function Loading(props: { error?: string }) {
     return (
         <div className="page main-page loading">
+            <SandboxWarning />
             <header className="main-header">
                 <div className="logo-container">
                     <img src={AppLogo} alt="FitVow Logo" />
@@ -155,6 +156,19 @@ function Loading(props: { error?: string }) {
                     </div>
                 )}
             </section>
+        </div>
+    );
+}
+
+
+function SandboxWarning() {
+    const isSandbox = location.pathname === '/sandbox';
+
+    if (!isSandbox) return null;
+
+    return (
+        <div className="sandbox-header-warning">
+            ⚠️ THIS IS THE SANDBOX VERSION OF FIT VOW DEPLOYED ON THE ARBITRUM SEPOLIA <b>TESTNET.</b> ⚠️
         </div>
     );
 }

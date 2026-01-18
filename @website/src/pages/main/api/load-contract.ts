@@ -59,8 +59,9 @@ let TimeLordContract: EnhancedContract | null = null;
 let MulticallContract: Contract | null = null;
 
 export default async function loadContract() {
+    const isSandbox = location.pathname == '/sandbox';
     addresses ||= await fetchAdresses();
-    network = addresses.LastUsedNetwork as Network;
+    network = isSandbox ? 'arbiSep' : addresses.LastUsedNetwork as Network;
     provider ||= makeProviderWithFallback(network);
     PhysicalActivityOracle ||= await getContract('PhysicalActivityOracle', network, provider) as EnhancedContract;
     FitnessUnbreakableVow ||= await getContract('FitnessUnbreakableVow', network, provider) as EnhancedContract;

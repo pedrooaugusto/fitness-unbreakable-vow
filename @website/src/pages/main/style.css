@@ -38,6 +38,15 @@ header {
     }
 }
 
+.sandbox-header-warning {
+    color: white;
+    font-family: Overpass;
+    text-align: center;
+    font-size: 14px;
+    background-color: #F44336;
+    padding: 8px;
+}
+
 section {
     display: flex;
     justify-content: center;
@@ -562,6 +571,17 @@ footer {
     }
     p + p {
         margin-top: 10px;
+    }
+
+    .sandbox-banner {
+        background-color: #B71C1C;
+        border: solid 1px white;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 0 5px;
+        a {
+            color: white;
+        }
     }
 }
 
