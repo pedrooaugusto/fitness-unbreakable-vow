@@ -11,6 +11,7 @@ const DEFAULT_REGION = 'us-east-1';
 type ScheduleSyncOptions = {
     startDate: Date;
     endDate: Date;
+    scheduleExpression: string;
     inputOverrides?: Record<string, unknown>;
 };
 
@@ -40,7 +41,7 @@ export async function syncEventBridgeSchedule(options: ScheduleSyncOptions) {
 
     const update: UpdateScheduleCommandInput = {
         Name: scheduleName,
-        ScheduleExpression: current.ScheduleExpression,
+        ScheduleExpression: options.scheduleExpression,
         FlexibleTimeWindow: current.FlexibleTimeWindow,
         Target: target,
         StartDate: options.startDate,

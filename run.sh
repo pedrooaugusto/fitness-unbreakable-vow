@@ -7,9 +7,15 @@ copyContractAbiToFrontend() {
     cp artifacts/contracts/FitnessUnbreakableVow.sol/FitnessUnbreakableVow.json @website/public/abi/FitnessUnbreakableVow.json
     cp artifacts/contracts/PhysicalActivityOracle.sol/PhysicalActivityOracle.json @website/public/abi/PhysicalActivityOracle.json
     cp artifacts/contracts/TheDoctor.sol/TheDoctor.json @website/public/abi/TheDoctor.json
+
     echo "Copying contract ABI files to event store."
     cp artifacts/contracts/PhysicalActivityOracle.sol/PhysicalActivityOracle.json @contract-event-store/src/abi/PhysicalActivityOracle.json
     cp artifacts/contracts/TheDoctor.sol/TheDoctor.json @contract-event-store/src/abi/TheDoctor.json
+
+    echo "Copying contract ABI files to sandbox event producer."
+    cp artifacts/contracts/PhysicalActivityOracle.sol/PhysicalActivityOracle.json @sandbox-event-producer/src/abi/PhysicalActivityOracle.json
+    cp artifacts/contracts/TheDoctor.sol/TheDoctor.json @sandbox-event-producer/src/abi/TheDoctor.json
+    cp artifacts/contracts/FitnessUnbreakableVow.sol/FitnessUnbreakableVow.json @sandbox-event-producer/src/abi/FitnessUnbreakableVow.json
     echo -e "\n\n\n"
 }
 

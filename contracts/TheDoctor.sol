@@ -12,7 +12,7 @@ function min256(uint256 a, uint256 b) pure returns (uint256) { return a > b ? b 
 /// @dev https://www.youtube.com/watch?v=wXrqtC81ztA
 contract TheDoctor is TimeLord, Ownable {
     /// @notice Number of seconds that define one week for the schedule.
-    uint256 public immutable SECONDS_IN_ONE_WEEK;
+    uint256 public SECONDS_IN_ONE_WEEK;
     /// @notice Unix timestamp (seconds) when the contract was created
     /// and the schedule starts.
     uint256 public CREATION_DATE;
@@ -24,7 +24,7 @@ contract TheDoctor is TimeLord, Ownable {
     uint8 public NUMBER_OF_WEEKS;
     /// @notice Length of the grace period (in seconds) after
     /// `EXPIRATION_DATE` before the contract is fully expired.
-    uint256 public immutable GRACE_PERIOD;
+    uint256 public GRACE_PERIOD;
     /// @dev Avoiding storage
     bytes32 immutable private END_OF_WEEK_CRON_P1;
     bytes32 immutable private END_OF_WEEK_CRON_P2;
@@ -48,7 +48,9 @@ contract TheDoctor is TimeLord, Ownable {
         END_OF_WEEK_CRON_P3 = endOfWeekCronP3;
     }
 
-    function reset(uint256 creationDate, uint256 expirationDate) external onlyOwnerOrigin {
+    function reset(uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek) external onlyOwnerOrigin {
+        SECONDS_IN_ONE_WEEK = secondsInOneWeek;
+        GRACE_PERIOD = min256(uint256(secondsInOneWeek / 5), 3600);
         NUMBER_OF_WEEKS = uint8((expirationDate - creationDate) / SECONDS_IN_ONE_WEEK);
         CREATION_DATE = creationDate;
         EXPIRATION_DATE = creationDate + NUMBER_OF_WEEKS * SECONDS_IN_ONE_WEEK;

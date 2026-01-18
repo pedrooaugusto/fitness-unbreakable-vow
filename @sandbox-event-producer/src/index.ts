@@ -3,7 +3,7 @@ import { ScheduledHandler } from 'aws-lambda';
 import { loadContracts } from './contract';
 import { createRandomPhysicalActivityRequest } from './physical-activity';
 import { Contract, JsonRpcProvider } from 'ethers';
-import { getCurrentWeekWindow, getScheduleWindow, getSignerAddress } from './helpers';
+import { getCurrentWeekWindow, getScheduleNewTimeline, getVowNewTimeline, getSignerAddress } from './helpers';
 import { syncEventBridgeSchedule } from './scheduler';
 
 dotenv.config();
@@ -11,6 +11,8 @@ dotenv.config();
 type SandboxEvent = {
     contractAddress: string;
     network: string;
+    secondsInWeekOverride?: number;
+    numberOfWeeksOverride?: number;
 };
 
 export const handler: ScheduledHandler<SandboxEvent> = (async (event: SandboxEvent) => {
@@ -18,18 +20,19 @@ export const handler: ScheduledHandler<SandboxEvent> = (async (event: SandboxEve
 
     const isActive = await timeLord.isContractActive();
 
-    if (!isActive) {
+    if (!isActive || event.secondsInWeekOverride) {
         console.log('[INFO] Contract is not active. Resetting sandbox and syncing event bridge scheduler.');
 
-        await resetVow(timeLord, fitnessUnbreakableVow, provider);
+        await resetVow(timeLord, fitnessUnbreakableVow, provider, event.secondsInWeekOverride, event.numberOfWeeksOverride);
 
         await sleep(3000);
 
-        const scheduleWindow = await getScheduleWindow(timeLord);
+        const scheduleWindow = await getScheduleNewTimeline(timeLord);
 
         await syncEventBridgeSchedule({
             startDate: scheduleWindow.startDate,
             endDate: scheduleWindow.endDate,
+            scheduleExpression: scheduleWindow.schedulerExpression,
             inputOverrides: {
                 contractAddress: event.contractAddress,
                 network: event.network,
@@ -57,11 +60,8 @@ export const handler: ScheduledHandler<SandboxEvent> = (async (event: SandboxEve
     console.log(`[INFO] Publish completed. tx=${tx.hash}`);
 }) as any;
 
-async function resetVow(timeLord: Contract, vow: Contract, provider: JsonRpcProvider) {
-    const [secondsInWeek, numberOfWeeks] = await Promise.all([timeLord.SECONDS_IN_ONE_WEEK(), timeLord.NUMBER_OF_WEEKS()]);
-
-    const creationDate = Math.floor(Date.now() / 1000) + 60; // one minute buffer
-    const expirationDate = creationDate + Number(secondsInWeek) * Number(numberOfWeeks);
+async function resetVow(timeLord: Contract, vow: Contract, provider: JsonRpcProvider, secondsInWeekOverride?: number, numberOfWeeksOverride?: number) {
+    const { creationDate, expirationDate, secondsInWeek } = await getVowNewTimeline(timeLord, secondsInWeekOverride, numberOfWeeksOverride)
 
     const stakedAmount = await vow.STAKED_AMOUNT();
     const vowBalance = await provider.getBalance(await vow.getAddress());
@@ -78,8 +78,8 @@ async function resetVow(timeLord: Contract, vow: Contract, provider: JsonRpcProv
     }
 
     const tx = missingAmount > 0n
-        ? await vow.reset(creationDate, expirationDate, { value: missingAmount })
-        : await vow.reset(creationDate, expirationDate);
+        ? await vow.reset(creationDate, expirationDate, secondsInWeek, { value: missingAmount })
+        : await vow.reset(creationDate, expirationDate, secondsInWeek);
 
     await tx.wait();
 
@@ -88,4 +88,4 @@ async function resetVow(timeLord: Contract, vow: Contract, provider: JsonRpcProv
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-// handler({ contractAddress: '0xBb46E7ccf01F248e0C75f2fAbEF7e110a51806C1', network: 'arbiSep' } as any, null as any, null as any);
+// handler({ "contractAddress": "0xeC87F28a65bF7DC2c87768E5a9136f00C3b2a539", "network": "arbiSep" } as any, null as any, null as any);

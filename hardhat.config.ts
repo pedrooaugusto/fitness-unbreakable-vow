@@ -13,10 +13,10 @@ import verify from './scripts/verify-contract';
 import { getTimeSettings, WeekDurations } from './scripts/timing';
 
 // Defaults
-const STAKED_AMOUNT = "0.0001";
+const STAKED_AMOUNT = "0.0012";
 const CREATION_DATE = new Date().toISOString();
-const NUMBER_OF_CYLES = "2";
-const SECONDS_IN_WEEK: WeekDurations = '3-minutes'; // 95min to run android test
+const NUMBER_OF_CYLES = "12"; // actual value: 12
+const SECONDS_IN_WEEK: WeekDurations = '10-minutes'; // actual value: 10-minutes
 
 dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env', override: true });

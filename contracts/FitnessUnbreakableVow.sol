@@ -124,10 +124,10 @@ contract FitnessUnbreakableVow is WeeklyGoalListable, UpkeeperManager, Ownable, 
         _configureUpkeeper(upkeeper, linkFunding, TIME_LORD.END_OF_WEEK_CRON());
     }
 
-    function reset(uint256 creationDate, uint256 expirationDate) external onlyOwner payable {
-        require(address(this).balance > 0.00001 ether, "No enough funds to reset.");
+    function reset(uint256 creationDate, uint256 expirationDate, uint256 secondsInOneWeek) external onlyOwner payable {
+        require(address(this).balance > 0.0001 ether, "No enough funds to reset.");
 
-        TIME_LORD.reset(creationDate, expirationDate);
+        TIME_LORD.reset(creationDate, expirationDate, secondsInOneWeek);
         PHYSICAL_ACTIVITY_ORACLE.reset();
         clearWeeks();
 

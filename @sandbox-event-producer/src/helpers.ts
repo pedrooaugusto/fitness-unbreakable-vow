@@ -33,16 +33,29 @@ export async function getCurrentWeekWindow(timeLord: Contract) {
     };
 }
 
-export async function getScheduleWindow(timeLord: Contract) {
+export async function getVowNewTimeline(timeLord: Contract, secondsInWeekOverride?: number, numberOfWeeksOverride?: number) {
+    const [secondsInWeekRaw, numberOfWeeksRaw]: [bigint, bigint] = await Promise.all([timeLord.SECONDS_IN_ONE_WEEK(), timeLord.NUMBER_OF_WEEKS()]);
+
+    const secondsInWeek = Number(secondsInWeekOverride !== undefined ? secondsInWeekOverride : secondsInWeekRaw);
+    const numberOfWeeks = Number(numberOfWeeksOverride !== undefined ? numberOfWeeksOverride : numberOfWeeksRaw);
+
+    //19h15
+    const creationDate = Math.floor((Date.now() / 1000) + (secondsInWeek / 2));
+    const expirationDate = creationDate + secondsInWeek * numberOfWeeks;
+
+    return { creationDate, expirationDate, secondsInWeek };
+}
+
+export async function getScheduleNewTimeline(timeLord: Contract) {
     const [creationDate, expirationDate, secondsInWeek] = await Promise.all([
         timeLord.CREATION_DATE(),
         timeLord.EXPIRATION_DATE(),
         timeLord.SECONDS_IN_ONE_WEEK(),
     ]);
 
-    const halfWeek = Math.floor(Number(secondsInWeek) / 2);
-    const startDate = new Date((Number(creationDate) + halfWeek) * 1000);
+    const startDate = new Date(Number(creationDate) * 1000);
     const endDate = new Date(Number(expirationDate + secondsInWeek + 10n) * 1000);
+    const schedulerExpression = `rate(${Math.floor(Number(secondsInWeek) / 60)} minutes)`
 
-    return { startDate, endDate };
+    return { startDate, endDate, schedulerExpression };
 }

@@ -221,6 +221,11 @@
         "internalType": "uint256",
         "name": "expirationDate",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "secondsInOneWeek",
+        "type": "uint256"
       }
     ],
     "name": "reset",
