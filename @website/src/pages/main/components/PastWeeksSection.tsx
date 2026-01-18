@@ -133,9 +133,7 @@ function PastWeekCard({
     sleepEventValidator: SleepEventValidator,
     upkeeperAddress: string
 } & WithModalProps) {
-    let { goals, status } = week;
-
-    status = 3;
+    const { goals, status } = week;
 
     const numberOfGoalsMet = [
         goals.gymVisitsGoalMet,
