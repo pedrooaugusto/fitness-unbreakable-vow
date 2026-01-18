@@ -49,6 +49,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
 
     const openSecurityModalCountKey = `${overview.network}.security-modal-open-count`;
     const openSecurityModalCount = Number(localStorage.getItem(openSecurityModalCountKey) || '0');
+    const isSandbox = location.pathname == '/sandbox';
 
     return (
         <section className="overview">
@@ -250,6 +251,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                                     closeModal={closeModal}
                                     contractOverview={overview}
                                     currency={currency}
+                                    isSandbox={isSandbox}
                                 />,
                                 'Welcome to FitVow!'
                             )
@@ -268,6 +270,15 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             icon={<ArticleIcon />}
                             title={
                                 <>
+                                    {isSandbox ? 'Production' : 'Sandbox'} <small>(Environment)</small>
+                                </>
+                            }
+                            url={`${isSandbox ? '../' : '/sandbox'}`}
+                        />
+                        <Link
+                            icon={<ArticleIcon />}
+                            title={
+                                <>
                                     Source Code <small>(Github)</small>
                                 </>
                             }
@@ -278,7 +289,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             title={
                                 <>
                                     Fitness Unbreakable Vow{" "}
-                                    <small>(smart contract)</small>
+                                    <small>(Smart Contract)</small>
                                 </>
                             }
                             url={getAddressBlockExplorerUrl(overview.contractAddress, overview.network)}
@@ -288,7 +299,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             title={
                                 <>
                                     Physical Activity Oracle{" "}
-                                    <small>(smart contract)</small>
+                                    <small>(Smart Contract)</small>
                                 </>
                             }
                             url={getAddressBlockExplorerUrl(overview.oracleAddress, overview.network)}
