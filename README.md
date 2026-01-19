@@ -4,9 +4,12 @@ FitVow is a self-enforcing fitness vow built on-chain. You stake funds, commit t
 
 Live dashboard: http://fitvow.pedroaugusto.dev/ (shows the current state of the challenge)
 
+Sandbox version: http://fitvow.pedroaugusto.dev/sandbox (deployed in the Sepolia testnet)
+
 ## Current challenge parameters
-- Duration: 13 weeks.
-- Total staked amount: 200 USD.
+- Duration: 12 weeks.
+- Total staked amount: ~235 USD / ~1200 BRL / 0.075 ETH.
+- Blockchain: Arbitrum
 
 ## What it is
 - A fitness commitment contract that escrows funds and penalizes missed weeks.
@@ -33,15 +36,15 @@ Goals are hard-coded in the contracts to keep rules immutable and auditable.
 
 ## Enforcement and penalties
 - Penalty per missed week is `STAKED_AMOUNT / number_of_weeks`.
-- If a regular user enforces, the penalty is split 50/50 between the caller and [Giveth charity](https://giveth.io/project/Giveth-Matching-Pool-0?tab=donations).
+- If a regular user enforces, the penalty is split 50/50 between the caller and the [Giveth Charity](https://giveth.io/project/Giveth-Matching-Pool-0?tab=donations).
 - If Chainlink Automation enforces, 100 percent goes to Giveth.
-- [Giveth Charity wallet](https://giveth.io/project/Giveth-Matching-Pool-0?tab=donations): `0x6e8873085530406995170Da467010565968C7C62`.
+- [Giveth Charity Wallet](https://giveth.io/project/Giveth-Matching-Pool-0?tab=donations): `0x6e8873085530406995170Da467010565968C7C62`.
 
 ## Trust and integrity model
 - Records are signed with a hardware-backed P-256 key stored in Android Keystore.
 - The oracle stores Android Key Attestation metadata on-chain for external verification.
-- Public key is set once; emergency rotation costs 35 percent of the vow balance and goes to Giveth.
-- The Android app can be built with a sign-and-forget flow to prevent silent APK replacement.
+- Public key is set once; one-time-emergency rotation costs 35 percent of the vow balance and goes to Giveth.
+- The Android app is built with a sign-and-forget flow to prevent silent APK replacement.
 
 ## Core contracts
 - `contracts/FitnessUnbreakableVow.sol`: escrows stake, enforces weekly penalties, releases funds.

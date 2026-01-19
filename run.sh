@@ -90,7 +90,7 @@ case "$1" in
         ;;
     diff)
         echo "Git diff"
-        git diff main -- . ':!*.java' ':!*.json' ':!*.abi' ':!*.bin' ':!*.addresses' ':!*addresses'
+        git diff v0.0.3-alpha HEAD -- . ':!*.java' ':!*.json' ':!*.abi' ':!*.bin' ':!*.addresses' ':!*addresses' ':!*.drawio'
         ;;
     deploy-webapp)
         echo "Deploying frontend"
