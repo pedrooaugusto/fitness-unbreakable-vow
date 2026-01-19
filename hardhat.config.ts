@@ -24,9 +24,9 @@ dotenv.config({ path: '.env', override: true });
 // Optional environment variables (may be missing in CI)
 const SEPOLIA_RPC_URL = process.env['sepolia.RPC_URL'];
 const ABI_SEP_RPC_URL = process.env['arbiSep.RPC_URL'];
-const SEPOLIA_WALLET_PRIVATE_KEY = process.env['sepolia.WALLET_PRIVATE_KEY'];
-const ARBITRUM_WALLET_PRIVATE_KEY = process.env['arbitrum.WALLET_PRIVATE_KEY'];
-const ARBITRUM_SEPOLIA_WALLET_PRIVATE_KEY = process.env['arbiSep.WALLET_PRIVATE_KEY'];
+const SEPOLIA_WALLET_PRIVATE_KEY = void 0;
+const ARBITRUM_WALLET_PRIVATE_KEY = void 0;
+const ARBITRUM_SEPOLIA_WALLET_PRIVATE_KEY = process.env['sandbox.WALLET_PRIVATE_KEY'];
 const ETHERSCAN_API_KEY = process.env['ETHERSCAN_API_KEY'];
 const COINMARKETCAP_API_KEY = process.env['GAS_REPORTER.COIN_MARKET_API_KEY'];
 
