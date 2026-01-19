@@ -39,7 +39,6 @@ export async function getVowNewTimeline(timeLord: Contract, secondsInWeekOverrid
     const secondsInWeek = Number(secondsInWeekOverride !== undefined ? secondsInWeekOverride : secondsInWeekRaw);
     const numberOfWeeks = Number(numberOfWeeksOverride !== undefined ? numberOfWeeksOverride : numberOfWeeksRaw);
 
-    //19h15
     const creationDate = Math.floor((Date.now() / 1000) + (secondsInWeek / 2));
     const expirationDate = creationDate + secondsInWeek * numberOfWeeks;
 
@@ -53,7 +52,7 @@ export async function getScheduleNewTimeline(timeLord: Contract) {
         timeLord.SECONDS_IN_ONE_WEEK(),
     ]);
 
-    const startDate = new Date(Number(creationDate) * 1000);
+    const startDate = new Date((Number(creationDate) + Number(secondsInWeek) / 2) * 1000);
     const endDate = new Date(Number(expirationDate + secondsInWeek + 10n) * 1000);
     const schedulerExpression = `rate(${Math.floor(Number(secondsInWeek) / 60)} minutes)`
 
