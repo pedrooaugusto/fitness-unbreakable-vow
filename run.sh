@@ -101,7 +101,7 @@ case "$1" in
         ;;
     diff)
         echo "Git diff"
-        git diff -- . ':!*.java' ':!*.json' ':!*.abi' ':!*.bin' ':!*.addresses' ':!*addresses'
+        git diff -- . ':!*.java' ':!*.json' ':!*.abi' ':!*.bin' ':!*.addresses' ':!*addresses' ':!*.drawio'
         ;;
     deploy-webapp)
         echo "Deploying frontend"
