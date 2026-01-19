@@ -166,7 +166,7 @@ export class FitnessUnbreakableVowUpkeeper {
         const deployTransaction = await contract.deploymentTransaction()?.wait()!!;
         const upkeepAddress = FitnessUnbreakableVowUpkeeper.getUpkeepAddress(deployTransaction);
 
-        const initialFunding = hre.ethers.parseUnits('0.65', 18);
+        const initialFunding = hre.ethers.parseUnits('1.1', 18);
         await FitnessUnbreakableVowUpkeeper.fundUpkeepWithLink(contract, initialFunding, hre);
 
         const configTransaction = await contract.configureUpkeeper(upkeepAddress, initialFunding);
