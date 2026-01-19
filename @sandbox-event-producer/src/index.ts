@@ -58,6 +58,18 @@ export const handler: ScheduledHandler<SandboxEvent> = (async (event: SandboxEve
     await tx.wait();
 
     console.log(`[INFO] Publish completed. tx=${tx.hash}`);
+
+    if (Math.random() >= 0.7) { // 30% chance of happening
+        console.log(`[INFO] Enforcing vow.`);
+
+        await sleep(3000);
+
+        const tx1 = await fitnessUnbreakableVow.enforceAgreement();
+        await tx1.wait();
+
+        console.log(`[INFO] Enforce completed. tx=${tx1.hash}`);
+    }
+
 }) as any;
 
 async function resetVow(timeLord: Contract, vow: Contract, provider: JsonRpcProvider, secondsInWeekOverride?: number, numberOfWeeksOverride?: number) {
