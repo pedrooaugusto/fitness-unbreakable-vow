@@ -8,5 +8,5 @@ abstract contract Versioned {
     /**
      * @notice Version reference for this contract.
      */
-    string public constant VERSION = 'https://github.com/pedrooaugusto/fitness-unbreakable-vow/commit/a1f8124873deebd07acf2310b5736ad6830d1666';
+    string public constant VERSION = 'https://github.com/pedrooaugusto/fitness-unbreakable-vow/commit/27ce7ff7dafe08ce5f2aa5d39b7ba130e63137ff';
 }

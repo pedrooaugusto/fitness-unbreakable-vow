@@ -28,7 +28,7 @@ library PhysicalActivityValidators {
             gymLoc2:  Geofence({ latitudeNanoDegree: -228871355, longitudeNanoDegree: -432813848, radiusInMeters: 250 }),
             gymLoc3:  Geofence({ latitudeNanoDegree: -260758108, longitudeNanoDegree:  280636459, radiusInMeters: 150 }),
             gymLoc4:  Geofence({ latitudeNanoDegree: -260888460, longitudeNanoDegree:  280602968, radiusInMeters: 150 }),
-            minimumVisitTimeInMinutes: uint8((40 minutes) / 60),
+            minimumVisitTimeInMinutes: uint8((45 minutes) / 60),
             minimumAvgBpm: 95,
             minimumMaxBpm: 125
         });
