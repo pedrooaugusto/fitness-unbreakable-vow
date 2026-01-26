@@ -518,7 +518,7 @@ function RunningCurrentWeekGoalHistory(props: { currentWeek: string; oracleEvent
     if (rows.length === 0) {
         return (
             <p className="hint">
-                No running sessions reported this week.{" "}
+                Unable to load running session records for this week.{" "}
                 <a href={props.oracleEventsUrl} target="_blank">More details on Etherscan.</a>
             </p>
         );
@@ -575,7 +575,7 @@ function SleepCurrentWeekGoalHistory(props: { currentWeek: string; oracleEventsU
     if (rows.length === 0) {
         return (
             <p className="hint">
-                No sleep sessions reported this week.{" "}
+                Unable to load sleep session records for this week.{" "}
                 <a href={props.oracleEventsUrl} target="_blank">More details on Etherscan.</a>
             </p>
         );
@@ -632,7 +632,7 @@ function GymVisitCurrentWeekGoalHistory(props: { currentWeek: string; oracleEven
     if (rows.length === 0) {
         return (
             <p className="hint">
-                No gym visit records reported this week.{" "}
+                Unable to load gym visit records for this week.{" "}
                 <a href={props.oracleEventsUrl} target="_blank">More details on Etherscan.</a>
             </p>
         );

@@ -82,6 +82,7 @@ export const PastWeeksSection: React.FC<PastWeeksSectionProps> = ({
                                         closeModal={closeModal}
                                         network={overview.network}
                                         currency={currency}
+                                        oracleAddress={overview.oracleAddress}
                                         vowAddress={overview.contractAddress}
                                         penaltyAmount={overview.penaltyAmount}
                                         requiredNumberOfCompletedGoals={overview.requiredNumberOfCompletedGoals}
@@ -113,6 +114,7 @@ function PastWeekCard({
     gymVisitEventValidator,
     sleepEventValidator,
     openModal,
+    oracleAddress,
     network,
     upkeeperAddress,
     currency,
@@ -133,7 +135,8 @@ function PastWeekCard({
     runningEventValidator: RunningEventValidator,
     gymVisitEventValidator: GymVisitEventValidator,
     sleepEventValidator: SleepEventValidator,
-    upkeeperAddress: string
+    upkeeperAddress: string,
+    oracleAddress: string,
 } & WithModalProps) {
     const { goals, status } = week;
 
@@ -164,6 +167,7 @@ function PastWeekCard({
         <PastWeekDetailsModal
             weekIndex={weekIndex}
             vowAddress={vowAddress}
+            oracleAddress={oracleAddress}
             penaltyAmount={penaltyAmount}
             upkeeperAddress={upkeeperAddress}
             status={status}
@@ -219,6 +223,7 @@ interface PastWeekDetailsModalProps {
     network: Network;
     goals: WeeklyGoal["goals"];
     vowAddress: string;
+    oracleAddress: string;
     currency: Currency;
     status: WeeklyGoalStatusType;
     requiredNumberOfCompletedGoals: number;
@@ -445,7 +450,7 @@ function PastWeekFailedDetailsModal({
                         </a>
                     </li>
                 </ul>
-                <RecordsHistory weekDetails={weekDetails} network={network} oracleAddress={props.vowAddress} />
+                <RecordsHistory weekDetails={weekDetails} network={network} oracleAddress={props.oracleAddress} />
             </div>
             <div className="actions">
                 <button className="close-button" onClick={props.closeModal}>
@@ -476,7 +481,7 @@ function PastWeekSucceedDetailsModal({
                     Since the weekly goals were completed no fine was applied
                     this week.
                 </p>
-                <RecordsHistory weekDetails={weekDetails} network={network} oracleAddress={props.vowAddress} />
+                <RecordsHistory weekDetails={weekDetails} network={network} oracleAddress={props.oracleAddress} />
             </div>
             <div className="actions">
                 <button className="close-button" onClick={closeModal}>
