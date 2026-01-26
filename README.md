@@ -2,9 +2,11 @@
 
 FitVow is a self-enforcing fitness vow built on-chain. You stake funds, commit to weekly activity goals, and let the contract enforce the rules without a trusted referee. Miss a week, pay a penalty. Keep your word, get your stake back.
 
-Live dashboard: http://fitvow.pedroaugusto.dev/ (shows the current state of the challenge)
+**Live dashboard**: http://fitvow.pedroaugusto.dev/ (shows the current state of the challenge)
 
-Sandbox version: http://fitvow.pedroaugusto.dev/sandbox (deployed in the Sepolia testnet)
+**Sandbox version**: http://fitvow.pedroaugusto.dev/sandbox (deployed in the Sepolia testnet)
+
+**Article about this project**: https://pedrooaugusto.github.io/blog/posts/making-missed-workouts-cost-money-with-smart-contracts/
 
 ## Current challenge parameters
 - Duration: 12 weeks.
