@@ -10,11 +10,15 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         FitnessUnbreakableVow,
         TimeLordContract,
     } = await loadContract();
- 
+
+    const startDate = Number(await TimeLordContract.CREATION_DATE());
+    const now = Math.floor((+new Date()) / 1000);
+
+    if (startDate > now) throw new Error(`The FitVow agreement start date is set to ${new Date(startDate * 1000)}. Nothing can be shown before this date, try again later.`);
+
     const contractBalance = await getBalance(FitnessUnbreakableVow);
 
     const [
-        startDate,
         expirationDate,
         currentWeekNumber,
         contractPhase,
@@ -22,7 +26,6 @@ export async function getContractOverview(): Promise<GetContractOverviewResponse
         secondsInAWeek,
         upkeeperCronSpec,
     ] = await executeMulticall(TimeLordContract, [
-        'CREATION_DATE',
         'EXPIRATION_DATE',
         'getCurrentWeekIndex',
         'getContractPhase',

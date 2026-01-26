@@ -115,7 +115,7 @@ const MainPage = WithModal(function(props) {
             <footer>
                 <span>
                     <a href={convertedOverview.version}>
-                        {version.startsWith('v') ? version : version.substring(0, 7)} (Ipanema)
+                        {version.startsWith('v') ? version : version.substring(0, 7)} (Copacabana)
                     </a>
                 </span>
                 <span>1 por amor, 2 por <b>dinheiro ♬</b></span>

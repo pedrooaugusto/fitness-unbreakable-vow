@@ -85,7 +85,7 @@ npm run dev
 
 Publish fake physical activity events:
 ```bash
-./run.sh push-record localhost
+./run.sh push-record localhost --d 4000 --s 3 --g 3
 ```
 
 Enforce a missed week:

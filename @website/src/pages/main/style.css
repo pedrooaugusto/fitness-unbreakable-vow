@@ -459,6 +459,14 @@ section.past-weeks-results {
             padding: 5px 0px;
             transition: transform 0.3s ease-in-out;
             cursor: pointer;
+            position: relative;
+
+            span.info-icon {
+                position: absolute;
+                top: 5px;
+                right: 5px;
+                & span { border-color: white; color: white; }
+            }
 
             &:hover {
                 transform: translateY(-5px);
@@ -479,6 +487,11 @@ section.past-weeks-results {
             &.not-met-pending-penalty {
                 background: linear-gradient(45deg, var(--start-0), var(--start-1), var(--center), var(--center), var(--start-1), var(--start-0));
                 animation: tilt-n-move-shaking 0.7s infinite, shine 0.7s infinite; /* The animation lasts 2 seconds, repeats infinitely, and alternates direction */
+
+                .info-icon {
+                    display: none;
+                }
+
             }
 
             &.not-met-unclaimed-penalty {
@@ -576,6 +589,18 @@ footer {
             color: white !important;
         }
     }
+
+    .highlight-info {
+        background-color: black;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 5px;
+        a {
+            color: white !important;
+            text-decoration: underline !important;
+        }
+    }
 }
 
 .modal-wrapper .modal .main > .upkeeper-info-modal {
@@ -604,51 +629,6 @@ footer {
 
         li a {
             font-weight: 400;
-        }
-    }
-
-    .records-history {
-        margin-top: 12px;
-
-        .records-history__heading {
-            color: var(--text, #fafafa);
-            font-weight: 700;
-        }
-
-        .records-history__table-wrapper {
-            overflow-x: auto;
-            border-radius: 8px;
-            border: 1px solid var(--border, #262626);
-            background: var(--card, #171717);
-            margin-top: 5px;
-        }
-
-        .records-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-family: Oxygen, sans-serif;
-            
-            th, td {
-                padding: 10px 10px;
-                text-align: left;
-                border-bottom: 1px solid var(--border, #262626);
-            }
-
-            th {
-                color: var(--text, #fafafa);
-                font-weight: 700;
-                background: #0f1116;
-                font-size: 14px;
-            }
-
-            td {
-                color: var(--text, #fafafa);
-                font-size: 14px;
-
-                &.record-detail {
-                    color: var(--text, #fafafa);
-                }
-            }
         }
     }
 
@@ -682,6 +662,52 @@ footer {
     .records-table th:nth-child(3),
     .records-table td:nth-child(3) {
         width: 50%;
+    }
+}
+
+
+.records-history {
+    margin-top: 12px;
+
+    .records-history__heading {
+        color: var(--text, #fafafa);
+        font-weight: 700;
+    }
+
+    .records-history__table-wrapper {
+        overflow-x: auto;
+        border-radius: 8px;
+        border: 1px solid var(--border, #262626);
+        background: var(--card, #171717);
+        margin-top: 5px;
+    }
+
+    .records-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: Oxygen, sans-serif;
+        
+        th, td {
+            padding: 10px 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border, #262626);
+        }
+
+        th {
+            color: var(--text, #fafafa);
+            font-weight: 700;
+            background: #0f1116;
+            font-size: 14px;
+        }
+
+        td {
+            color: var(--text, #fafafa);
+            font-size: 14px;
+
+            &.record-detail {
+                color: var(--text, #fafafa);
+            }
+        }
     }
 }
 
