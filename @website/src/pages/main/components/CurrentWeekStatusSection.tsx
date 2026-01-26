@@ -1,19 +1,22 @@
-import { type JSX, type ReactElement } from "react";
+import React, { type JSX, type ReactElement } from "react";
 import {
     formatCurrency,
     formatDate,
     formatTime,
     getAddressBlockExplorerUrl,
+    getTransactionBlockExplorerUrl,
     GIVETH_PAGE_URL,
+    shortAddress,
 } from "../../utils";
 import CalendarIcon from "../../../assets/calendar-icon";
 import CheckCircleIcon from "../../../assets/check-circle-icon";
 import XIcon from "../../../assets/x-circle-icon";
 import { SectionTitle } from "../../components/SectionTitle";
-import { ContractPhase, type GetContractOverviewResponse, type GymVisitEventValidator, type Network, type RunningEventValidator, type SleepEventValidator } from "../types";
+import { ContractPhase, type GetContractOverviewResponse, type GymVisitEventProcessed, type GymVisitEventValidator, type Network, type RunningEventProcessed, type RunningEventValidator, type SleepEventProcessed, type SleepEventValidator } from "../types";
 import type { WithModalProps } from "../../components/modal";
 import LiveTimeCountdown from "./LiveTimeCountdown";
 import InfoIcon from "../../../assets/info-icon";
+import { getWeekDetails } from "../api/week-details";
 
 interface CurrentWeekStatusSectionProps extends WithModalProps {
     overview: GetContractOverviewResponse;
@@ -50,7 +53,8 @@ export default function CurrentWeekStatusSection({
     const completedGoalsReq = overview.requiredNumberOfCompletedGoals;
 
     const totalPenaltyAmount = formatCurrency(overview.penaltyAmount, currency);
-    const enforceFunUrl = getAddressBlockExplorerUrl(overview.contractAddress, overview.network) + "#writeContract#F1";
+    const enforceFunUrl = getAddressBlockExplorerUrl(overview.contractAddress, overview.network) + "#writeContract#F2";
+    const oracleEventsUrl = getAddressBlockExplorerUrl(overview.oracleAddress, overview.network) + "#events";
 
     return (
         <section className="current-week-results">
@@ -89,6 +93,9 @@ export default function CurrentWeekStatusSection({
                                     validator={overview.runningValidator}
                                     requiredValue={overview.runningSessionsGoal}
                                     goalMet={currentWeekGoals.run2KmGoalMet}
+                                    currentWeek={overview.currentWeekNumber.toString()}
+                                    oracleEventsUrl={oracleEventsUrl}
+                                    network={overview.network}
                                 />,
                                 "🏃 Running Session Goal"
                             )
@@ -114,6 +121,9 @@ export default function CurrentWeekStatusSection({
                                     requiredValue={overview.healthySleepNightsGoal}
                                     validator={overview.sleepValidator}
                                     goalMet={currentWeekGoals.sleptWellGoalMet}
+                                    currentWeek={overview.currentWeekNumber.toString()}
+                                    oracleEventsUrl={oracleEventsUrl}
+                                    network={overview.network}
                                 />,
                                 `🛏️ ${sleepSessionMinimumDuration} Sleep Goal`
                             )
@@ -138,6 +148,9 @@ export default function CurrentWeekStatusSection({
                                     currentValue={gymVisits}
                                     requiredValue={overview.gymVisitsGoal}
                                     goalMet={currentWeekGoals.gymVisitsGoalMet}
+                                    currentWeek={overview.currentWeekNumber.toString()}
+                                    oracleEventsUrl={oracleEventsUrl}
+                                    network={overview.network}
                                 />,
                                 "💪 Gym Visits Goal"
                             )
@@ -239,12 +252,15 @@ type GoalModalProps = {
     requiredValue?: string | number;
     totalPenaltyAmount: string;
     enforceVowFunctionUrl: string;
+    currentWeek: string;
+    oracleEventsUrl: string;
     validator: RunningEventValidator | GymVisitEventValidator | SleepEventValidator;
 }
 
-function RunningSessionsGoalModal(props: GoalModalProps) {
+function RunningSessionsGoalModal(props: GoalModalProps & { network: Network }) {
     const validator = props.validator as RunningEventValidator;
     const requiredDistance = metersToKms(Number(validator.minimumDistanceInMeters));
+    const pace = formatTime(Number(validator.maximumPaceInSecondsPerKm), '');
 
     return (
         <div className="main">
@@ -258,7 +274,7 @@ function RunningSessionsGoalModal(props: GoalModalProps) {
                 definition={
                     <p>
                         A valid running session has a minimum distance of <b>{requiredDistance}km</b>, pace smaller{" "}
-                        than <b>{Number(validator.maximumPaceInSecondsPerKm / 60n)}min/km</b>, avarage heart rate during the{" "}
+                        than <b>{pace}/km</b>, avarage heart rate during the{" "}
                         exercise greater than <b>{Number(validator.minimumAvgBpm)}bpm</b> and cannot happen <b>during</b> a gym session.
                     </p>
                 }
@@ -282,6 +298,13 @@ function RunningSessionsGoalModal(props: GoalModalProps) {
                         {props.currentValue} out of {props.requiredValue} running sessions reported this week. <b>Weekly goal {props.goalMet ? 'met' : 'not Met'}.</b>
                     </p>
                 }
+                history={
+                    <RunningCurrentWeekGoalHistory
+                        currentWeek={props.currentWeek}
+                        oracleEventsUrl={props.oracleEventsUrl}
+                        network={props.network}
+                    />
+                }
                 {...props}
             />
             <div className="actions">
@@ -293,7 +316,7 @@ function RunningSessionsGoalModal(props: GoalModalProps) {
     );
 }
 
-function SleepGoalModal(props: GoalModalProps) {
+function SleepGoalModal(props: GoalModalProps & { network: Network }) {
     const validator = props.validator as SleepEventValidator;
     const requiredSleepDuration = formatTime(Number(validator.minimumDurationInMinutes * 60n), 'and', 'long');
 
@@ -332,6 +355,13 @@ function SleepGoalModal(props: GoalModalProps) {
                         {props.currentValue} out of {props.requiredValue} healthy sleep sessions reported this week. <b>Weekly goal {props.goalMet ? 'met' : 'not Met'}.</b>
                     </p>
                 }
+                history={
+                    <SleepCurrentWeekGoalHistory
+                        currentWeek={props.currentWeek}
+                        oracleEventsUrl={props.oracleEventsUrl}
+                        network={props.network}
+                    />
+                }
                 
                 {...props}
             />
@@ -344,7 +374,7 @@ function SleepGoalModal(props: GoalModalProps) {
     );
 }
 
-function GymVisitsGoalModal(props: GoalModalProps) {
+function GymVisitsGoalModal(props: GoalModalProps & { network: Network }) {
     const validator = props.validator as GymVisitEventValidator;
     const requiredVisitDuration = formatTime(Number(validator.minimumVisitTimeInMinutes * 60n), ' ', 'long');
     const gymLocations = [validator.gymLoc1, validator.gymLoc2]
@@ -378,8 +408,15 @@ function GymVisitsGoalModal(props: GoalModalProps) {
                 }
                 currentStatus={
                     <p>
-                        {props.currentValue} out of {props.requiredValue} healthy gym visits reported this week. <b>Weekly goal {props.goalMet ? 'met' : 'not Met'}.</b>
+                        {props.currentValue} out of {props.requiredValue} gym visits reported this week. <b>Weekly goal {props.goalMet ? 'met' : 'not Met'}.</b>
                     </p>
+                }
+                history={
+                    <GymVisitCurrentWeekGoalHistory
+                        currentWeek={props.currentWeek}
+                        oracleEventsUrl={props.oracleEventsUrl}
+                        network={props.network}
+                    />
                 }
                 {...props}
             />
@@ -400,6 +437,7 @@ type GoalDetailsProps = {
     totalPenaltyAmount: string;
     enforceVowFunctionUrl: string;
     definition: JSX.Element;
+    history: JSX.Element;
 };
 
 function GoalDetails(props: GoalDetailsProps) {
@@ -438,7 +476,7 @@ function GoalDetails(props: GoalDetailsProps) {
                     preventing falsification.
                 </li>
                 <li>
-                    <a href="#" target="_blank" rel="noopener noreferrer">
+                    <a href="https://pedrooaugusto.github.io/blog/posts/making-missed-workouts-cost-money-with-smart-contracts/#security-model-high-level" target="_blank" rel="noopener noreferrer">
                         Learn more about anti-falsification mechanisms.
                     </a>
                 </li>
@@ -460,8 +498,189 @@ function GoalDetails(props: GoalDetailsProps) {
                     calling <a href={props.enforceVowFunctionUrl} target="_blank">#enforceAgreement</a> on the contract.
                 </li>
             </ul>
+            
+            <h4>Current Week History</h4>
+            {props.history}
         </div>
     );
+}
+
+function RunningCurrentWeekGoalHistory(props: { currentWeek: string; oracleEventsUrl: string; network: Network }) {
+    const [runningSessions, setRunningSessions] = React.useState<RunningEventProcessed[] | null>(null);
+
+    React.useEffect(() => {
+        getWeekDetails(props.currentWeek.toString())
+            .then((r) => setRunningSessions(r.history?.runningEventProcessed || null));
+    }, []);
+
+    const rows = [...(runningSessions) || []].sort((a, b) => b.timestamp - a.timestamp);
+
+    if (rows.length === 0) {
+        return (
+            <p className="hint">
+                No running sessions reported this week.{" "}
+                <a href={props.oracleEventsUrl} target="_blank">More details on Etherscan.</a>
+            </p>
+        );
+    }
+
+    return (
+        <div className="records-history">
+            <div className="records-history__table-wrapper">
+                <table className="records-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>When</th>
+                            <th>Details</th>
+                            <th>Transaction</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((event, index) => (
+                            <tr key={`${event.transactionHash}-${index}`}>
+                                <td>Run</td>
+                                <td>{formatDate(event.timestamp, "numeric", "short")}</td>
+                                <td className="record-detail">
+                                    {(event.distanceInMeters / 1000).toFixed(2)} km ● {formatPace(event.paceInSecondsPerKm)} ● {event.avgBpm} bpm
+                                </td>
+                                <td>
+                                    <a
+                                        href={getTransactionBlockExplorerUrl(event.transactionHash, props.network)}
+                                        target="_blank"
+                                        className="records-history__tx-link"
+                                    >
+                                        {shortAddress(event.transactionHash)}
+                                    </a>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+function SleepCurrentWeekGoalHistory(props: { currentWeek: string; oracleEventsUrl: string; network: Network }) {
+    const [sleepSessions, setSleepSessions] = React.useState<SleepEventProcessed[] | null>(null);
+
+    React.useEffect(() => {
+        getWeekDetails(props.currentWeek.toString())
+            .then((r) => setSleepSessions(r.history?.sleepEventProcessed || null));
+    }, []);
+
+    const rows = [...(sleepSessions || [])].sort((a, b) => b.timestamp - a.timestamp);
+
+    if (rows.length === 0) {
+        return (
+            <p className="hint">
+                No sleep sessions reported this week.{" "}
+                <a href={props.oracleEventsUrl} target="_blank">More details on Etherscan.</a>
+            </p>
+        );
+    }
+
+    return (
+        <div className="records-history">
+            <div className="records-history__table-wrapper">
+                <table className="records-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>When</th>
+                            <th>Details</th>
+                            <th>Transaction</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((event, index) => (
+                            <tr key={`${event.transactionHash}-${index}`}>
+                                <td>Sleep</td>
+                                <td>{formatDate(event.timestamp, "numeric", "short")}</td>
+                                <td className="record-detail">
+                                    {(event.durationInMinutes / 60).toFixed(1)} hrs ● {event.avgBpm} bpm
+                                </td>
+                                <td>
+                                    <a
+                                        href={getTransactionBlockExplorerUrl(event.transactionHash, props.network)}
+                                        target="_blank"
+                                        className="records-history__tx-link"
+                                    >
+                                        {shortAddress(event.transactionHash)}
+                                    </a>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+function GymVisitCurrentWeekGoalHistory(props: { currentWeek: string; oracleEventsUrl: string; network: Network }) {
+    const [gymVisits, setGymVisits] = React.useState<GymVisitEventProcessed[] | null>(null);
+
+    React.useEffect(() => {
+        getWeekDetails(props.currentWeek.toString())
+            .then((r) => setGymVisits(r.history?.gymVisitEventProcessed || null));
+    }, []);
+
+    const rows = [...(gymVisits || [])].sort((a, b) => b.timestamp - a.timestamp);
+
+    if (rows.length === 0) {
+        return (
+            <p className="hint">
+                No gym visit records reported this week.{" "}
+                <a href={props.oracleEventsUrl} target="_blank">More details on Etherscan.</a>
+            </p>
+        );
+    }
+
+    return (
+        <div className="records-history">
+            <div className="records-history__table-wrapper">
+                <table className="records-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>When</th>
+                            <th>Details</th>
+                            <th>Transaction</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((event, index) => (
+                            <tr key={`${event.transactionHash}-${index}`}>
+                                <td>Workout</td>
+                                <td>{formatDate(event.timestamp, "numeric", "short")}</td>
+                                <td className="record-detail">
+                                    {event.durationInMinutes} min ● {event.avgBpm} bpm ● {event.maxBpm} bpm ● Valid Gym Location ✔
+                                </td>
+                                <td>
+                                    <a
+                                        href={getTransactionBlockExplorerUrl(event.transactionHash, props.network)}
+                                        target="_blank"
+                                        className="records-history__tx-link"
+                                    >
+                                        {shortAddress(event.transactionHash)}
+                                    </a>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+function formatPace(secondsPerKm: number) {
+    const minutes = Math.floor(secondsPerKm / 60);
+    const seconds = secondsPerKm % 60;
+
+    return `${minutes}:${seconds.toString().padStart(2, '0')} min/km`;
 }
 
 const metersToKms = (distance: number) =>  Math.floor((distance / 1000) * 100) / 100;

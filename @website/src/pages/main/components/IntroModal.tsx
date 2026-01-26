@@ -17,7 +17,7 @@ export function IntroModal(props: IntroModalProps) {
     const weekLength = Math.round(ov.secondsInAWeek / 60);
     const contractUrl = getAddressBlockExplorerUrl(ov.contractAddress, ov.network);
     const oracleUrl = getAddressBlockExplorerUrl(ov.oracleAddress, ov.network);
-    const enforceFunctionUrl = getAddressBlockExplorerUrl(ov.contractAddress, ov.network) + "#writeContract#F1";
+    const enforceFunctionUrl = getAddressBlockExplorerUrl(ov.contractAddress, ov.network) + "#writeContract#F2";
     const appGithub = 'https://github.com/pedrooaugusto/fitness-unbreakable-vow/tree/main/%40androidapp';
     const EL = ({ l, c }: {l: string, c: string }) => <a href={l} target="_blank">{c}</a>;
 
@@ -33,7 +33,7 @@ export function IntroModal(props: IntroModalProps) {
                 )}
                 <p>
                     FitVow is a {weeks}-week fitness commitment experiment enforced by a smart contract on the
-                    Arbitrum network (Ethereum L2). At the start, the pledger locked <b>{stake}</b>{' '}
+                    Arbitrum blockchain (Ethereum L2). At the start, the pledger locked <b>{stake}</b>{' '}
                     on-chain as a stake, which is held in escrow by the contract until the challenge ends <EL l={contractUrl} c="[1]" />.
                 </p>
 
@@ -63,11 +63,13 @@ export function IntroModal(props: IntroModalProps) {
                 </p>
 
                 {!props.isSandbox && (
-                    <p>
+                    <p className="highlight-info">
                         A sandbox version of this experiment is available at <a href="/sandbox">/sandbox</a>. It runs on the Arbitrum Sepolia testnet
                         with shortened weeks and testnet-only balances, allowing you to explore how FitVow works without real funds.
                     </p>
                 )}
+
+                <p><small>All currency conversions on this page are handled by Coingecko free api.</small></p>
 
             </div>
 

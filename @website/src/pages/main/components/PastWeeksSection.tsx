@@ -29,6 +29,7 @@ import {
 import CallContractButton from "./WalletButton";
 import type { LogDescription } from "ethers";
 import { getWeekDetails } from "../api/week-details";
+import InfoIcon from "../../../assets/info-icon";
 
 interface PastWeeksSectionProps extends WithModalProps {
     overview: GetContractOverviewResponse;
@@ -94,6 +95,7 @@ export const PastWeeksSection: React.FC<PastWeeksSectionProps> = ({
                                 );
                             })
                             .reverse()}
+                    {currentWeekNumber === 0 ? <p style={{color: 'white', fontFamily: 'Oxygen', fontSize: '16px'}}>No past weeks to display, first week has not finished yet.</p> : null}
                 </div>
             </div>
         </section>
@@ -184,6 +186,7 @@ function PastWeekCard({
             className={`week-card ${cardClass()}`}
             onClick={() => openModal(modal, title)}
         >
+            <span className="info-icon"><InfoIcon color="#fff"/></span>
             <div className="title">Week {weekIndex}</div>
             <div className="value">
                 {isStatusPending && "Claim Fine!"}

@@ -42,8 +42,8 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
     const currentBalancePercent = (overview.currentBalance / overview.initialStakedAmount - 1) * 100;
     const currentBalancePercentText = `${currentBalancePercent > 0 ? '+' : ''}${currentBalancePercent.toFixed(1)}%`;
     const totalWeeks = Math.floor((overview.expirationDate - overview.startDate) / overview.secondsInAWeek) - 1;
-    const enforceFunctionUrl = getAddressBlockExplorerUrl(overview.contractAddress, overview.network) + "#writeContract#F1";
-    const contractBlockExplorerUrl = getAddressBlockExplorerUrl(overview.contractAddress, overview.network);
+    const enforceFunctionUrl = getAddressBlockExplorerUrl(overview.contractAddress, overview.network) + "#writeContract#F2";
+    const contractBlockExplorerUrl = getAddressBlockExplorerUrl(overview.contractAddress, overview.network) + "#code";
 
     const upkeepExecutionInterval = CronInterval[String(overview.secondsInAWeek) as unknown as WeekDurations];
     const nextUpkeeperExecTime = new Date(cronParser.parse(overview.upkeeperCronSpec, { tz: 'UTC' }).next().getTime());
@@ -106,6 +106,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                                             closeModal={closeModal}
                                             initialStake={formatCurrency(overview.initialStakedAmount, currency)}
                                             enforceVowFunctionUrl={enforceFunctionUrl}
+                                            contractBlockExplorerUrl={contractBlockExplorerUrl}
                                         />,
                                         'Initial Stake Info'
                                     )
@@ -265,7 +266,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                         <Link
                             icon={<ArticleIcon />}
                             title={<>What is this project? <small>(Article)</small></>}
-                            url="#hello"
+                            url="https://pedrooaugusto.github.io/blog/posts/making-missed-workouts-cost-money-with-smart-contracts/"
                         />
                         <Link
                             icon={<ArticleIcon />}
@@ -274,7 +275,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                                     {isSandbox ? 'Production' : 'Sandbox'} <small>(Environment)</small>
                                 </>
                             }
-                            url={`${isSandbox ? '../' : '/sandbox'}`}
+                            url={`${isSandbox ? '/' : '/sandbox'}`}
                             newTab={false}
                         />
                         <Link
@@ -362,6 +363,7 @@ type InitialStakeInfoModalProps = {
     closeModal: () => void;
     initialStake: string;
     enforceVowFunctionUrl: string;
+    contractBlockExplorerUrl: string;
 };
 
 function InitialStakeInfoModal(props: InitialStakeInfoModalProps) {
@@ -369,7 +371,7 @@ function InitialStakeInfoModal(props: InitialStakeInfoModalProps) {
         <div className="main">
             <div className="weekly-goal-modal">
                 <p>
-                    The Initial Stake is the amount of cryptocurrency (<b>native ETH</b>) locked into the contract by the Pledger at the commencement of the vow. This sum <b>({props.initialStake})</b> is held in escrow on-chain as collateral for the Fitness Unbreakable Vow.
+                    The Initial Stake is the amount of cryptocurrency (<b>native ETH</b>) locked into the contract by the Pledger at the commencement of the vow. This sum <b>({props.initialStake})</b> is held in escrow on-chain as collateral for the <a href={props.contractBlockExplorerUrl} target="_blank">Fitness Unbreakable Vow</a>.
                     <br /><br />
                     In the event of breach, fines may be imposed and collected by any party through invocation of the <a href={props.enforceVowFunctionUrl} target="_blank">#enforceAgreement</a> function on the smart contract. Such fines reduce the remaining balance, with forfeited amounts distributed in equal measure to the enforcing party (You) and the registered beneficiary (<a href={GIVETH_PAGE_URL} target="_blank">Giveth Charity</a>).
                     <br /><br />
@@ -390,7 +392,7 @@ function FundsRemainingInfoModal(props: { closeModal: () => void; }) {
         <div className="main">
             <div className="weekly-goal-modal">
                 <p>
-                    The Funds Remaining represent the portion of the Initial Stake still held in escrow on-chain on behalf of the <b>Pledger</b> This balance reflects the Initial Stake minus any fines imposed for breaches of weekly obligations.
+                    The Funds Remaining represent the portion of the Initial Stake still held in escrow on-chain on behalf of the <b>Pledger</b>. This balance reflects the Initial Stake minus any fines imposed for breaches of weekly obligations.
                     <br /><br />
                     At any point during the contract term, this amount serves as collateral, securing the Pledger's ongoing commitment.
                     <br /><br />
@@ -516,12 +518,12 @@ function SecurityModelModal(props: KeyAttestationModalProps) {
                     the pledger's physical activity data (runs, sleep, gym visits) from Android Health Connect and publishing those records to the{' '}
                     <a href={blockExplorer} target="_blank">PhysicalActivity Oracle Contract</a> which uses this data to 
                     decide whether fines should be applied. The Oracle accepts only properly signed records — any submission 
-                    that fails cryptographic verification is ignored and produces no on-chain effect{' '}<CL f="1" l="91" c="[1]" />.
+                    that fails cryptographic verification is ignored and produces no on-chain effect{' '}<CL f="1" l="111" c="[1]" />.
                 </p>
                 <h4>Signed submissions & on-chain checks</h4>
                 <p>
                     Every record sent by FitVow-Sync is cryptographically signed with a private key whose public part is 
-                    permanently registered on-chain (the Registered Key) and cannot be changed{' '}<FL f="3" c="[2]" />. The Contract verifies
+                    permanently registered on-chain (the Registered Key) and cannot be changed{' '}<FL f="4" c="[2]" />. The Contract verifies
                     signatures using <i>P-256 (secp256r1)</i>, ensuring that only data from the holder of the corresponding private key is accepted.
                 </p>
                 <h4>Device authenticity — Android Key Attestation</h4>
@@ -538,12 +540,12 @@ function SecurityModelModal(props: KeyAttestationModalProps) {
                 <p>
                     As a result, any data signed with 
                     that key is proven to originate from the FitVow-Sync app running on a genuine unrooted Android device.{' '}
-                    Both the attestation certificate and public key are public available on-chain <FRL f="2" c="[4]" />.
+                    Both the attestation certificate and public key are public available on-chain <FRL f="4" c="[4]" /> <FRL f="5" c="[5]" />.
                 </p>
                 <h4>App integrity — Sign-and-Forget (unique APK signing)</h4>
                 <p>
                     To prevent tampering or reinstallation attacks, each FitVow-Sync APK is signed with a unique, random, 
-                    ephemeral signing key — a mechanism called Sign-and-Forget. The proccess of creating such APKs happens publicly on Github Actions <EL l="https://github.com/pedrooaugusto/fitness-unbreakable-vow/actions/runs/19219023055" c="[5]" />.
+                    ephemeral signing key — a mechanism called Sign-and-Forget. The proccess of creating such APKs happens publicly on Github Actions. The current build of FitVow, the one that is being used on this experiment, is available for download and to verify the build steps at <EL l="https://github.com/pedrooaugusto/fitness-unbreakable-vow/actions/runs/21156618647" c="Github Actions Page" />.
                 </p>
                 <p>
                     Android treats apps signed with different keys as completely separate applications. A new version signed with a 
