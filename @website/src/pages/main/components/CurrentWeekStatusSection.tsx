@@ -393,7 +393,7 @@ function GymVisitsGoalModal(props: GoalModalProps & { network: Network }) {
                 }
                 definition={
                     <p>
-                        A valid gym visit is defined as the Pledger staying inside one of the following geofences defined by a circle: {gymLocations} and others... for a minimum of <b>{requiredVisitDuration}</b> with average and max heart rates during this period greater than <b>{validator.minimumAvgBpm}bpm</b> and <b>{validator.minimumMaxBpm}bpm</b> respectively.
+                        A valid gym visit is defined as the Pledger staying inside one of the following geofences defined by a circle: {gymLocations} for a minimum of <b>{requiredVisitDuration}</b> with average and max heart rates during this period greater than <b>{validator.minimumAvgBpm}bpm</b> and <b>{validator.minimumMaxBpm}bpm</b> respectively.
                     </p>
                 }
                 verificationBulletPoints={
@@ -540,7 +540,7 @@ function RunningCurrentWeekGoalHistory(props: { currentWeek: string; oracleEvent
                         {rows.map((event, index) => (
                             <tr key={`${event.transactionHash}-${index}`}>
                                 <td>Run</td>
-                                <td>{formatDate(event.timestamp, "numeric", "short")}</td>
+                                <td>{formatDate(event.timestamp, "numeric", "short", false)}</td>
                                 <td className="record-detail">
                                     {(event.distanceInMeters / 1000).toFixed(2)} km ● {formatPace(event.paceInSecondsPerKm)} ● {event.avgBpm} bpm
                                 </td>
@@ -557,6 +557,7 @@ function RunningCurrentWeekGoalHistory(props: { currentWeek: string; oracleEvent
                         ))}
                     </tbody>
                 </table>
+                <a href={props.oracleEventsUrl} target="_blank">Complete history on Etherscan.</a>
             </div>
         </div>
     );
@@ -597,7 +598,7 @@ function SleepCurrentWeekGoalHistory(props: { currentWeek: string; oracleEventsU
                         {rows.map((event, index) => (
                             <tr key={`${event.transactionHash}-${index}`}>
                                 <td>Sleep</td>
-                                <td>{formatDate(event.timestamp, "numeric", "short")}</td>
+                                <td>{formatDate(event.timestamp, "numeric", "short", false)}</td>
                                 <td className="record-detail">
                                     {(event.durationInMinutes / 60).toFixed(1)} hrs ● {event.avgBpm} bpm
                                 </td>
@@ -614,6 +615,7 @@ function SleepCurrentWeekGoalHistory(props: { currentWeek: string; oracleEventsU
                         ))}
                     </tbody>
                 </table>
+                <a href={props.oracleEventsUrl} target="_blank">Complete history on Etherscan.</a>
             </div>
         </div>
     );
@@ -654,7 +656,7 @@ function GymVisitCurrentWeekGoalHistory(props: { currentWeek: string; oracleEven
                         {rows.map((event, index) => (
                             <tr key={`${event.transactionHash}-${index}`}>
                                 <td>Workout</td>
-                                <td>{formatDate(event.timestamp, "numeric", "short")}</td>
+                                <td>{formatDate(event.timestamp, "numeric", "short", false)}</td>
                                 <td className="record-detail">
                                     {event.durationInMinutes} min ● {event.avgBpm} bpm ● {event.maxBpm} bpm ● Valid Gym Location ✔
                                 </td>
@@ -671,6 +673,7 @@ function GymVisitCurrentWeekGoalHistory(props: { currentWeek: string; oracleEven
                         ))}
                     </tbody>
                 </table>
+                <a href={props.oracleEventsUrl} target="_blank">Complete history on Etherscan.</a>
             </div>
         </div>
     );

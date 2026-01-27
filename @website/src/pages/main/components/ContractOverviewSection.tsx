@@ -196,7 +196,7 @@ const ContractOverviewSection: React.FC<ContractOverviewSectionProps> = ({ overv
                             <StatInfoCard
                                 title="Time Until Expiration"
                                 network={overview.network}
-                                subtext={`Week ${overview.currentWeekNumber} out of ${totalWeeks}`}
+                                subtext={`Week #${overview.currentWeekNumber} out of #${totalWeeks}`}
                                 value={
                                     overview.contractPhase === ContractPhase.GRACE ? 
                                         <>

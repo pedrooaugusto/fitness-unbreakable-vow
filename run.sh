@@ -114,6 +114,7 @@ case "$1" in
         aws s3 cp @website/dist "$BUCKET" --recursive \
             --exclude "*" \
             --include "abi/*" \
+            --include "events/*" \
             --include "addresses" \
             --include "index.html" \
             --include "logo.svg" \

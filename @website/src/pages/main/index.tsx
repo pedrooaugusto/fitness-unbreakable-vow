@@ -86,7 +86,7 @@ const MainPage = WithModal(function(props) {
     return (
         <div className="page main-page">
             <SandboxWarning />
-            <header className="main-header">
+            <header className="main-header" style={{ marginTop: location.pathname == '/sandbox' ? '50px' : undefined }}>
                 <div className="logo-container">
                     <img src={AppLogo} alt="FitVow Logo" />
                     <h1>FitVow</h1>
@@ -167,8 +167,8 @@ function SandboxWarning() {
     if (!isSandbox) return null;
 
     return (
-        <div className="sandbox-header-warning">
+        <a style={{textDecoration: 'none'}} className="sandbox-header-warning" target="_blank" href="https://docs.arbitrum.io/build-decentralized-apps/public-chains#arbitrum-sepolia">
             ⚠️ THIS IS THE SANDBOX VERSION OF FIT VOW DEPLOYED ON THE ARBITRUM SEPOLIA <b>TESTNET.</b> ⚠️
-        </div>
+        </a>
     );
 }

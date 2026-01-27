@@ -357,7 +357,7 @@ function RecordsHistory({ weekDetails, network, oracleAddress }: { weekDetails: 
                         {rows.map((row, index) => (
                             <tr key={`${row.transactionHash}-${index}`}>
                                 <td>{row.type}</td>
-                                <td>{formatDate(row.timestamp, "numeric", "short")}</td>
+                                <td>{formatDate(row.timestamp, "numeric", "short", false)}</td>
                                 <td className="record-detail">{row.detail}</td>
                                 <td>
                                     <a
@@ -636,9 +636,10 @@ function PastWeekFailedClaimRewardDetailsModal({
             <div className="past-week-details-modal">
                 {isSandbox && (
                     <p className="sandbox-banner">
-                        <b>Sandbox mode:</b> you are interacting with the sandbox version of FitVow deployed on the <u>Arbitrum Sepolia Testnet</u>.{' '}
+                        <b>Sandbox mode:</b> you are interacting with the sandbox version of FitVow deployed on the <a target="_blank" style={{textDecoration: 'underline'}} href="https://docs.arbitrum.io/build-decentralized-apps/public-chains#arbitrum-sepolia"><i>Arbitrum Sepolia Testnet</i></a>.{' '}
                         Monetary values have no real-world value.<br />
-                        <a href="../">Access production version.</a>
+                        <a href="../" style={{textDecoration: 'underline'}}>Access production version.</a><br/>
+                        <a target="_blank" href="https://www.alchemy.com/faucets/arbitrum-sepolia" style={{textDecoration: 'underline'}}>Get testnet tokens.</a>
                     </p>
                 )}
                 <h4>🎯 Missed Weekly Goals</h4>

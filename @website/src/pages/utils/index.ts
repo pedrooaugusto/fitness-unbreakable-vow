@@ -47,17 +47,17 @@ export function formatTime(secondsToExpire: number, separator = " ", mode: 'shor
 export function formatDate(
     timestamp: number,
     year: "numeric" | "2-digit" | null = "numeric",
-    month: "2-digit" | "short" = "short"
+    month: "2-digit" | "short" = "short",
+    includeTime = true,
 ) {
     const date = new Date(timestamp * 1000);
+    const timeConfig = (includeTime ? { hour: "2-digit", minute: "2-digit", hour12: false } : {}) as any
 
     return date.toLocaleDateString("en-US", {
         year: year == null ? undefined : year,
         month: month,
         day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false
+        ...timeConfig
     });
 }
 

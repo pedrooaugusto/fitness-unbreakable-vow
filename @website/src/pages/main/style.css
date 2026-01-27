@@ -45,6 +45,9 @@ header {
     font-size: 14px;
     background-color: #F44336;
     padding: 8px;
+    position: fixed;
+    top: 0px;
+    width: 100%;
 }
 
 section {

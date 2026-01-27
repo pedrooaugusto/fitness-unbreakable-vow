@@ -74,7 +74,7 @@ async function saveToS3(body: string, key: string) {
 
     const s3 = new S3Client({ region });
 
-    await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: 'application/json' }));
+    await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: 'application/json', CacheControl: 'public, max-age=5400' }));
 }
 
 const bigIntNormalizer = (_: unknown, value: unknown) => typeof value === 'bigint' ? Number(value) : value
