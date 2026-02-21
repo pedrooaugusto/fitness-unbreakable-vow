@@ -52,9 +52,22 @@ export async function getScheduleNewTimeline(timeLord: Contract) {
         timeLord.SECONDS_IN_ONE_WEEK(),
     ]);
 
-    const startDate = new Date((Number(creationDate) + Number(secondsInWeek) / 2) * 1000);
-    const endDate = new Date(Number(expirationDate + secondsInWeek + 10n) * 1000);
-    const schedulerExpression = `rate(${Math.floor(Number(secondsInWeek) / 60)} minutes)`
+    const secondsInWeekNumber = Number(secondsInWeek);
+    const rateMinutes = Math.max(1, Math.floor(secondsInWeekNumber / 60));
+    const intervalMs = rateMinutes * 60_000;
+
+    const computedStartMs = (Number(creationDate) + secondsInWeekNumber / 2) * 1000;
+    const minStartMs = Date.now() + 60_000;
+    const startMs = Math.max(computedStartMs, minStartMs);
+
+    let endMs = Number(expirationDate + secondsInWeek + 10n) * 1000;
+    if (endMs <= startMs + intervalMs) {
+        endMs = startMs + intervalMs + 60_000;
+    }
+
+    const startDate = new Date(startMs);
+    const endDate = new Date(endMs);
+    const schedulerExpression = `rate(${rateMinutes} minutes)`
 
     return { startDate, endDate, schedulerExpression };
 }
