@@ -557,8 +557,8 @@ function RunningCurrentWeekGoalHistory(props: { currentWeek: string; oracleEvent
                         ))}
                     </tbody>
                 </table>
-                <a href={props.oracleEventsUrl} target="_blank">Complete history on Etherscan.</a>
             </div>
+            <a href={props.oracleEventsUrl} target="_blank">Complete history on Etherscan.</a>
         </div>
     );
 }

@@ -98,7 +98,8 @@ case "$1" in
         BUCKET="s3://e2e4fa73"
 
         # (A) Update content & deletions (no headers here)
-        aws s3 sync @website/dist "$BUCKET" --delete
+        # Keep event data written by the scheduler; don't delete /events/*
+        aws s3 sync @website/dist "$BUCKET" --delete --exclude "events/*"
 
         # (B) Long-cache everything EXCEPT the no-cache files (force metadata)
         aws s3 cp @website/dist "$BUCKET" --recursive \
@@ -114,7 +115,6 @@ case "$1" in
         aws s3 cp @website/dist "$BUCKET" --recursive \
             --exclude "*" \
             --include "abi/*" \
-            --include "events/*" \
             --include "addresses" \
             --include "index.html" \
             --include "logo.svg" \

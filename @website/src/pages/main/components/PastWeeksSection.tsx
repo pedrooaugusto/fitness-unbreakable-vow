@@ -523,7 +523,7 @@ function PastWeekFailedClaimRewardDetailsModal({
     ...props
 }: PastWeekDetailsModalProps) {
     const enforcerReward = formatCurrency(penaltyAmount / 2, currency);
-    const enforceFuncUrl = getAddressBlockExplorerUrl(vowAddress, network) + "#writeContract#F1";
+    const enforceFuncUrl = getAddressBlockExplorerUrl(vowAddress, network) + "#writeContract#F2";
     const [isLoading, setLoading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [response, setResponse] = React.useState<CollectFineResponse | null>(null);
@@ -661,8 +661,8 @@ function PastWeekFailedClaimRewardDetailsModal({
                 </ul>
                 <h4>Option 1: Collect with a Wallet</h4>
                 <p>
-                    To collect the fine, connect your <b>{network}</b> wallet and confirm the transaction to call the <a href={enforceFuncUrl} target="_blank">#enforceAgreement()</a>. This option is
-                    only available if you have a Wallet app installed like Metamask on your browser and will appear as an orange button on this modal.
+                    To collect the fine, connect your <b>{network === 'arbiSep' ? 'Arbitrum Sepolia' : network}</b> wallet and confirm the transaction to call the <a href={enforceFuncUrl} target="_blank">#enforceAgreement()</a>. This option is
+                    <b>only available</b> if you have a Wallet app installed like Metamask on your browser and will appear as an orange button on this modal.
                 </p>
                 <h4>Option 2: Collect Manually</h4>
                 <p>
@@ -671,7 +671,7 @@ function PastWeekFailedClaimRewardDetailsModal({
                 </p>
                 <h4>Important Notes</h4>
                 <ul>
-                    <li>This contract is deployed only in the <b>{network}</b> blockchain, make sure to target this network when calling <code>#enforceAgreement()</code>.</li>
+                    <li>This contract is deployed only in the <b>{network === 'arbiSep' ? 'Arbitrum Sepolia' : network}</b> blockchain, make sure to target this network when calling <code>#enforceAgreement()</code>.</li>
                     <li>
                         Calling <code>#enforceAgreement()</code> does NOT require payment, in fact, the function is marked as non-payable and therefore any attempts to send ether with the transaction will automatically revert.
                     </li>

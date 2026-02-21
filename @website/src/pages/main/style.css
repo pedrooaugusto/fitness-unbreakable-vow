@@ -48,6 +48,7 @@ header {
     position: fixed;
     top: 0px;
     width: 100%;
+    z-index: 10;
 }
 
 section {
@@ -582,6 +583,7 @@ footer {
 }
 
 .modal-wrapper {
+    z-index: 99;
     .sandbox-banner {
         background-color: #B71C1C;
         border: solid 1px white;

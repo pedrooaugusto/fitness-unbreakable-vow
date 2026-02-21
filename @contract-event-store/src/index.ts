@@ -10,7 +10,7 @@ dotenv.config();
 export const handler: ScheduledHandler = async (event: any, context) => {
     const { timeLord, physicalActivityOracleAddress, network } = await loadContracts(event?.contractAddress, event?.network);
 
-    const currentWeekIndex = event?.currentWeekIndex || Number(await timeLord.getCurrentWeekIndex());
+    const currentWeekIndex = Number(event?.currentWeekIndex || Number(await timeLord.getCurrentWeekIndex()));
 
     console.log('[INFO] Fetching events for week #' + currentWeekIndex);
     const secondsInOneWeek = Number(await timeLord.SECONDS_IN_ONE_WEEK());
@@ -74,7 +74,13 @@ async function saveToS3(body: string, key: string) {
 
     const s3 = new S3Client({ region });
 
-    await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: 'application/json', CacheControl: 'public, max-age=5400' }));
+    await s3.send(new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: body,
+        ContentType: 'application/json',
+        CacheControl: 'no-cache, no-store, max-age=0, s-maxage=0, must-revalidate',
+    }));
 }
 
 const bigIntNormalizer = (_: unknown, value: unknown) => typeof value === 'bigint' ? Number(value) : value
